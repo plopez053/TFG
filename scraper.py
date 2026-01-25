@@ -1,55 +1,86 @@
 import requests
 from bs4 import BeautifulSoup
+import os
+import re
 from concurrent.futures import ThreadPoolExecutor
+
+# Ruta de salida para los archivos descargados
+OUTPUT_DIR = "actas"
+# Patrón para limpiar caracteres de los nombres de archivos
+RE_LIMPIAR_NOMBRE = re.compile(r'[\\/*?:"<>|]')
 
 def descargar_pdf(session, url_post, payload_base, opcion):
     anio_texto = opcion.text.strip()
     anio_valor = opcion.get('value')
     
-    if not anio_valor:
+    if not anio_valor or not anio_texto.isdigit():
         return
         
-    print(f"--- Buscando PDFs en el año: {anio_texto} ---")
+    print(f"\nProcesando año {anio_texto}...")
     
+    # Preparamos el payload para este año
     payload_anio = payload_base.copy()
     payload_anio['anioId'] = anio_valor
     
     try:
-        resp_lista = session.post(url_post, data=payload_anio)
-        soup_lista = BeautifulSoup(resp_lista.text, 'html.parser')
+        resp = session.post(url_post, data=payload_anio, timeout=30)
+        soup = BeautifulSoup(resp.text, 'html.parser')
         
-        enlaces = soup_lista.find_all('a', href=True)
-        pdf_urls = []
-        for a in enlaces:
-            if 'blobheader=application%2Fpdf' in a['href']:
-                url_pdf = a['href']
-                if not url_pdf.startswith('http'):
-                    url_pdf = "https://www.bilbao.eus" + url_pdf
-                pdf_urls.append(url_pdf)
+        # Buscamos la tabla con la clase 'tablalistados'
+        tabla = soup.find('table', class_='tablalistados')
+        if not tabla:
+            print(f"No se encontró tabla para {anio_texto}")
+            return
 
-        print(f"   -> He encontrado {len(pdf_urls)} documentos para {anio_texto}")
+        filas = tabla.find_all('tr')
+        print(f"Procesando {len(filas)} filas en {anio_texto}...")
+        descargas_count = 0
 
-        for i, url_pdf in enumerate(pdf_urls):
-            import urllib.parse
-            try:
-                nombre_real = urllib.parse.unquote(url_pdf.split('filename%3D')[1].split('&')[0])
-            except:
-                nombre_real = f"archivo_{anio_texto}_{i}.pdf"
+        for idx, fila in enumerate(filas):
+            tds = fila.find_all('td')
+            if len(tds) < 6: 
+                continue
 
-            print(f"   -> Descargando: {nombre_real}...")
-            
-            # Pedimos el archivo. IMPORTANTE: usamos .content (datos binarios) no .text
-            resp_pdf = session.get(url_pdf)
-            
-            # Guardamos con 'wb' (Write Binary) porque un PDF no es texto plano
-            with open(nombre_real, "wb") as f:
-                f.write(resp_pdf.content)
-        
-        print(f"✅ Finalizado año {anio_texto}")
+            # Extraemos metadatos para el nombre del archivo
+            fecha = tds[0].get_text(strip=True).replace("/", "-")
+            sesion_raw = tds[2].get_text(strip=True).replace("\n", " ").strip()
+            sesion_limpia = RE_LIMPIAR_NOMBRE.sub("", sesion_raw)
+
+            # Revisamos cada columna de interés
+            for col_idx, doc_tipo in [(5, "Acta"),]:
+                link = tds[col_idx].find('a', href=True)
+                
+                if link and 'pdf' in link['href'].lower():
+                    # Aseguramos que existe la carpeta para el año
+                    folder_path = os.path.join(OUTPUT_DIR, anio_texto)
+                    os.makedirs(folder_path, exist_ok=True)
+                    
+                    nombre_archivo = f"{fecha}_{sesion_limpia}_{doc_tipo}.pdf"
+                    ruta_guardado = os.path.join(folder_path, nombre_archivo)
+
+                    if not os.path.exists(ruta_guardado):
+                        href = link['href']
+                        url_pdf = f"https://www.bilbao.eus{href}" if href.startswith("/") else href
+                        
+                        print(f"Detectado {doc_tipo} ({fecha}): {nombre_archivo}")
+                        try:
+                            # Descarga del contenido binario (PDF)
+                            resp_pdf = session.get(url_pdf, timeout=60)
+                            if resp_pdf.status_code == 200:
+                                with open(ruta_guardado, "wb") as f:
+                                    f.write(resp_pdf.content)
+                                print(f"Guardado")
+                                descargas_count += 1
+                            else:
+                                print(f"Error HTTP {resp_pdf.status_code}")
+                        except Exception as e:
+                            print(f"Error en descarga: {e}")
+
+        if descargas_count > 0:
+            print(f"Finalizado {anio_texto}: {descargas_count} archivos nuevos.")
         
     except Exception as e:
-        print(f"Error procesando {anio_texto}: {e}")
-        
+        print(f"Error procesando año {anio_texto}: {e}")
 
 def obtener_html():
     url = "https://www.bilbao.eus/cs/Satellite?c=Page&cid=3000015482&language=es&pageid=3000015482&pagename=Bilbaonet%2FPage%2FBIO_ListadoSesionesPlenarias"
@@ -88,3 +119,4 @@ def obtener_html():
 
 if __name__ == "__main__":
     obtener_html()
+    print("Proceso finalizado.")
