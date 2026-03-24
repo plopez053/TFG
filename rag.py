@@ -13,8 +13,9 @@ from langchain_core.documents import Document
 from tqdm import tqdm
 
 # Configuration
-DATA_PATH = "actas/pruebas actas_2025"
-CHROMA_PATH = "chroma_db_test"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Puntero a la raíz del TFG
+DATA_PATH = os.path.join(BASE_DIR, "actas", "pruebas actas_2025")
+CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db_v4")
 EMBEDDING_MODEL = "nomic-embed-text"
 LLM_MODEL = "mistral"
 
@@ -110,32 +111,45 @@ class RAGPipeline:
                 
                 party_map = self._get_party_mapping(pages)
                 
+                # 1. Join all pages into a single full text string
+                full_text = "\n".join([page.page_content for page in pages])
+                
+                # 2. Split the text into segments based on proposal headers
+                split_regex = re.compile(
+                    r'(?=\n(?:[\s]*)(?:\d+)\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA))',
+                    re.IGNORECASE 
+                )
+                segments = split_regex.split(full_text)
+                
                 current_speaker = "Desconocido"
                 current_party = "Desconocido"
-                current_topic = "General / Sin Asunto Específico"
+                current_topic = "General / Introducción"
                 
-                for page in pages:
-                    content = page.page_content
-                    # We check for speaker and topic changes
-                    lines = content.split('\n')
+                for segment in segments:
+                    if not segment.strip():
+                        continue
+                        
+                    # Extract the topic from the start of the segment (up to 300 characters to capture the full description)
+                    topic_match = re.search(
+                        r'^\s*(\d+\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA).{0,400})', 
+                        segment, re.IGNORECASE | re.DOTALL
+                    )
                     
-                    # Accumulate text for the topic title if it spans multiple lines.
-                    # For simplicity, we grab the first line of the proposal string.
-                    for line in lines:
-                        topic_match = topic_regex.search(line)
-                        if topic_match:
-                            candidate = topic_match.group(1).strip()
-                            if len(candidate) > 10:
-                                current_topic = candidate
+                    if topic_match:
+                        # Clean up newlines in the topic so it reads as a single sentence
+                        candidate = topic_match.group(1).strip().replace('\n', ' ')
+                        if len(candidate) > 10:
+                            current_topic = candidate
                     
-                    page_chunks = text_splitter.split_text(content)
+                    # 3. Chunk the text within this specific proposal
+                    segment_chunks = text_splitter.split_text(segment)
                     
-                    for chunk_text in page_chunks:
+                    for chunk_text in segment_chunks:
                         # Check for speaker change in the chunk
                         match = speaker_regex.search(chunk_text)
                         if match:
                             name_candidate = match.group(1).strip()
-                            # Reject if it's too long or has low-case (regex already handles caps)
+                            # Reject if it's too long
                             if len(name_candidate) < 50:
                                 current_speaker = name_candidate
                                 current_party = "Desconocido"
@@ -144,23 +158,25 @@ class RAGPipeline:
                                         current_party = party_map[kn]
                                         break
                         
+                        # Inyectar el metadata directamente en el texto para que Chroma lo vectorice
+                        enriched_content = f"ASUNTO: {current_topic}\nORADOR: {current_speaker} ({current_party})\n\n{chunk_text}"
+                        
                         # Create a chunk document with enriched metadata
                         all_chunks.append(Document(
-                            page_content=chunk_text,
+                            page_content=enriched_content,
                             metadata={
                                 "source": path,
                                 "date": date,
                                 "speaker": current_speaker,
                                 "party": current_party,
-                                "topic": current_topic,
-                                "page": page.metadata.get("page", 0)
+                                "topic": current_topic
                             }
                         ))
                         
             except Exception as e:
                 print(f"Error cargando {path}: {e}")
                 
-        print(f"Generados {len(all_chunks)} chunks con metadatos enriquecidos.")
+        print(f"Generados {len(all_chunks)} chunks con metadatos enriquecidos enfocados a propuestas.")
         return all_chunks
 
     def create_vector_store(self, force_rebuild=False):
@@ -201,35 +217,16 @@ class RAGPipeline:
         llm = ChatOllama(model=LLM_MODEL, temperature=0)
 
         system_prompt = """Eres un asistente experto en Actas del Pleno del Ayuntamiento de Bilbao.
-Tu objetivo es responder a las preguntas basándote ÚNICAMENTE en el contexto proporcionado.
-ES OBLIGATORIO RESPONDER SIEMPRE EN CASTELLANO, independientemente del idioma de la pregunta.
+Tu ÚNICO objetivo es responder a las preguntas basándote ESTRICTAMENTE en la información del texto proporcionado bajo "Contexto recuperado".
 
-**NORMAS ESTRICTAS:**
-1. NO inventes información. Si la respuesta no está en el contexto, di "No hay información en las actas proporcionadas."
-2. NO uses conocimientos externos.
-3. El contexto puede incluir fragmentos en Euskera ("udalbatza", "proposamena") y Castellano. Traduce y resume la respuesta SIEMPRE al Castellano.
-4. Identifica la intención de la pregunta:
-   - ¿Es una pregunta sobre el sistema o los documentos disponibles? (CASO A)
-   - ¿Es una pregunta sobre el contenido detallado o lo que dijo alguien? (CASO B)
-   - ¿Es una pregunta pidiendo un listado de las propuestas o temas tratados? (CASO C)
-
-### CASO A: Preguntas sobre el SISTEMA o DOCUMENTOS DISPONIBLES
-(Ejemplos: "¿Qué actas tienes?", "¿De qué fechas son los documentos?", "¿Qué puedes hacer?")
-- **ACCIÓN**: Enumera los documentos que ves en el contexto de forma clara y concisa (ej: "Tengo acceso al acta del 27-02-2025").
-
-### CASO B: Preguntas sobre DATO ESPECÍFICO o CONTENIDO detallado
-(Ejemplo: "¿Qué dijo X sobre Y?", "¿Dime todo sobre la propuesta Z?")
-- **ACCIÓN**: Usa el contexto de abajo para responder OBLIGATORIAMENTE en este formato de ficha:
-  - **Acta**: [Nombre del archivo]
-  - **Fecha**: [Usar metadato 'fecha']
-  - **Asunto/Propuesta**: [Usar metadato 'asunto' si la pregunta es sobre qué se aprobó o votó]
-  - **Intervención**: "[Texto literal, si aplica]"
-  - **Autor**: [Nombre del orador] ([Partido Político])
-  - **Resumen/Contexto**: [Explicación detallada. IMPORTANTE: Si te preguntan por una propuesta completa, estructura tu resumen en 3 partes si el contexto lo permite: 1) De qué trata la propuesta. 2) Principales posturas en el debate. 3) Resultado de la votación (busca 'votos emitidos', 'acuerda', 'aprobado').]
-
-### CASO C: Listado de PROPUESTAS / ASUNTOS
-(Ejemplos: "¿Qué propuestas se hicieron el 29 de mayo?", "Enumera los temas tratados")
-- **ACCIÓN**: NO uses el formato de ficha. Responde con una introducción amigable y enumera en una lista con viñetas los distintos asuntos o propuestas que encuentres en el contexto (fíjate en el campo [ASUNTO: ...] de cada fragmento). No repitas asuntos idénticos.
+**REGLAS CRÍTICAS (DE OBLIGADO CUMPLIMIENTO):**
+1. CÍÑETE AL CONTEXTO: Si la respuesta no está explícitamente en el texto proporcionado abajo, di "No hay información suficiente en las actas proporcionadas para responder a esto." ¡NO INVENTES NADA!
+2. PROHIBIDO USAR CONOCIMIENTO EXTERNO: No asumas de qué trata una propuesta si el texto no lo dice. Lee el texto con atención.
+3. INCLUYE FECHAS Y ORADORES: Menciona en tu respuesta quién (Orador) dice qué y en qué fecha, guiándote por los metadatos de los fragmentos.
+4. FORMATO: Si te preguntan por una propuesta o un debate, redacta un resumen claro indicando: 
+   - De qué trata el tema.
+   - Qué postura tiene cada orador mencionado en el texto.
+   - Si el texto menciona el resultado de la votación, indícalo. Si no lo menciona, di que no aparece el resultado.
 
 Contexto recuperado:
 {context}
@@ -249,17 +246,131 @@ Pregunta del usuario: {question}"""
                 formatted_texts.append(f"[ACTA: {source}]\n[FECHA: {date}]\n[ASUNTO: {topic}]\n[ORADOR: {speaker} ({party})]\n{doc.page_content}")
             return "\n\n".join(formatted_texts)
 
-        retriever = self.vector_store.as_retriever(search_kwargs={"k": 7})
+        mq_prompt = f"""Eres un asistente experto. Genera 3 versiones alternativas de la siguiente pregunta en CASTELLANO, enfocadas en palabras clave esenciales (nombres, partidos, temas) para un motor de búsqueda matemático.
+Escribe SÓLO las preguntas alternativas, una por línea, sin listas estructuradas ni guiones.
+
+Pregunta original: {question}"""
+
+        print("\nMultiQuery: Expandiendo tu pregunta en búsquedas vectoriales simultáneas...")
+        try:
+            variations_text = llm.invoke(mq_prompt).content
+            variations = [v.strip() for v in variations_text.split('\n') if v.strip()]
+        except Exception:
+            variations = []
+            
+        if question not in variations:
+            variations.append(question)
+            
+        retriever = self.vector_store.as_retriever(search_kwargs={"k": 8})
+        all_initial_docs = []
+        for v in variations:
+            try:
+                all_initial_docs.extend(retriever.invoke(v))
+            except Exception:
+                pass
+            
+        # --- FASE 2: EXPANSIÓN POR TEMA (Topic Expansion) ---
+        # Identificar los temas más relevantes (top 2 temas para no saturar memoria)
+        topic_counts = {}
+        for doc in all_initial_docs:
+            source = doc.metadata.get("source")
+            topic = doc.metadata.get("topic")
+            if source and topic and topic != "General / Introducción":
+                key = (source, topic)
+                topic_counts[key] = topic_counts.get(key, 0) + 1
         
-        chain = (
-            {"context": retriever | format_docs, "question": RunnablePassthrough()}
-            | prompt
-            | llm
-            | StrOutputParser()
-        )
+        # Ordenar temas por frecuencia de Hits
+        sorted_topics = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        # Filtrado inteligente: prioritizar temas que contengan palabras clave específicas
+        # Excluimos palabras genéricas que están en casi todas las propuestas
+        generic_words = {"partido", "popular", "propuesta", "proposicion", "mocio", "mocion", "bilbao", "votas", "votacion", "reunio", "reunion", "sobre", "dame", "informacion"}
+        important_keywords = [w.lower() for w in question.split() if len(w) > 4 and w.lower() not in generic_words]
+        
+        prioritized_topics_scores = []
+        for topic_key, count in sorted_topics:
+            topic_text = topic_key[1].lower()
+            # Contar CUÁNTAS palabras clave únicas coinciden
+            matches = sum(1 for kw in important_keywords if kw in topic_text)
+            prioritized_topics_scores.append((topic_key, matches, count))
+            
+        # Ordenar primero por número de matches únicos, luego por frecuencia de hits
+        prioritized_topics_scores.sort(key=lambda x: (x[1], x[2]), reverse=True)
+        
+        # PRUNING: Si el mejor tema tiene matches y el segundo no tiene ninguno, 
+        # o el primero tiene muchos más, nos quedamos SOLO con el mejor para evitar ruido.
+        if len(prioritized_topics_scores) > 1:
+            top_score = prioritized_topics_scores[0][1]
+            next_score = prioritized_topics_scores[1][1]
+            if top_score > 0 and next_score == 0:
+                target_topics = [prioritized_topics_scores[0][0]]
+            else:
+                target_topics = [t[0] for t in prioritized_topics_scores[:2]]
+        elif prioritized_topics_scores:
+            target_topics = [prioritized_topics_scores[0][0]]
+        else:
+            target_topics = []
+        
+        docs = []
+        if target_topics:
+            # Detectar fecha de la pregunta para priorizar aún más (opcional, pero ayuda)
+            print(f"Propuestas priorizadas (Pruned): {[t[1][:60] for t in target_topics]}")
+            for (source, topic) in target_topics:
+                # Recuperar fragmentos de ese tema
+                topic_docs_data = self.vector_store.get(where={
+                    "$and": [
+                        {"source": source},
+                        {"topic": topic}
+                    ]
+                })
+                
+                metadatas = topic_docs_data.get('metadatas', [])
+                documents = topic_docs_data.get('documents', [])
+                
+                metadatas = topic_docs_data.get('metadatas', [])
+                documents = topic_docs_data.get('documents', [])
+                
+                # Para asegurar que el LLM vea el debate completo (intro + votos), 
+                # tomamos los primeros 15 y los últimos 15 chunks si el tema es largo.
+                if len(documents) > 30:
+                    indices = list(range(15)) + list(range(len(documents)-15, len(documents)))
+                    for idx in indices:
+                         docs.append(Document(page_content=documents[idx], metadata=metadatas[idx]))
+                else:
+                    for i in range(len(documents)):
+                        docs.append(Document(page_content=documents[i], metadata=metadatas[i]))
+        else:
+            # Si no detectamos un tema claro, usamos los hits iniciales deduplicados
+            docs = list({doc.page_content: doc for doc in all_initial_docs}.values())[:15]
+        
+        chain = prompt | llm | StrOutputParser()
 
         print(f"\nGenerando respuesta...")
-        return chain.invoke(question)
+        llm_response = chain.invoke({
+            "context": format_docs(docs), 
+            "question": question
+        })
+        
+        # ==============================================================
+        # Añadir las fuentes (con Orador, Acta y fragmento) directamente
+        # a la respuesta final. (Fragmento más largo solicitado por el usuario)
+        # ==============================================================
+        sources_text = "\n\n" + "="*60 + "\nFUENTES Y EXTRACTOS UTILIZADOS PARA ESTA RESPUESTA:\n"
+        for i, doc in enumerate(docs):
+            source = os.path.basename(doc.metadata.get("source", "Desconocido"))
+            topic = doc.metadata.get("topic", "General / Sin Asunto Específico")
+            speaker = doc.metadata.get("speaker", "Desconocido")
+            
+            topic_short = topic if len(topic) < 70 else topic[:67] + "..."
+            
+            # Limpiar saltos de línea y mostrar un fragmento mucho más largo (400 caracteres)
+            snippet = doc.page_content.replace('\n', ' ')
+            snippet = snippet if len(snippet) < 400 else snippet[:397] + "..."
+            
+            sources_text += f" [{i+1}] {source} | Orador: {speaker} | Asunto: {topic_short}\n"
+            sources_text += f"     -> Extracto: \"{snippet}\"\n\n"
+        
+        return llm_response + sources_text
 
 def main():
     global DATA_PATH, CHROMA_PATH, LLM_MODEL
@@ -288,14 +399,26 @@ def main():
 
     if args.query:
         print("\nRESPUESTA:")
-        print(rag.query(args.query))
+        try:
+            res = rag.query(args.query)
+            # Intentar imprimir normalmente, pero caer a buffer si falla
+            print(res)
+        except UnicodeEncodeError:
+            # Forzar salida en UTF-8 si el terminal de Windows falla
+            sys.stdout.buffer.write(res.encode('utf-8', errors='replace'))
+            print("\n")
     else:
         print(f"\n--- RAG Bilbao Ready [Model: {LLM_MODEL}] (Tipo 'exit' para salir) ---")
         while True:
             q = input("\nPregunta: ")
             if q.lower() in ["exit", "quit"]: break
             if not q.strip(): continue
-            print(rag.query(q))
+            try:
+                res = rag.query(q)
+                print(res)
+            except UnicodeEncodeError:
+                sys.stdout.buffer.write(res.encode('utf-8', errors='replace'))
+                print("\n")
 
 if __name__ == "__main__":
     main()
