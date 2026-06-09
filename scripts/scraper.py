@@ -5,7 +5,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 # Ruta de salida para los archivos descargados
-OUTPUT_DIR = "actas"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+OUTPUT_DIR = os.path.join(BASE_DIR, "actas")
 # Patrón para limpiar caracteres de los nombres de archivos
 RE_LIMPIAR_NOMBRE = re.compile(r'[\\/*?:"<>|]')
 
