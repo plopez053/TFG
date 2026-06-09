@@ -15,11 +15,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 
 # --- Configuration ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DATA_PATH = os.path.join(BASE_DIR, "actas_scalability")
-CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db_final_v11")
-EMBEDDING_MODEL = "nomic-embed-text"
-LLM_MODEL = "mistral"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(BASE_DIR, "actas")
+CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
+EMBEDDING_MODEL = "bge-m3"
+LLM_MODEL = "qwen2.5:7b"
 
 # --- Diccionario Temático Global ---
 # Cada entrada mapea triggers (palabras del usuario) a:
@@ -117,14 +117,18 @@ class RAGPipeline:
 
     # --- Fase de Ingesta (ETL) ---
 
-    def load_and_split_documents(self) -> List[Document]:
+    def load_and_split_documents(self, year_filter: str = None) -> List[Document]:
         """Carga los PDFs y los divide en fragmentos con metadatos de forma recursiva."""
         all_chunks = []
-        # Buscamos PDFs en DATA_PATH y todas sus subcarpetas (2023, 2024, 2025...)
         pdf_files = glob.glob(os.path.join(DATA_PATH, "**", "*.pdf"), recursive=True)
-        
+
+        if year_filter:
+            sep = os.sep
+            pdf_files = [p for p in pdf_files if f"{sep}{year_filter}{sep}" in p]
+
         if not pdf_files:
-            print(f"[!] No se encontraron archivos PDF en {DATA_PATH}")
+            label = f"del año {year_filter}" if year_filter else f"en {DATA_PATH}"
+            print(f"[!] No se encontraron archivos PDF {label}")
             return []
         
         print(f"[*] Encontrados {len(pdf_files)} archivos PDF. Procesando...")
@@ -194,20 +198,43 @@ class RAGPipeline:
                 
         return all_chunks
 
-    def create_vector_store(self, force_rebuild: bool = False):
+    def _add_chunks_with_progress(self, chunks: List[Document], label: str, batch_size: int = 50):
+        """Inserta chunks en Chroma en lotes mostrando barra de progreso."""
+        batches = [chunks[i:i+batch_size] for i in range(0, len(chunks), batch_size)]
+        for batch in tqdm(batches, desc=f"Embeddings {label}", unit="lote",
+                          bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} lotes [{elapsed}<{remaining}]"):
+            self.vector_store.add_documents(batch)
+
+    def create_vector_store(self, force_rebuild: bool = False, year_filter: str = None):
         """Crea o carga la base de datos vectorial ChromaDB."""
-        if os.path.exists(CHROMA_PATH) and not force_rebuild:
+        if year_filter:
+            if force_rebuild and os.path.exists(CHROMA_PATH):
+                import shutil
+                shutil.rmtree(CHROMA_PATH)
+                print(f"[*] Base de datos eliminada. Empezando desde cero con {year_filter}...")
+
+            chunks = self.load_and_split_documents(year_filter=year_filter)
+            if not chunks: return
+            print(f"[*] {len(chunks)} fragmentos listos para indexar ({year_filter}).")
+            if os.path.exists(CHROMA_PATH):
+                self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
+            else:
+                self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
+            self._add_chunks_with_progress(chunks, label=year_filter)
+            print(f"[+] Año {year_filter} indexado en la base de datos.")
+        elif os.path.exists(CHROMA_PATH) and not force_rebuild:
             print(f"[*] Cargando base de datos vectorial desde {CHROMA_PATH}...")
             self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
         else:
             if force_rebuild and os.path.exists(CHROMA_PATH):
                 import shutil
                 shutil.rmtree(CHROMA_PATH)
-            
+
             chunks = self.load_and_split_documents()
             if not chunks: return
-            print("[*] Generando nuevos embeddings (esto puede tardar unos minutos)...")
-            self.vector_store = Chroma.from_documents(documents=chunks, embedding=self.embeddings, persist_directory=CHROMA_PATH)
+            print(f"[*] {len(chunks)} fragmentos listos para indexar.")
+            self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
+            self._add_chunks_with_progress(chunks, label="completo")
             print(f"[+] Base de datos guardada en {CHROMA_PATH}")
 
     # --- Fase de Recuperación (Retrieval) ---
@@ -664,13 +691,16 @@ def get_rag() -> RAGPipeline:
 
 def main():
     parser = argparse.ArgumentParser(description="RAG System for Bilbao Actas")
-    parser.add_argument("--rebuild", action="store_true", help="Reconstruir base de datos")
+    parser.add_argument("--rebuild", action="store_true", help="Reconstruir base de datos (borra la existente)")
+    parser.add_argument("--year", type=str, help="Procesar solo este año, ej: 2024")
     parser.add_argument("--query", type=str, help="Pregunta directa")
     args = parser.parse_args()
 
     rag = RAGPipeline()
-    if args.rebuild:
-        rag.create_vector_store(force_rebuild=True)
+    if args.rebuild or args.year:
+        rag.create_vector_store(force_rebuild=args.rebuild, year_filter=args.year)
+        if not args.query:
+            return
     elif not os.path.exists(CHROMA_PATH):
         rag.create_vector_store()
     else:

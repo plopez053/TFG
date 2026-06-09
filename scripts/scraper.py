@@ -48,7 +48,7 @@ def descargar_pdf(session, url_post, payload_base, opcion):
             sesion_limpia = RE_LIMPIAR_NOMBRE.sub("", sesion_raw)
 
             # Revisamos cada columna de interés
-            for col_idx, doc_tipo in [(5, "Acta"),(3,"Orden"),(4,"Extracto")]:
+            for col_idx, doc_tipo in [(5, "Acta")]:
                 link = tds[col_idx].find('a', href=True)
                 
                 if link and 'pdf' in link['href'].lower():
