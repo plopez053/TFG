@@ -10,6 +10,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
@@ -18,8 +19,13 @@ from langchain_core.documents import Document
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(BASE_DIR, "actas")
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
-EMBEDDING_MODEL = "bge-m3"
-LLM_MODEL = "qwen2.5:7b"
+EMBEDDING_MODEL = "nomic-embed-text"
+LLM_MODEL = "mistral"
+# Clave de API de Cohere para reranking (opcional). Si está vacía, el sistema funciona sin reranking.
+# Obtén una clave gratuita en https://cohere.com → Dashboard → API Keys
+# Ejecución: export COHERE_API_KEY="tu-clave" antes de lanzar chainlit
+COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # --- Diccionario Temático Global ---
 # Cada entrada mapea triggers (palabras del usuario) a:
@@ -77,7 +83,12 @@ class RAGPipeline:
         """Inicializa el motor RAG con el modelo de embeddings configurado."""
         self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
         self.vector_store = None
-        self.llm = ChatOllama(model=LLM_MODEL, temperature=0, num_ctx=4096)
+        if GROQ_API_KEY:
+            self.llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0, api_key=GROQ_API_KEY)
+            print("[+] LLM: Groq (llama-3.3-70b-versatile) — respuestas rápidas via API")
+        else:
+            self.llm = ChatOllama(model=LLM_MODEL, temperature=0, num_ctx=4096)
+            print("[+] LLM: Ollama local (mistral)")
 
     # --- Métodos de Utilidad ---
 
@@ -117,18 +128,88 @@ class RAGPipeline:
 
     # --- Fase de Ingesta (ETL) ---
 
-    def load_and_split_documents(self, year_filter: str = None) -> List[Document]:
+    def _process_single_pdf(self, path: str) -> List[Document]:
+        """Procesa un único PDF y devuelve sus chunks con metadatos."""
+        speaker_regex = re.compile(r'(?:(?:EL|LA)\s+)?(?:SR\.|SRA\.)\s+([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)\s*[:.]', re.IGNORECASE)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
+        chunks = []
+
+        date = self._extract_date_from_filename(path)
+        from langchain_community.document_loaders import PyPDFLoader
+        pdf_loader = PyPDFLoader(path)
+        pages = pdf_loader.load()
+        party_map = self._get_party_mapping(pages)
+
+        full_text = "\n".join([page.page_content for page in pages])
+        split_regex = re.compile(
+            r'(?=\n(?:[\s]*)(?:\d+)\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA)'
+            r'|\n\s*-\d+-\s*\n\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen))',
+            re.IGNORECASE
+        )
+        segments = split_regex.split(full_text)
+
+        is_old_format = len(segments) <= 2
+        if is_old_format:
+            split_regex_old = re.compile(r'(?=\n-\s*\d+\s*-\s*\n)')
+            segments = split_regex_old.split(full_text)
+
+        chunk_index_in_doc = 0
+        for segment in segments:
+            if not segment.strip():
+                continue
+            current_speaker, current_party = "Desconocido", "Desconocido"
+
+            if is_old_format:
+                topic_raw = re.search(r'^-\s*\d+\s*-\s*\n\s*(.{0,200})', segment.lstrip('\n'), re.DOTALL)
+                if topic_raw:
+                    first_line = topic_raw.group(1).strip().split('\n')[0].strip()
+                    first_line = re.sub(r' {2,}', ' ', first_line)
+                    current_topic = first_line[:120] if first_line else "General / Introducción"
+                else:
+                    current_topic = "General / Introducción"
+            else:
+                topic_match_std = re.search(
+                    r'^\s*(\d+\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA).{0,400})',
+                    segment, re.IGNORECASE | re.DOTALL
+                )
+                topic_match_hist = re.search(
+                    r'^\s*-\s*(\d+)\s*-\s*\n\s*((?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen).{0,400})',
+                    segment, re.IGNORECASE | re.DOTALL
+                )
+                if topic_match_std:
+                    current_topic = topic_match_std.group(1).strip().replace('\n', ' ')
+                elif topic_match_hist:
+                    clean_text = topic_match_hist.group(2).strip().replace('\n', ' ')
+                    current_topic = f"{topic_match_hist.group(1)}. {clean_text}"
+                else:
+                    current_topic = "General / Introducción"
+
+            for chunk_text in text_splitter.split_text(segment):
+                match = speaker_regex.search(chunk_text)
+                if match:
+                    current_speaker = match.group(1).strip()
+                    if len(current_speaker) < 50:
+                        for kn, kp in party_map.items():
+                            if kn in current_speaker or current_speaker in kn:
+                                current_party = kp
+                                break
+                chunks.append(Document(
+                    page_content=f"ASUNTO: {current_topic}\nORADOR: {current_speaker} ({current_party})\n\n{chunk_text}",
+                    metadata={
+                        "source": path, "date": date, "speaker": current_speaker,
+                        "party": current_party, "topic": current_topic, "chunk_index": chunk_index_in_doc
+                    }
+                ))
+                chunk_index_in_doc += 1
+        return chunks
+
+    def load_and_split_documents(self) -> List[Document]:
         """Carga los PDFs y los divide en fragmentos con metadatos de forma recursiva."""
         all_chunks = []
         pdf_files = glob.glob(os.path.join(DATA_PATH, "**", "*.pdf"), recursive=True)
 
-        if year_filter:
-            sep = os.sep
-            pdf_files = [p for p in pdf_files if f"{sep}{year_filter}{sep}" in p]
-
         if not pdf_files:
-            label = f"del año {year_filter}" if year_filter else f"en {DATA_PATH}"
-            print(f"[!] No se encontraron archivos PDF {label}")
+            print(f"[!] No se encontraron archivos PDF en {DATA_PATH}")
             return []
         
         print(f"[*] Encontrados {len(pdf_files)} archivos PDF. Procesando...")
@@ -151,29 +232,48 @@ class RAGPipeline:
                     re.IGNORECASE
                 )
                 segments = split_regex.split(full_text)
-                
+
+                # Fallback para formato antiguo (2007-2010): secciones separadas por
+                # "- N -" al inicio de línea sin sangría, sin keyword de tipo.
+                # Los números de página usan el mismo guion pero con 40+ espacios de sangría.
+                is_old_format = len(segments) <= 2
+                if is_old_format:
+                    split_regex_old = re.compile(r'(?=\n-\s*\d+\s*-\s*\n)')
+                    segments = split_regex_old.split(full_text)
+
                 chunk_index_in_doc = 0
                 for segment in segments:
                     if not segment.strip(): continue
-                    
+
                     current_speaker, current_party = "Desconocido", "Desconocido"
-                    
-                    topic_match_std = re.search(
-                        r'^\s*(\d+\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA).{0,400})',
-                        segment, re.IGNORECASE | re.DOTALL
-                    )
-                    topic_match_hist = re.search(
-                        r'^\s*-\s*(\d+)\s*-\s*\n\s*((?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen).{0,400})',
-                        segment, re.IGNORECASE | re.DOTALL
-                    )
-                    
-                    if topic_match_std:
-                        current_topic = topic_match_std.group(1).strip().replace('\n', ' ')
-                    elif topic_match_hist:
-                        clean_text = topic_match_hist.group(2).strip().replace('\n', ' ')
-                        current_topic = f"{topic_match_hist.group(1)}. {clean_text}"
+
+                    if is_old_format:
+                        # Extraer topic de la primera línea significativa tras el marcador
+                        topic_raw = re.search(r'^-\s*\d+\s*-\s*\n\s*(.{0,200})', segment.lstrip('\n'), re.DOTALL)
+                        if topic_raw:
+                            first_line = topic_raw.group(1).strip().split('\n')[0].strip()
+                            # Limpiar espacios dobles del OCR (p.ej. "se  ha" → "se ha")
+                            first_line = re.sub(r' {2,}', ' ', first_line)
+                            current_topic = first_line[:120] if first_line else "General / Introducción"
+                        else:
+                            current_topic = "General / Introducción"
                     else:
-                        current_topic = "General / Introducción"
+                        topic_match_std = re.search(
+                            r'^\s*(\d+\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA).{0,400})',
+                            segment, re.IGNORECASE | re.DOTALL
+                        )
+                        topic_match_hist = re.search(
+                            r'^\s*-\s*(\d+)\s*-\s*\n\s*((?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen).{0,400})',
+                            segment, re.IGNORECASE | re.DOTALL
+                        )
+
+                        if topic_match_std:
+                            current_topic = topic_match_std.group(1).strip().replace('\n', ' ')
+                        elif topic_match_hist:
+                            clean_text = topic_match_hist.group(2).strip().replace('\n', ' ')
+                            current_topic = f"{topic_match_hist.group(1)}. {clean_text}"
+                        else:
+                            current_topic = "General / Introducción"
                     
                     for chunk_text in text_splitter.split_text(segment):
                         match = speaker_regex.search(chunk_text)
@@ -198,43 +298,16 @@ class RAGPipeline:
                 
         return all_chunks
 
-    def _add_chunks_with_progress(self, chunks: List[Document], label: str, batch_size: int = 50):
-        """Inserta chunks en Chroma en lotes mostrando barra de progreso."""
-        batches = [chunks[i:i+batch_size] for i in range(0, len(chunks), batch_size)]
-        for batch in tqdm(batches, desc=f"Embeddings {label}", unit="lote",
-                          bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} lotes [{elapsed}<{remaining}]"):
-            self.vector_store.add_documents(batch)
-
-    def create_vector_store(self, force_rebuild: bool = False, year_filter: str = None):
+    def create_vector_store(self):
         """Crea o carga la base de datos vectorial ChromaDB."""
-        if year_filter:
-            if force_rebuild and os.path.exists(CHROMA_PATH):
-                import shutil
-                shutil.rmtree(CHROMA_PATH)
-                print(f"[*] Base de datos eliminada. Empezando desde cero con {year_filter}...")
-
-            chunks = self.load_and_split_documents(year_filter=year_filter)
-            if not chunks: return
-            print(f"[*] {len(chunks)} fragmentos listos para indexar ({year_filter}).")
-            if os.path.exists(CHROMA_PATH):
-                self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
-            else:
-                self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
-            self._add_chunks_with_progress(chunks, label=year_filter)
-            print(f"[+] Año {year_filter} indexado en la base de datos.")
-        elif os.path.exists(CHROMA_PATH) and not force_rebuild:
+        if os.path.exists(CHROMA_PATH):
             print(f"[*] Cargando base de datos vectorial desde {CHROMA_PATH}...")
             self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
         else:
-            if force_rebuild and os.path.exists(CHROMA_PATH):
-                import shutil
-                shutil.rmtree(CHROMA_PATH)
-
             chunks = self.load_and_split_documents()
             if not chunks: return
-            print(f"[*] {len(chunks)} fragmentos listos para indexar.")
-            self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
-            self._add_chunks_with_progress(chunks, label="completo")
+            print("[*] Generando embeddings...")
+            self.vector_store = Chroma.from_documents(documents=chunks, embedding=self.embeddings, persist_directory=CHROMA_PATH)
             print(f"[+] Base de datos guardada en {CHROMA_PATH}")
 
     # --- Fase de Recuperación (Retrieval) ---
@@ -402,22 +475,24 @@ class RAGPipeline:
                                  if (m.get('topic') == t_name or d.lstrip().startswith(t_prefix))]
                 
                 if topic_indices:
-                    # NUEVA LÓGICA: Extraer solo el fragmento inicial (donde suele estar la propuesta)
-                    # y el fragmento final (donde suele estar la votación)
-                    start_idx = min(topic_indices)
-                    start_chunks = [pairs[start_idx]]
-                    
-                    # Buscamos el final del tema (donde cambia el topic o se acaba el acta)
-                    topic_end_idx = start_idx
-                    for i in range(start_idx, len(pairs)):
-                        if pairs[i][0].get('topic') == t_name:
-                            topic_end_idx = i
+                    # El tema suele aparecer DOS veces en el acta:
+                    #   1) en el ORDEN DEL DÍA al principio -> una racha de fragmentos cortos (solo títulos)
+                    #   2) en el DEBATE real mucho después -> una racha de fragmentos largos (cuerpo + votación)
+                    # Agrupamos los índices en rachas contiguas y nos quedamos con la que
+                    # tiene MÁS texto: ese es el debate real, no la entrada del índice.
+                    runs = []
+                    current_run = [topic_indices[0]]
+                    for idx in topic_indices[1:]:
+                        if idx == current_run[-1] + 1:
+                            current_run.append(idx)
                         else:
-                            break
-                    
-                    end_chunks = [pairs[topic_end_idx]] if topic_end_idx != start_idx else []
-                    selected = start_chunks + end_chunks
-                    
+                            runs.append(current_run)
+                            current_run = [idx]
+                    runs.append(current_run)
+
+                    best_run = max(runs, key=lambda run: sum(len(pairs[i][1]) for i in run))
+                    selected = [pairs[i] for i in best_run]
+
                     # Extraemos el número del tema para el filtro de seguridad (ej: "25.")
                     t_topic_number = t_name.split('.')[0].strip() + "."
                     seen_content = set()
@@ -443,6 +518,43 @@ class RAGPipeline:
 
 
 
+    def _rerank_with_cohere(self, docs: List[Document], question: str, top_n: int = 30) -> List[Document]:
+        """Reordena los documentos candidatos usando Cohere rerank-multilingual-v3.0.
+
+        Si la API key no está configurada o hay un error, devuelve los docs originales
+        sin modificar (degradación elegante).
+        """
+        if not COHERE_API_KEY or not docs:
+            return docs
+        try:
+            import cohere
+            co = cohere.Client(COHERE_API_KEY)
+
+            # Deduplicar por contenido antes de enviar a la API
+            seen_content: set = set()
+            unique_docs: List[Document] = []
+            for d in docs:
+                key = d.page_content[:200]
+                if key not in seen_content:
+                    seen_content.add(key)
+                    unique_docs.append(d)
+
+            # Limitar a 60 candidatos para no desperdiciar cuota de la API
+            candidates = unique_docs[:60]
+
+            results = co.rerank(
+                model="rerank-multilingual-v3.0",
+                query=question,
+                documents=[d.page_content for d in candidates],
+                top_n=min(top_n, len(candidates))
+            )
+            reranked = [candidates[r.index] for r in results.results]
+            print(f"[*] Cohere reranking: {len(candidates)} candidatos → top {len(reranked)}")
+            return reranked
+        except Exception as e:
+            print(f"[!] Cohere reranking fallido, usando ChromaDB directo: {e}")
+            return docs
+
     def _format_context(self, docs: List[Document]) -> str:
         """Formatea los documentos agrupando por (fecha, tema) para compactar el contexto.
         
@@ -464,13 +576,23 @@ class RAGPipeline:
             content = content.replace("Udalbatzarreko Idazkaritza Nagusia", "")
             content = content.replace("Secretar\u00eda General del Pleno", "")
             
-            # Quitar las lineas ASUNTO: y ORADOR: del inicio (el titulo ya lo tenemos)
+            # Quitar las etiquetas ASUNTO:/ORADOR: SIN borrar el cuerpo de la propuesta.
+            # OJO: en las actas modernas el chunk entero va en UNA sola línea, así que
+            # el antiguo split('\n') + quitar la primera línea borraba toda la propuesta.
             lines = content.split('\n')
-            if lines and lines[0].startswith('ASUNTO:'):
-                lines = lines[1:]
-            if lines and lines[0].startswith('ORADOR:'):
-                lines = lines[1:]
-            content = '\n'.join(lines).strip()
+            if len(lines) >= 3:
+                # Formato antiguo: cabeceras ASUNTO:/ORADOR: en líneas propias.
+                if lines[0].startswith('ASUNTO:'):
+                    lines = lines[1:]
+                if lines and lines[0].startswith('ORADOR:'):
+                    lines = lines[1:]
+                content = '\n'.join(lines).strip()
+            else:
+                # Formato moderno (todo en una línea): quitamos solo las ETIQUETAS
+                # con regex y conservamos el cuerpo de la propuesta.
+                content = re.sub(r'^ASUNTO:\s*', '', content)
+                content = re.sub(r'\bORADOR:\s*[^(]*\([^)]*\)\s*', ' ', content)
+                content = re.sub(r'\s{2,}', ' ', content).strip()
             
             if key not in groups:
                 groups[key] = []
@@ -481,10 +603,15 @@ class RAGPipeline:
         # Regex para extraer resultados de votación del texto
         # vote_re: captura resultados numéricos de votación.
         # Usa DOTALL para no cortarse en saltos de línea del PDF.
+        # Anclamos en "Votos emitidos" (inicio real del recuento). Entre cada cifra y
+        # la siguiente etiqueta va la lista de nombres de los concejales (cientos de
+        # caracteres), por eso usamos ventanas amplias no codiciosas. negativos y
+        # abstenciones son opcionales (en votaciones unánimes no aparecen).
         vote_re = re.compile(
-            r'(?:Votos\s+emitidos[:\s]+(\d+)[.\s]*)?'
-            r'Votos\s+afirmativos[:\s]+(\d+).{0,60}'
-            r'Votos\s+negativos[:\s]+(\d+)',
+            r'Votos\s+emitidos[:\s]+(\d+)'
+            r'.{0,80}?Votos\s+afirmativos[:\s]+(\d+)'
+            r'(?:.{0,400}?Votos\s+negativos[:\s]+(\d+))?'
+            r'(?:.{0,400}?Abstenciones?[:\s]+(\d+))?',
             re.IGNORECASE | re.DOTALL
         )
         # result_re: captura la frase de resultado textual.
@@ -504,23 +631,46 @@ class RAGPipeline:
             # cortadas por el OCR del PDF no rompan las coincidencias de los regex.
             raw_flat = re.sub(r'\s+', ' ', raw)
 
-            # Extraer resultado de votación si está en el texto (búsqueda sobre texto aplanado)
-            resultado = None
-            vm = vote_re.search(raw_flat)
-            if vm:
-                total = vm.group(1) or "?"
-                favor = vm.group(2)
-                contra = vm.group(3)
-                resultado = f"Votos emitidos: {total} | A favor: {favor} | En contra: {contra}"
+            # Resultado textual (se acepta / aprueba / rechaza ...)
+            resultado_text = None
+            rm = result_re.search(raw_flat)
+            if rm:
+                resultado_text = rm.group(0).strip()
+
+            # Cifras de votación: cogemos la ÚLTIMA votación del debate (la decisión final,
+            # tras las votaciones de enmiendas o cuestiones previas).
+            resultado_num = None
+            votes = list(vote_re.finditer(raw_flat))
+            if votes:
+                vm = votes[-1]
+                emitidos, favor, contra, absten = vm.group(1), vm.group(2), vm.group(3), vm.group(4)
+                # Solo mostramos el recuento si está COMPLETO (a favor Y en contra);
+                # un "a favor: 4" suelto sin los negativos parece un dato erróneo.
+                if favor and contra:
+                    partes = [f"a favor: {favor}", f"en contra: {contra}"]
+                    if absten:
+                        partes.append(f"abstenciones: {absten}")
+                    cab = f"Votos emitidos: {emitidos} | " if emitidos else ""
+                    resultado_num = cab + ", ".join(partes)
+
+            # Combinar texto + cifras cuando ambos existan
+            if resultado_text and resultado_num:
+                resultado = f"{resultado_text} ({resultado_num})"
             else:
-                rm = result_re.search(raw_flat)
-                if rm:
-                    resultado = rm.group(0).strip()
+                resultado = resultado_text or resultado_num
             
-            # Limitar el texto del debate a 800 chars
-            if len(raw) > 800:
-                raw = raw[:800] + "..."
-            
+            # Construir el cuerpo: cabecera (texto dispositivo de la propuesta) + primer
+            # tramo del DEBATE real. Las actas repiten muchas veces el texto dispositivo
+            # antes de las intervenciones, así que saltamos a la primera intervención de
+            # un concejal (SR./SRA. NOMBRE) para que los argumentos entren en el contexto
+            # sin disparar el nº de tokens. Si no hay intervención localizable, recortamos normal.
+            head = raw_flat[:1600]
+            m_int = re.search(r'SR[A]?\.\s+[A-ZÁÉÍÓÚÑ]{2,}', raw_flat)
+            if m_int and m_int.start() > 1600:
+                raw = head + " [...debate...] " + raw_flat[m_int.start():m_int.start() + 2200]
+            elif len(raw) > 3800:
+                raw = raw[:3800] + "..."
+
             short_topic = topic[:120]
             block = f"[PLENO: {date}] {short_topic}\n{raw}\n"
             if resultado:
@@ -533,6 +683,86 @@ class RAGPipeline:
 
 
     # --- Punto de Entrada Principal ---
+
+    def retrieve_context(self, question: str) -> dict:
+        """Fase de recuperación: devuelve el contexto y el prompt listos para el LLM.
+
+        Separa la recuperación (lenta por embeddings) de la generación (streaming).
+        Llamar esto en un thread y luego hacer streaming del LLM en el hilo async.
+        """
+        if not self.vector_store: self.create_vector_store()
+
+        mq_prompt = "Genera 3 variantes de: '{question}' centradas en el sujeto principal. Una por línea:"
+        try:
+            vars_txt = self.llm.invoke(mq_prompt.format(question=question)).content
+            variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
+        except Exception:
+            variations = [question]
+
+        q_lower = question.lower()
+        extra_variants = []
+        for entry in TOPIC_VARIANTS_MAP:
+            if any(kw in q_lower for kw in entry["triggers"]):
+                extra_variants.extend(entry["search"])
+        if extra_variants:
+            seen_vars: set = set()
+            variations = [v for v in (variations + extra_variants) if not (v in seen_vars or seen_vars.add(v))]
+        variations = variations[:6]
+
+        filter_dict, valid_dates = self._get_temporal_filter(question)
+        all_initial_docs = []
+        for v in variations:
+            if filter_dict:
+                for d_val in valid_dates:
+                    try:
+                        res = self.vector_store.similarity_search_with_score(v, k=80, filter={"date": {"$eq": d_val}})
+                        all_initial_docs.extend([d for d, s in res if s < 1.4])
+                    except: pass
+            else:
+                try:
+                    res = self.vector_store.similarity_search_with_score(v, k=80)
+                    all_initial_docs.extend([d for d, s in res if s < 1.4])
+                except: pass
+
+        if COHERE_API_KEY:
+            all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
+
+        docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
+
+        if target_topics:
+            valid_prefixes = [t['topic'].split('.')[0].strip() + "." for t in target_topics]
+            docs = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
+
+        def _date_sort_key(d):
+            date_str = d.metadata.get('date', '01-01-1900')
+            try:
+                parts = date_str.split('-')
+                if len(parts) == 3:
+                    return (int(parts[2]), int(parts[1]), int(parts[0]))
+            except: pass
+            return (1900, 1, 1)
+        docs = sorted(docs, key=_date_sort_key)
+        self.last_retrieved_docs = docs
+
+        formatted_context = self._format_context(docs)
+        # Límite alto: con Groq el contexto ya no es cuello de botella y así las actas
+        # recientes (ordenadas al final) no se cortan. Cada debate ya está acotado a 800 chars.
+        if len(formatted_context) > 34000:
+            formatted_context = formatted_context[:34000] + "\n\n[...CONTEXTO TRUNCADO POR TAMAÑO...]"
+
+        with open("debug_context.txt", "w", encoding="utf-8") as f:
+            f.write(formatted_context)
+
+        unique_dates = list(set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")))
+        is_multi_session = len(unique_dates) > 1
+
+        return {
+            "context": formatted_context,
+            "is_multi_session": is_multi_session,
+            "unique_dates": unique_dates,
+            "docs": docs,
+            "question": question,
+        }
 
     def query(self, question: str) -> str:
         """Flujo principal: Recuperación, Expansión y Generación."""
@@ -560,6 +790,8 @@ class RAGPipeline:
         if extra_variants:
             seen_vars: set = set()
             variations = [v for v in (variations + extra_variants) if not (v in seen_vars or seen_vars.add(v))]
+        # Limitar variantes para no multiplicar llamadas de embedding innecesariamente
+        variations = variations[:6]
 
         # 2. Búsqueda Inicial con Filtros
         filter_dict, valid_dates = self._get_temporal_filter(question)
@@ -568,17 +800,21 @@ class RAGPipeline:
             if filter_dict:
                 for d_val in valid_dates:
                     try:
-                        res = self.vector_store.similarity_search_with_score(v, k=150, filter={"date": {"$eq": d_val}})
+                        res = self.vector_store.similarity_search_with_score(v, k=50, filter={"date": {"$eq": d_val}})
                         # Pre-filtrar: descartar docs con distancia semántica muy alta (>1.4)
                         # Esto elimina ruido antes de que llegue al scoring de temas.
                         all_initial_docs.extend([d for d, s in res if s < 1.4])
                     except: pass
             else:
                 try:
-                    res = self.vector_store.similarity_search_with_score(v, k=150)
+                    res = self.vector_store.similarity_search_with_score(v, k=50)
                     # Pre-filtrar: descartar docs con distancia semántica muy alta (>1.4)
                     all_initial_docs.extend([d for d, s in res if s < 1.4])
                 except: pass
+
+        # 2.5 Reranking con Cohere (mejora la selección de temas antes de la expansión)
+        if COHERE_API_KEY:
+            all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
 
         # 3. Expansión y Formateo
         docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
@@ -617,6 +853,12 @@ class RAGPipeline:
 
         # Guardar para inspección técnica
         with open("debug_context.txt", "w", encoding="utf-8") as f: f.write(formatted_context)
+
+        # Guarda contra alucinaciones: si el contexto está vacío no se invoca el LLM
+        if not formatted_context.strip():
+            return ("Lo siento, no he encontrado fragmentos relevantes en las actas para responder a tu pregunta. "
+                    "Puede que el tema no esté cubierto en los documentos indexados, o que el modelo de embeddings "
+                    "no haya podido conectarse. Prueba a reformular la pregunta.")
 
         if is_multi_session:
             dates_found = ', '.join(sorted(unique_dates))
@@ -663,8 +905,22 @@ class RAGPipeline:
         
         chain = ChatPromptTemplate.from_template(sys_prompt) | self.llm | StrOutputParser()
         print(f"[*] Generando crónica detallada (Fuerza Bruta de Contexto)...")
-        
-        response = chain.invoke({"context": formatted_context, "question": question})
+
+        # Reintento automático: en máquinas con poca RAM ollama puede tardar en recargar
+        # el modelo LLM después de las llamadas de embedding, rechazando la conexión
+        # durante ese breve intervalo. Reintentos con backoff corto solucionan el problema.
+        import time
+        response = None
+        for attempt in range(3):
+            try:
+                response = chain.invoke({"context": formatted_context, "question": question})
+                break
+            except Exception as e:
+                if attempt < 2 and any(msg in str(e) for msg in ("Connection refused", "RemoteProtocolError", "Server disconnected", "ConnectError")):
+                    print(f"[!] Ollama cargando modelo, reintentando ({attempt+2}/3)...")
+                    time.sleep(10)
+                else:
+                    raise
         
         # 5. Añadir fuentes enriquecidas
         sources = "\n\n" + "="*60 + "\nFUENTES UTILIZADAS:\n"
@@ -687,24 +943,37 @@ def get_rag() -> RAGPipeline:
             persist_directory=CHROMA_PATH,
             embedding_function=_rag_instance.embeddings
         )
+        # Precalentar el LLM para que el primer query no espere la carga del modelo
+        try:
+            _rag_instance.llm.invoke("ok")
+        except Exception:
+            pass
     return _rag_instance
 
 def main():
     parser = argparse.ArgumentParser(description="RAG System for Bilbao Actas")
-    parser.add_argument("--rebuild", action="store_true", help="Reconstruir base de datos (borra la existente)")
-    parser.add_argument("--year", type=str, help="Procesar solo este año, ej: 2024")
     parser.add_argument("--query", type=str, help="Pregunta directa")
     args = parser.parse_args()
 
     rag = RAGPipeline()
-    if args.rebuild or args.year:
-        rag.create_vector_store(force_rebuild=args.rebuild, year_filter=args.year)
-        if not args.query:
-            return
-    elif not os.path.exists(CHROMA_PATH):
+    if not os.path.exists(CHROMA_PATH):
         rag.create_vector_store()
     else:
         rag.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=rag.embeddings)
+
+    # Precalentar mistral ANTES de que empiece cualquier query para evitar que
+    # el primer LLM call (MultiQuery) falle por RAM y corrompa el pool HTTP de httpx
+    print("[*] Cargando modelo LLM...")
+    import time
+    for attempt in range(3):
+        try:
+            rag.llm.invoke("ok")
+            print("[+] Modelo listo.")
+            break
+        except Exception as e:
+            if attempt < 2:
+                print(f"[!] Modelo cargando, reintentando ({attempt+2}/3)...")
+                time.sleep(10)
 
     if args.query:
         print("\nRESPUESTA:")

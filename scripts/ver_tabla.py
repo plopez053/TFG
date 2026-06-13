@@ -11,13 +11,14 @@ from collections import Counter
 # Forzar UTF-8 en la salida para evitar errores de encoding en Windows
 sys.stdout.reconfigure(encoding='utf-8')
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db_final_v11")
-DATA_PATH = os.path.join(BASE_DIR, "actas_scalability")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CHROMA_PATH = os.path.abspath(os.path.join(BASE_DIR, "chroma_db"))
+DATA_PATH = os.path.abspath(os.path.join(BASE_DIR, "actas"))
 EMBEDDING_MODEL = "nomic-embed-text"
 
 def print_some_metadatas():
-    # 1. PDFs on disk with their parent directory name
+    # 1. PDFs on disk with their paren
+
     pdfs_on_disk = {}
     for root, dirs, files in os.walk(DATA_PATH):
         for f in files:
@@ -53,7 +54,7 @@ def print_some_metadatas():
     disk_by_year = Counter(pdfs_on_disk.values())
     db_by_year = Counter()
     for s in unique_sources:
-        parts = s.replace('/', os.sep).split(os.sep)
+        parts = s.replace('\\', '/').split('/')
         if len(parts) >= 2:
             db_by_year[parts[-2]] += 1
             

@@ -20,3 +20,12 @@ Thumbs.db
 # Temporary and log files
 *.log
 debug_context.txt
+
+# API keys — nunca subir al repo
+.env
+
+# Datos pesados — no subir al repo (regenerables localmente)
+# chroma_db: base de datos vectorial (~2.5 GB)
+# actas: PDFs de las actas (~251 MB)
+chroma_db/
+actas/
