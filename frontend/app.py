@@ -101,50 +101,57 @@ def build_sources_data(retrieved_docs):
     Chainlit) para construir los elementos en el hilo async.
     """
     from collections import OrderedDict
+    import urllib.parse
 
-    # Agrupar por (fecha, tema) = una PROPUESTA, conservando el orden de aparición.
-    # Así cada propuesta del acta tiene su propia fuente con su rango de páginas,
-    # aunque varias propuestas sean del mismo día.
+    # Agrupar por (fecha, pdf_path): una entrada por acta, no por tema.
+    # Así evitamos duplicados cuando hay varios temas del mismo PDF.
     por_grupo = OrderedDict()
     for doc in retrieved_docs:
         pdf_path = resolve_pdf_path(doc.metadata.get("source", ""))
         if not pdf_path or not os.path.exists(pdf_path):
             continue
         date = doc.metadata.get("date", "Fecha desconocida")
-        topic = doc.metadata.get("topic", "Tema general")
-        key = (date, topic)
-        por_grupo.setdefault(key, {"pdf_path": pdf_path, "docs": []})["docs"].append(doc)
-
-    import urllib.parse
+        key = (date, pdf_path)
+        entry = por_grupo.setdefault(key, {"pdf_path": pdf_path, "date": date, "docs": [], "topics": []})
+        entry["docs"].append(doc)
+        t = doc.metadata.get("topic", "")
+        if t and t not in entry["topics"]:
+            entry["topics"].append(t)
 
     sources_data = []
-    for (date, topic), info in por_grupo.items():
+    for (date, pdf_path), info in por_grupo.items():
         docs_d = info["docs"]
-        first = docs_d[0]
         paginas = [d.metadata.get("page") for d in docs_d if d.metadata.get("page")]
-        if not paginas:
-            paginas = [1]
-        p_min, p_max = min(paginas), max(paginas)
-        rango = f"Pág. {p_min}" if p_min == p_max else f"Págs. {p_min}-{p_max}"
+        p_min = min(paginas) if paginas else None
+        p_max = max(paginas) if paginas else None
+        if p_min is not None:
+            rango = f"Pág. {p_min}" if p_min == p_max else f"Págs. {p_min}-{p_max}"
+        else:
+            rango = None
 
-        # URL de la ruta propia /acta/{año}/{fichero}#page=N (abre el PDF en una
-        # pestaña del navegador, saltando a la primera página del debate).
-        pdf_path = info["pdf_path"]
         year = os.path.basename(os.path.dirname(pdf_path))
         fname = os.path.basename(pdf_path)
-        url = f"/acta/{year}/{urllib.parse.quote(fname)}#page={p_min}"
+        anchor = f"#page={p_min}" if p_min else ""
+        url = f"/acta/{year}/{urllib.parse.quote(fname)}{anchor}"
 
+        pdf_name = f"Ver PDF - Acta {date}"
+        if rango:
+            pdf_name += f" ({rango})"
+
+        topic = info["topics"][0] if info["topics"] else "Tema general"
         short_topic = topic[:80] + "..." if len(topic) > 80 else topic
+        vote_result = next(
+            (d.metadata.get("vote_result") for d in docs_d if d.metadata.get("vote_result")), None
+        )
         sources_data.append({
             "date": date,
             "topic": topic,
             "pdf_path": pdf_path,
             "url": url,
-            "page": p_min,
-            "speaker": first.metadata.get("speaker", "Desconocido"),
-            "party": first.metadata.get("party", "Desconocido"),
+            "page": p_min or 1,
             "short_topic": short_topic,
-            "pdf_name": f"Ver PDF - Acta {date} ({rango})",
+            "pdf_name": pdf_name,
+            "vote_result": vote_result,
         })
     return sources_data
 
@@ -226,8 +233,9 @@ REGLAS CRUCIALES:
 - USA SOLO la informacion que esta explicitamente en las actas proporcionadas abajo.
 - NUNCA inventes fechas, cifras, nombres, resultados o detalles que no esten en el texto.
 - Si no sabes el resultado de una votacion, escribe: [Sin resultado en acta]
+- SIEMPRE escribe las fechas en formato DD-MM-YYYY exacto tal como aparecen en el contexto (ej: 26-10-2010), nunca solo el año.
 - Para cada pleno relevante desarrolla un parrafo con este formato:
-  **[fecha] — [grupo proponente]**
+  **[fecha DD-MM-YYYY] — [grupo proponente]**
   - Propuesta: explica con DETALLE que pedia exactamente (los puntos concretos, cifras y medidas).
   - Argumentos: si el acta recoge la justificacion o los argumentos del debate, resumelos CON
     TUS PROPIAS PALABRAS (no hace falta citar textualmente; parafrasear o interpretar fielmente
@@ -275,8 +283,10 @@ CRÓNICA:"""
     async with cl.Step(name="Redactando la crónica"):
         respuesta = await rag.llm.ainvoke(prompt_value)
         answer_text = respuesta.content if hasattr(respuesta, "content") else str(respuesta)
+        # Eliminar eco del prompt (PREGUNTA:/RESPUESTA: que el LLM a veces repite al final)
+        answer_text = re.sub(r'\n+PREGUNTA\s*:.*', '', answer_text, flags=re.DOTALL | re.IGNORECASE)
 
-    # Localizar las fuentes y colocar el enlace de cada acta DEBAJO de su bloque de fecha.
+    # Insertar enlace de fuente debajo del bloque de cada pleno en la respuesta.
     if retrieved_docs:
         async with cl.Step(name="Localizando fuentes en los PDFs"):
             sources_data = await asyncio.to_thread(build_sources_data, retrieved_docs)
@@ -284,55 +294,82 @@ CRÓNICA:"""
         if sources_data:
             from collections import defaultdict
 
-            # La conclusión final acota el último bloque (no metemos fuentes dentro de ella).
             concl = re.search(r'\n\s*(?:CONCLUSI[ÓO]N|En conclusi|En resumen)', answer_text, re.I)
             concl_pos = concl.start() if concl else len(answer_text)
 
-            # Inicio de cada bloque de propuesta = cada aparición de una fecha conocida.
             fechas = {s["date"] for s in sources_data}
-            bloques = []  # (pos_inicio, fecha)
+            bloques = []
             for date in fechas:
                 for m in re.finditer(re.escape(date), answer_text[:concl_pos]):
                     bloques.append([m.start(), date])
             bloques.sort()
 
-            # Fuentes agrupadas por fecha.
             src_por_fecha = defaultdict(list)
             for s in sources_data:
                 src_por_fecha[s["date"]].append(s)
 
-            # Asignar a cada bloque la fuente de su misma fecha cuyo GRUPO coincide más
-            # (comparando el nombre del grupo en la cabecera con el tema de la fuente).
-            # Si ninguna coincide, se usa el orden de aparición como respaldo.
-            asignaciones = []  # (pos_fin_bloque, source)
+            asignaciones = []
             usadas = []
             for idx, (start, date) in enumerate(bloques):
                 candidatos = [s for s in src_por_fecha[date] if id(s) not in usadas]
                 if not candidatos:
                     continue
                 fin = bloques[idx + 1][0] if idx + 1 < len(bloques) else concl_pos
-                cabecera = answer_text[start:start + 120]  # "fecha — Grupo Municipal ..."
+                cabecera = answer_text[start:start + 120]
                 cab_words = _palabras_clave(cabecera)
                 mejor = max(candidatos, key=lambda s: len(cab_words & _palabras_clave(s["topic"])))
                 if len(cab_words & _palabras_clave(mejor["topic"])) == 0:
-                    mejor = candidatos[0]  # sin coincidencia de grupo → respaldo por orden
+                    mejor = candidatos[0]
                 asignaciones.append((fin, mejor))
                 usadas.append(id(mejor))
 
-            # Insertar de atrás hacia delante, retrocediendo sobre el formato del
-            # encabezado siguiente (**, #, saltos) para NO romper la negrita del título.
             for fin, s in sorted(asignaciones, key=lambda x: x[0], reverse=True):
                 f = fin
-                while f > 0 and answer_text[f - 1] in "*#\n\r \t":
+                while f > 0 and answer_text[f - 1] in "*#\n\r \t[":
                     f -= 1
                 linea = f"\n\n📄 *Fuente:* [{s['pdf_name']}]({s['url']})\n"
+                if s.get("vote_result"):
+                    linea += f"*Resultado:* {s['vote_result']}\n"
                 answer_text = answer_text[:f] + linea + answer_text[f:]
 
-            # Fuentes que no se pudieron ubicar en el texto: al final, agrupadas.
             no_ubicadas = [s for s in sources_data if id(s) not in usadas]
             if no_ubicadas:
-                answer_text += "\n\n**Otras fuentes consultadas:**\n"
-                for s in no_ubicadas:
-                    answer_text += f"* [{s['pdf_name']}]({s['url']})\n"
+                if not is_multi_session:
+                    # Sesión única: la fuente va al final limpiamente
+                    for s in no_ubicadas:
+                        linea_extra = f"\n\n📄 *Fuente:* [{s['pdf_name']}]({s['url']})\n"
+                        if s.get("vote_result"):
+                            linea_extra += f"*Resultado:* {s['vote_result']}\n"
+                        answer_text += linea_extra
+                else:
+                    answer_text += "\n\n**Otras fuentes:**\n"
+                    for s in no_ubicadas:
+                        linea_extra = f"* [{s['pdf_name']}]({s['url']})"
+                        if s.get("vote_result"):
+                            linea_extra += f" — *{s['vote_result']}*"
+                        answer_text += linea_extra + "\n"
+
+    # Sección de descubrimiento: otros plenos relacionados no incluidos en el resumen.
+    # Solo en preguntas multisesión (temas amplios). No pasa contexto al LLM.
+    if is_multi_session and retrieved_docs:
+        main_keys = {
+            (d.metadata.get("date", ""), d.metadata.get("topic", "")[:60])
+            for d in retrieved_docs
+        }
+        async with cl.Step(name="Buscando más plenos relacionados"):
+            related = await asyncio.to_thread(rag.search_related, question, main_keys, 80)
+
+        if related:
+            related_sorted = sorted(related, key=lambda x: (
+                tuple(reversed(x["date"].split("-"))) if len(x["date"].split("-")) == 3 else ("",)
+            ))
+            answer_text += "\n\n---\n🔍 **Otros plenos disponibles sobre este tema** (no incluidos en el resumen anterior):\n"
+            for r in related_sorted[:20]:
+                snippet = r.get("snippet", r["topic"])
+                short = snippet[:120] + "..." if len(snippet) > 120 else snippet
+                answer_text += f"- **{r['date']}** — *{short}*\n"
+            if len(related) > 20:
+                answer_text += f"- *... y {len(related) - 20} más. Puedes preguntar por una fecha concreta para profundizar.*\n"
+            answer_text += "\ *Puedes preguntar, por ejemplo: \"¿Qué se debatió el 23-02-2017 sobre medio ambiente?\"*\n"
 
     await cl.Message(content=answer_text).send()

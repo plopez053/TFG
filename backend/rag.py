@@ -4,6 +4,8 @@ import re
 import glob
 import sys
 from tqdm import tqdm
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 from typing import List, Dict, Any, Optional
 
 from langchain_community.document_loaders import PyPDFLoader
@@ -17,13 +19,12 @@ from langchain_core.documents import Document
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(BASE_DIR, "actas")
+DATA_PATH = os.path.join(os.path.dirname(BASE_DIR), "actas")
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
 EMBEDDING_MODEL = "nomic-embed-text"
-LLM_MODEL = "mistral"
-# Clave de API de Cohere para reranking (opcional). Si está vacía, el sistema funciona sin reranking.
-# Obtén una clave gratuita en https://cohere.com → Dashboard → API Keys
-# Ejecución: export COHERE_API_KEY="tu-clave" antes de lanzar chainlit
+LLM_MODEL_LOCAL = "gemma3:4b"
+LLM_MODEL_GROQ = "llama-3.3-70b-versatile"
+COHERE_RERANK_MODEL = "rerank-multilingual-v3.0"
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
@@ -33,11 +34,11 @@ class RAGPipeline:
         self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
         self.vector_store = None
         if GROQ_API_KEY:
-            self.llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0, api_key=GROQ_API_KEY)
-            print("[+] LLM: Groq (llama-3.3-70b-versatile) — respuestas rápidas via API")
+            self.llm = ChatGroq(model=LLM_MODEL_GROQ, temperature=0, api_key=GROQ_API_KEY)
+            print(f"[+] LLM: Groq ({LLM_MODEL_GROQ}) — respuestas rápidas via API")
         else:
-            self.llm = ChatOllama(model=LLM_MODEL, temperature=0, num_ctx=4096)
-            print("[+] LLM: Ollama local (mistral)")
+            self.llm = ChatOllama(model=LLM_MODEL_LOCAL, temperature=0, num_ctx=8192)
+            print(f"[+] LLM: Ollama local ({LLM_MODEL_LOCAL})")
 
     # --- Métodos de Utilidad ---
 
@@ -78,9 +79,23 @@ class RAGPipeline:
     # --- Fase de Ingesta (ETL) ---
 
     def _process_single_pdf(self, path: str) -> List[Document]:
-        """Procesa un único PDF y devuelve sus chunks con metadatos."""
+        """Procesa un único PDF y devuelve sus chunks con metadatos (page + vote_result)."""
         speaker_regex = re.compile(r'(?:(?:EL|LA)\s+)?(?:SR\.|SRA\.)\s+([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)\s*[:.]', re.IGNORECASE)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
+        vote_re = re.compile(
+            r'Votos\s+emitidos[:\s]+(\d+)'
+            r'.{0,80}?Votos\s+afirmativos[:\s]+(\d+)'
+            r'(?:.{0,400}?Votos\s+negativos[:\s]+(\d+))?'
+            r'(?:.{0,400}?Abstenciones?[:\s]+(\d+))?',
+            re.IGNORECASE | re.DOTALL
+        )
+        result_re = re.compile(
+            r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega)\b.{0,30}?'
+            r'(?:enmienda|proposici[óo]n|propuesta|moci[óo]n|mozio|proposamen).{0,200}|'
+            r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao]).{0,200}|'
+            r'resulta\s+(?:aprobad[ao]|rechazad[ao]).{0,150})',
+            re.IGNORECASE | re.DOTALL
+        )
         chunks = []
 
         date = self._extract_date_from_filename(path)
@@ -89,7 +104,25 @@ class RAGPipeline:
         pages = pdf_loader.load()
         party_map = self._get_party_mapping(pages)
 
-        full_text = "\n".join([page.page_content for page in pages])
+        # Mapa de offsets para rastrear nº de página por posición en el texto
+        page_offsets = []  # (char_offset, page_number 1-indexed)
+        full_text_parts = []
+        cursor = 0
+        for i, page in enumerate(pages):
+            page_offsets.append((cursor, i + 1))
+            full_text_parts.append(page.page_content)
+            cursor += len(page.page_content) + 1
+        full_text = "\n".join(full_text_parts)
+
+        def page_for_offset(offset: int) -> int:
+            pg = 1
+            for off, num in page_offsets:
+                if off <= offset:
+                    pg = num
+                else:
+                    break
+            return pg
+
         split_regex = re.compile(
             r'(?=\n(?:[\s]*)(?:\d+)\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA)'
             r'|\n\s*-\d+-\s*\n\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen))',
@@ -103,10 +136,42 @@ class RAGPipeline:
             segments = split_regex_old.split(full_text)
 
         chunk_index_in_doc = 0
+        seg_search_start = 0
         for segment in segments:
             if not segment.strip():
                 continue
             current_speaker, current_party = "Desconocido", "Desconocido"
+
+            # Posición del segmento en el texto completo (para calcular página)
+            segment_offset = full_text.find(segment, seg_search_start)
+            if segment_offset != -1:
+                seg_search_start = segment_offset + max(1, len(segment) - 200)
+
+            # Extraer vote_result a nivel de segmento limpio (sin solapamiento de chunks)
+            seg_flat = re.sub(r'\s+', ' ', segment)
+            resultado_text = None
+            rm = result_re.search(seg_flat)
+            if rm:
+                resultado_text = re.split(
+                    r'\s*-{3,}\s*|\s*https?://|\s+Egiaztatzeko|\s+Verificaci',
+                    rm.group(0).strip()
+                )[0].strip()
+            resultado_num = None
+            votes = list(vote_re.finditer(seg_flat))
+            if votes:
+                vm = votes[-1]
+                emitidos, favor, contra, absten = vm.group(1), vm.group(2), vm.group(3), vm.group(4)
+                if favor and contra:
+                    partes = [f"a favor: {favor}", f"en contra: {contra}"]
+                    if absten:
+                        partes.append(f"abstenciones: {absten}")
+                    cab = f"Votos emitidos: {emitidos} | " if emitidos else ""
+                    resultado_num = cab + ", ".join(partes)
+            # Solo guardar si hay cifras reales (evita falsos positivos del debate)
+            if resultado_num:
+                vote_result = f"{resultado_text} ({resultado_num})" if resultado_text else resultado_num
+            else:
+                vote_result = None
 
             if is_old_format:
                 topic_raw = re.search(r'^-\s*\d+\s*-\s*\n\s*(.{0,200})', segment.lstrip('\n'), re.DOTALL)
@@ -133,6 +198,7 @@ class RAGPipeline:
                 else:
                     current_topic = "General / Introducción"
 
+            chunk_search_start = 0
             for chunk_text in text_splitter.split_text(segment):
                 match = speaker_regex.search(chunk_text)
                 if match:
@@ -142,109 +208,50 @@ class RAGPipeline:
                             if kn in current_speaker or current_speaker in kn:
                                 current_party = kp
                                 break
+
+                # Página del chunk: buscar su posición en el segmento
+                if segment_offset != -1:
+                    chunk_pos = segment.find(chunk_text[:60], chunk_search_start)
+                    if chunk_pos != -1:
+                        page_num = page_for_offset(segment_offset + chunk_pos)
+                        chunk_search_start = chunk_pos
+                    else:
+                        page_num = page_for_offset(segment_offset)
+                else:
+                    page_num = 1
+
+                metadata = {
+                    "source": path, "date": date, "speaker": current_speaker,
+                    "party": current_party, "topic": current_topic,
+                    "chunk_index": chunk_index_in_doc, "page": page_num,
+                }
+                if vote_result:
+                    metadata["vote_result"] = vote_result
+
                 chunks.append(Document(
                     page_content=f"ASUNTO: {current_topic}\nORADOR: {current_speaker} ({current_party})\n\n{chunk_text}",
-                    metadata={
-                        "source": path, "date": date, "speaker": current_speaker,
-                        "party": current_party, "topic": current_topic, "chunk_index": chunk_index_in_doc
-                    }
+                    metadata=metadata
                 ))
                 chunk_index_in_doc += 1
         return chunks
 
     def load_and_split_documents(self) -> List[Document]:
         """Carga los PDFs y los divide en fragmentos con metadatos de forma recursiva."""
-        all_chunks = []
         pdf_files = glob.glob(os.path.join(DATA_PATH, "**", "*.pdf"), recursive=True)
 
         if not pdf_files:
             print(f"[!] No se encontraron archivos PDF en {DATA_PATH}")
             return []
-        
-        print(f"[*] Encontrados {len(pdf_files)} archivos PDF. Procesando...")
-        
-        all_chunks = []
-        speaker_regex = re.compile(r'(?:(?:EL|LA)\s+)?(?:SR\.|SRA\.)\s+([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)\s*[:.]', re.IGNORECASE)
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
 
+        print(f"[*] Encontrados {len(pdf_files)} archivos PDF. Procesando...")
+
+        all_chunks = []
         for path in tqdm(pdf_files, desc="Procesando Actas", unit="pdf"):
             try:
-                date = self._extract_date_from_filename(path)
-                pdf_loader = PyPDFLoader(path)
-                pages = pdf_loader.load()
-                party_map = self._get_party_mapping(pages)
-                
-                full_text = "\n".join([page.page_content for page in pages])
-                split_regex = re.compile(
-                    r'(?=\n(?:[\s]*)(?:\d+)\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA)'
-                    r'|\n\s*-\d+-\s*\n\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen))',
-                    re.IGNORECASE
-                )
-                segments = split_regex.split(full_text)
-
-                # Fallback para formato antiguo (2007-2010): secciones separadas por
-                # "- N -" al inicio de línea sin sangría, sin keyword de tipo.
-                # Los números de página usan el mismo guion pero con 40+ espacios de sangría.
-                is_old_format = len(segments) <= 2
-                if is_old_format:
-                    split_regex_old = re.compile(r'(?=\n-\s*\d+\s*-\s*\n)')
-                    segments = split_regex_old.split(full_text)
-
-                chunk_index_in_doc = 0
-                for segment in segments:
-                    if not segment.strip(): continue
-
-                    current_speaker, current_party = "Desconocido", "Desconocido"
-
-                    if is_old_format:
-                        # Extraer topic de la primera línea significativa tras el marcador
-                        topic_raw = re.search(r'^-\s*\d+\s*-\s*\n\s*(.{0,200})', segment.lstrip('\n'), re.DOTALL)
-                        if topic_raw:
-                            first_line = topic_raw.group(1).strip().split('\n')[0].strip()
-                            # Limpiar espacios dobles del OCR (p.ej. "se  ha" → "se ha")
-                            first_line = re.sub(r' {2,}', ' ', first_line)
-                            current_topic = first_line[:120] if first_line else "General / Introducción"
-                        else:
-                            current_topic = "General / Introducción"
-                    else:
-                        topic_match_std = re.search(
-                            r'^\s*(\d+\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA).{0,400})',
-                            segment, re.IGNORECASE | re.DOTALL
-                        )
-                        topic_match_hist = re.search(
-                            r'^\s*-\s*(\d+)\s*-\s*\n\s*((?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA|Proposición|Propuesta|Moción|Mozio|Dictamen|Irizpen|Asunto|Gaia|Proposamen).{0,400})',
-                            segment, re.IGNORECASE | re.DOTALL
-                        )
-
-                        if topic_match_std:
-                            current_topic = topic_match_std.group(1).strip().replace('\n', ' ')
-                        elif topic_match_hist:
-                            clean_text = topic_match_hist.group(2).strip().replace('\n', ' ')
-                            current_topic = f"{topic_match_hist.group(1)}. {clean_text}"
-                        else:
-                            current_topic = "General / Introducción"
-                    
-                    for chunk_text in text_splitter.split_text(segment):
-                        match = speaker_regex.search(chunk_text)
-                        if match:
-                            current_speaker = match.group(1).strip()
-                            if len(current_speaker) < 50:
-                                for kn, kp in party_map.items():
-                                    if kn in current_speaker or current_speaker in kn:
-                                        current_party = kp
-                                        break
-                        
-                        all_chunks.append(Document(
-                            page_content=f"ASUNTO: {current_topic}\nORADOR: {current_speaker} ({current_party})\n\n{chunk_text}",
-                            metadata={
-                                "source": path, "date": date, "speaker": current_speaker,
-                                "party": current_party, "topic": current_topic, "chunk_index": chunk_index_in_doc
-                            }
-                        ))
-                        chunk_index_in_doc += 1
+                all_chunks.extend(self._process_single_pdf(path))
             except Exception as e:
                 print(f"[!] Error cargando {path}: {e}")
-                
+
         return all_chunks
 
     def create_vector_store(self):
@@ -263,28 +270,42 @@ class RAGPipeline:
 
     def _get_temporal_filter(self, question: str) -> Optional[Dict[str, Any]]:
         """Analiza la pregunta para aplicar filtros de fecha inteligentes."""
-        months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-        year_match = re.search(r'(20\d{2})', question)
-        month_found = next((m for m in months if m in question.lower()), None)
-        
-        if not year_match: return None, []
-        
-        target_year = year_match.group(1)
-        target_month = f"{str(months.index(month_found)+1).zfill(2)}" if month_found else None
-        target_pattern = f"{target_month}-{target_year}" if target_month else target_year
-        
-        # Obtener fechas únicas desde el sistema de archivos (Escalabilidad Real)
-        # Es mucho más rápido que consultar 60k metadatos en la DB
+        # Recopilar fechas conocidas del sistema de archivos
         known_dates = []
         for root, dirs, files in os.walk(DATA_PATH):
             for file in files:
                 if file.endswith(".pdf"):
                     d = self._extract_date_from_filename(file)
                     if d: known_dates.append(d)
-        
         known_dates = list(set(known_dates))
+
+        # Prioridad 1: fecha exacta DD-MM-YYYY en la pregunta
+        exact_match = re.search(r'\b(\d{2})-(\d{2})-(20\d{2})\b', question)
+        if exact_match:
+            exact_date = exact_match.group(0)
+            if exact_date in known_dates:
+                print(f"[*] Filtro fecha exacta: {exact_date}")
+                return {"date": {"$eq": exact_date}}, [exact_date]
+            # Fallback a mes-año si la fecha exacta no existe
+            target_pattern = f"{exact_match.group(2)}-{exact_match.group(3)}"
+            valid_dates = [d for d in known_dates if target_pattern in d]
+            if valid_dates:
+                print(f"[*] Filtro Temporal (mes-año): {target_pattern} ({len(valid_dates)} actas)")
+                return {"date": {"$in": valid_dates}}, valid_dates
+            return None, []
+
+        # Prioridad 2: año + nombre de mes en español
+        months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+        year_match = re.search(r'(20\d{2})', question)
+        month_found = next((m for m in months if m in question.lower()), None)
+
+        if not year_match: return None, []
+
+        target_year = year_match.group(1)
+        target_month = f"{str(months.index(month_found)+1).zfill(2)}" if month_found else None
+        target_pattern = f"{target_month}-{target_year}" if target_month else target_year
+
         valid_dates = [d for d in known_dates if target_pattern in d]
-        
         if valid_dates:
             print(f"[*] Filtro Temporal: {target_pattern} ({len(valid_dates)} actas detectadas)")
             return {"date": {"$in": valid_dates}}, valid_dates
@@ -299,25 +320,19 @@ class RAGPipeline:
         """
         target_topics, seen = [], set()
 
+        # Solo palabras ≥6 chars que llegan al check (las <6 chars y los años numéricos
+        # ya se descartan antes por las reglas \w{6,} y not w.isdigit()).
         stopwords = {
-            "partido", "popular", "grupo", "municipal", "municipales", "proposicion", "proposizioa",
-            "acuerdo", "bilbao", "pleno", "sobre", "mayo", "2024", "resultado",
-            "exacto", "votacion", "propone", "presenta", "mocion", "mozioa",
-            "junio", "abril", "marzo", "enero", "febrero", "septiembre", "octubre",
-            "noviembre", "diciembre", "reunion", "sesion",
-            "decidio", "propuso", "dime", "quien", "cual",
-            "este", "esta", "estos", "estas", "2023", "2025", "2026",
-            # Palabras estructurales de los títulos de actas
-            "propuesta", "propuestas", "debate", "debates", "habido", "habida",
-            "habia", "cuales", "hubo", "hay", "sido", "han",
-            # Términos que aparecen en TODOS los títulos y no aportan señal
-            "presenta", "cuya", "parte", "dispositiva", "tenor", "literal",
-            "siguiente", "adoptado", "acuerdo", "acuerdos", "tomado", "tomados",
-            "relacionado", "relacionados", "plantea", "adopcion",
-            # Artículos, preposiciones y palabras funcionales cortas del castellano
-            "que", "los", "las", "del", "con", "por", "para", "una", "uno",
-            "mas", "pero", "como", "sus", "son", "fue", "era", "les", "nos",
-            "largo", "anos", "ano", "vez", "todo", "toda", "todos"
+            # Omnipresentes en todos los títulos de acta — no aportan señal temática
+            "bilbao", "municipal", "municipales", "partido", "popular",
+            "acuerdo", "acuerdos", "proposicion", "proposizioa", "propuesta", "propuestas",
+            "mocion", "mozioa", "debate", "debates", "sesion", "reunion",
+            "resultado", "votacion", "propone", "propuso", "presenta", "plantea",
+            "siguiente", "adoptado", "tomado", "tomados", "relacionado", "relacionados",
+            "dispositiva", "literal", "adopcion", "decidio", "habido", "habida",
+            "cuales", "exacto",
+            # Meses ≥6 chars (los ≤5 chars ya los filtra la regla \w{6,})
+            "febrero", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
         }
         # Normalizamos acentos y caracteres especiales para asegurar coincidencia robusta
         def normalize(txt: str) -> str:
@@ -430,11 +445,11 @@ class RAGPipeline:
                     best_run = max(runs, key=lambda run: sum(len(pairs[i][1]) for i in run))
                     selected = [pairs[i] for i in best_run]
 
-                    # Extraemos el número del tema para el filtro de seguridad (ej: "25.")
-                    t_topic_number = t_name.split('.')[0].strip() + "."
+                    # Filtro de seguridad: descartar fragmentos de otros temas
+                    _num = t_name.split('.')[0].strip()
+                    t_topic_number = (_num + ".") if _num.isdigit() else t_name[:80]
                     seen_content = set()
                     for m, d in selected:
-                        # FILTRO DE SEGURIDAD: Si el fragmento tiene un metadato de OTRO tema, lo saltamos
                         topic_val = m.get('topic', '')
                         if topic_val and not topic_val.startswith(t_topic_number):
                             continue
@@ -480,7 +495,7 @@ class RAGPipeline:
             candidates = unique_docs[:60]
 
             results = co.rerank(
-                model="rerank-multilingual-v3.0",
+                model=COHERE_RERANK_MODEL,
                 query=question,
                 documents=[d.page_content for d in candidates],
                 top_n=min(top_n, len(candidates))
@@ -532,52 +547,18 @@ class RAGPipeline:
                 content = re.sub(r'\s{2,}', ' ', content).strip()
             
             if key not in groups:
-                groups[key] = []
-            groups[key].append(content)
-        
-        # Formatear cada grupo como un bloque compacto de debate
+                groups[key] = {"contents": [], "vote_result": None}
+            groups[key]["contents"].append(content)
+            if not groups[key]["vote_result"] and d.metadata.get("vote_result"):
+                groups[key]["vote_result"] = d.metadata["vote_result"]
+
         final_text = ""
-        # result_re: captura la frase de resultado textual.
-        # Usa re.DOTALL para no cortarse en saltos de línea del PDF.
-        # IMPORTANTE: el verbo lleva \b (límite de palabra) y debe ir seguido en ~30
-        # caracteres del OBJETO real (enmienda/proposición/propuesta/moción). Así se evita
-        # el falso positivo de "se rechazaban préstamos..." (un concejal hablando, no un voto).
-        result_re = re.compile(
-            r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega)\b.{0,30}?'
-            r'(?:enmienda|proposici[óo]n|propuesta|moci[óo]n|mozio|proposamen).{0,200}|'
-            r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao]).{0,200}|'
-            r'resulta\s+(?:aprobad[ao]|rechazad[ao]).{0,150})',
-            re.IGNORECASE | re.DOTALL
-        )
+        for (date, topic, source), group_data in groups.items():
+            contents = group_data["contents"]
+            resultado = group_data["vote_result"]  # extraído del segmento limpio, sin solapamiento
 
-        for (date, topic, source), contents in groups.items():
             raw = "\n---\n".join(c for c in contents if c.strip())
-            # Texto aplanado: sustituye saltos de línea por espacios para que las frases
-            # cortadas por el OCR del PDF no rompan las coincidencias de los regex.
             raw_flat = re.sub(r'\s+', ' ', raw)
-
-            # Resultado textual (se acepta / aprueba / rechaza ...)
-            resultado_text = None
-            rm = result_re.search(raw_flat)
-            if rm:
-                resultado_text = rm.group(0).strip()
-                # Cortar en el separador de chunks "---" (causaba "Se aprueba [Sin
-                # resultado...]") y en la basura del pie de página del PDF (URLs de
-                # verificación, "Egiaztatzeko", etc.).
-                resultado_text = re.split(
-                    r'\s*-{3,}\s*|\s*https?://|\s+Egiaztatzeko|\s+Verificaci',
-                    resultado_text
-                )[0].strip()
-
-            # NOTA: las CIFRAS de votación se han desactivado a propósito. Los chunks
-            # se solapan (chunk_overlap) y en los límites entre temas el recuento de
-            # un tema se cuela en los chunks del tema siguiente, así que con regex no se
-            # puede garantizar que el voto mostrado sea el del tema correcto (se vio el
-            # caso 2010: mostraba el voto del tema anterior). Mostrar un voto equivocado
-            # es peor que no mostrarlo. Las cifras volverán de forma fiable cuando el
-            # rebuild guarde `vote_result` como metadato extraído del segmento limpio.
-            # (ver decisiones/votos_no_fiables_en_chunks_solapados.txt)
-            resultado = resultado_text
             
             # Construir el cuerpo: cabecera (texto dispositivo de la propuesta) + primer
             # tramo del DEBATE real. Las actas repiten muchas veces el texto dispositivo
@@ -622,13 +603,19 @@ class RAGPipeline:
         variations = variations[:6]
 
         filter_dict, valid_dates = self._get_temporal_filter(question)
+        exact_date = len(valid_dates) == 1  # fecha exacta: sin filtro de score
         all_initial_docs = []
         for v in variations:
             if filter_dict:
                 for d_val in valid_dates:
                     try:
-                        res = self.vector_store.similarity_search_with_score(v, k=80, filter={"date": {"$eq": d_val}})
-                        all_initial_docs.extend([d for d, s in res if s < 1.4])
+                        if exact_date:
+                            # Fecha única: tomar todo sin filtrar por score
+                            res_docs = self.vector_store.similarity_search(v, k=80, filter={"date": {"$eq": d_val}})
+                            all_initial_docs.extend(res_docs)
+                        else:
+                            res = self.vector_store.similarity_search_with_score(v, k=80, filter={"date": {"$eq": d_val}})
+                            all_initial_docs.extend([d for d, s in res if s < 1.4])
                     except: pass
             else:
                 try:
@@ -639,11 +626,29 @@ class RAGPipeline:
         if COHERE_API_KEY:
             all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
 
-        docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
+        if exact_date:
+            # Fecha exacta: no expandir — usar los chunks más relevantes directamente
+            # La expansión traería ruido de otros temas del mismo pleno
+            seen_keys = set()
+            docs = []
+            for d in all_initial_docs:
+                k = (d.metadata.get('source',''), d.metadata.get('chunk_index', d.page_content[:50]))
+                if k not in seen_keys:
+                    seen_keys.add(k)
+                    docs.append(d)
+            docs = docs[:40]
+        else:
+            docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
 
-        if target_topics:
-            valid_prefixes = [t['topic'].split('.')[0].strip() + "." for t in target_topics]
-            docs = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
+            if target_topics:
+                valid_prefixes = []
+                for t in target_topics:
+                    tp = t['topic']
+                    num = tp.split('.')[0].strip()
+                    valid_prefixes.append((num + ".") if num.isdigit() else tp[:80])
+                filtered = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
+                if filtered:
+                    docs = filtered
 
         def _date_sort_key(d):
             date_str = d.metadata.get('date', '01-01-1900')
@@ -676,6 +681,44 @@ class RAGPipeline:
             "question": question,
         }
 
+    def search_related(self, question: str, exclude_keys: set, k: int = 80) -> List[Dict[str, str]]:
+        """Búsqueda amplia para descubrir propuestas relacionadas no incluidas en los resultados principales."""
+        if not self.vector_store:
+            return []
+        docs = self.vector_store.similarity_search(question, k=k)
+        seen: set = set()
+        related = []
+        _SKIP = {"General / Introducción", "General", "GENERAL / INTRODUCCIÓN", "GENERAL"}
+        for d in docs:
+            date = d.metadata.get("date", "")
+            topic = d.metadata.get("topic", "")
+            if not topic or topic.strip() in _SKIP:
+                continue
+            t = topic.strip()
+            is_numbered = bool(re.match(r'^\d+', t))
+            has_keyword = bool(re.search(
+                r'[Pp]roposici[oó]n|[Pp]roposamen|PROPOSAMENA|MOZIO|MOC?I[OÓ]N|DICTAMEN|IRIZPENA',
+                t
+            ))
+            # Cabecera formal sin número: >55% de letras en mayúscula con longitud suficiente.
+            # Cubre partidos, organizaciones y cualquier cabecera de formato antiguo sin
+            # necesidad de hardcodear ningún nombre concreto.
+            letters = [c for c in t if c.isalpha()]
+            is_formal_header = (
+                len(letters) >= 10
+                and sum(1 for c in letters if c.isupper()) / len(letters) > 0.55
+            )
+            if not (is_numbered or has_keyword or is_formal_header):
+                continue
+            key = (date, t[:60])
+            if key in exclude_keys or key in seen:
+                continue
+            seen.add(key)
+            body = d.page_content.split('\n\n', 1)[-1] if '\n\n' in d.page_content else d.page_content
+            snippet = re.sub(r'\s+', ' ', body).strip()[:130]
+            related.append({"date": date, "topic": topic, "snippet": snippet})
+        return related
+
     def query(self, question: str) -> str:
         """Flujo principal: Recuperación, Expansión y Generación."""
         if not self.vector_store: self.create_vector_store()
@@ -692,20 +735,22 @@ class RAGPipeline:
 
         # 2. Búsqueda Inicial con Filtros
         filter_dict, valid_dates = self._get_temporal_filter(question)
+        exact_date = len(valid_dates) == 1
         all_initial_docs = []
         for v in variations:
             if filter_dict:
                 for d_val in valid_dates:
                     try:
-                        res = self.vector_store.similarity_search_with_score(v, k=50, filter={"date": {"$eq": d_val}})
-                        # Pre-filtrar: descartar docs con distancia semántica muy alta (>1.4)
-                        # Esto elimina ruido antes de que llegue al scoring de temas.
-                        all_initial_docs.extend([d for d, s in res if s < 1.4])
+                        if exact_date:
+                            res_docs = self.vector_store.similarity_search(v, k=50, filter={"date": {"$eq": d_val}})
+                            all_initial_docs.extend(res_docs)
+                        else:
+                            res = self.vector_store.similarity_search_with_score(v, k=50, filter={"date": {"$eq": d_val}})
+                            all_initial_docs.extend([d for d, s in res if s < 1.4])
                     except: pass
             else:
                 try:
                     res = self.vector_store.similarity_search_with_score(v, k=50)
-                    # Pre-filtrar: descartar docs con distancia semántica muy alta (>1.4)
                     all_initial_docs.extend([d for d, s in res if s < 1.4])
                 except: pass
 
@@ -714,13 +759,29 @@ class RAGPipeline:
             all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
 
         # 3. Expansión y Formateo
-        docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
-        
+        if exact_date:
+            seen_keys: set = set()
+            docs = []
+            for d in all_initial_docs:
+                k = (d.metadata.get('source', ''), d.metadata.get('chunk_index', d.page_content[:50]))
+                if k not in seen_keys:
+                    seen_keys.add(k)
+                    docs.append(d)
+            docs = docs[:40]
+            target_topics = []
+        else:
+            docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
+
         # Filtro de ruido: eliminamos docs de temas que NO están en la lista de target_topics
-        # (ya pasaron el umbral del 40% en _expand_context_by_topic)
         if target_topics:
-            valid_prefixes = [t['topic'].split('.')[0].strip() + "." for t in target_topics]
-            docs = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
+            valid_prefixes = []
+            for t in target_topics:
+                tp = t['topic']
+                num = tp.split('.')[0].strip()
+                valid_prefixes.append((num + ".") if num.isdigit() else tp[:80])
+            filtered = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
+            if filtered:
+                docs = filtered
         # Ordenar docs cronológicamente (más antiguo primero)
         # Esto garantiza que el contexto represente todos los años de forma equilibrada
         # en lugar de meter todos los docs de un año juntos al principio
@@ -879,7 +940,7 @@ def main():
         except UnicodeEncodeError:
             sys.stdout.buffer.write(rag.query(args.query).encode('utf-8'))
     else:
-        print(f"\n--- RAG Bilbao Ready [Model: {LLM_MODEL}] ---")
+        print(f"\n--- RAG Bilbao Ready [Model: {LLM_MODEL_GROQ if GROQ_API_KEY else LLM_MODEL_LOCAL}] ---")
         while True:
             try:
                 q = input("\nPregunta: ")
