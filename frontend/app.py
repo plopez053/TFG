@@ -2,7 +2,6 @@ import sys
 import os
 import asyncio
 import re
-import pypdf
 
 # Fix Python 3.14 + sniffio incompatibility: current_task() returns None in some
 # ASGI contexts even though a loop is running, causing anyio.NoEventLoopError.
@@ -24,7 +23,34 @@ _sniffio.current_async_library = _patched_detect
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import chainlit as cl
+from chainlit.server import app as _fastapi_app
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
 from backend.rag import get_rag, DATA_PATH
+
+# ---------------------------------------------------------------------------
+# Ruta propia para servir los PDF de las actas directamente desde actas/.
+# Permite enlazarlos con un hipervínculo normal (abre en pestaña del navegador y
+# salta a la página con #page=N), evitando el panel lateral de Chainlit que se
+# abría solo. Se sanea el nombre para impedir path traversal (../).
+# ---------------------------------------------------------------------------
+@_fastapi_app.get("/acta/{year}/{filename}")
+async def servir_acta(year: str, filename: str):
+    filename = os.path.basename(filename)
+    if not re.match(r"^\d{4}$", year):
+        raise HTTPException(status_code=400, detail="Año no válido")
+    path = os.path.join(DATA_PATH, year, filename)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Acta no encontrada")
+    return FileResponse(path, media_type="application/pdf")
+
+
+# Chainlit registra un catch-all que sirve la SPA para CUALQUIER ruta. Como se
+# registró antes que la nuestra, interceptaba /acta/... y devolvía la app en vez
+# del PDF. Movemos nuestra ruta al principio para que tenga prioridad.
+_ruta_acta = _fastapi_app.router.routes.pop()
+_fastapi_app.router.routes.insert(0, _ruta_acta)
+
 
 # ---------------------------------------------------------------------------
 # Pre-carga del RAG al importar el módulo (evita problemas de threading con ChromaDB)
@@ -33,8 +59,6 @@ print("[*] Pre-cargando el motor RAG...")
 _rag = get_rag()
 print("[+] Motor RAG listo.")
 
-# Caché para evitar volver a leer/parsear los mismos PDFs en una sesión
-_pdf_cache = {}
 
 def resolve_pdf_path(source: str) -> str:
     """Convierte rutas Windows de la BD al path local equivalente."""
@@ -50,88 +74,77 @@ def resolve_pdf_path(source: str) -> str:
     # Si ya es una ruta local válida, devolverla tal cual
     return source
 
-def find_page_in_pdf(pdf_path: str, chunk_content: str) -> int:
-    """
-    Encuentra la página (1-indexed) de un fragmento de texto dentro del PDF.
-    Usa caché y búsqueda lazy para máxima velocidad.
-    """
-    # El fragmento del RAG suele empezar por "ASUNTO: ...\nORADOR: ...\n\n"
-    parts = chunk_content.split("\n\n", 1)
-    core_text = parts[1].strip() if len(parts) > 1 else chunk_content.strip()
-    
-    def clean_txt(t):
-        return re.sub(r'[^a-z0-9]', '', t.lower()).strip()
-        
-    core_clean = clean_txt(core_text[:100]) # primeros 100 caracteres significativos
-    if not core_clean:
-        return 1
-        
-    if pdf_path not in _pdf_cache:
-        try:
-            reader = pypdf.PdfReader(pdf_path)
-            _pdf_cache[pdf_path] = {
-                "reader": reader,
-                "pages_text": [None] * len(reader.pages)
-            }
-        except Exception as e:
-            print(f"Error cargando PDF {pdf_path}: {e}")
-            return 1
-            
-    cache_entry = _pdf_cache[pdf_path]
-    reader = cache_entry["reader"]
-    pages_text = cache_entry["pages_text"]
-    
-    # 1. Comprobar páginas ya leídas/cargadas en caché
-    for idx, txt in enumerate(pages_text):
-        if txt is not None and core_clean in txt:
-            return idx + 1
-            
-    # 2. Cargar páginas perezosamente (lazy) hasta encontrar la coincidencia
-    for idx in range(len(pages_text)):
-        if pages_text[idx] is None:
-            try:
-                page_raw = reader.pages[idx].extract_text() or ""
-                pages_text[idx] = clean_txt(page_raw)
-                if core_clean in pages_text[idx]:
-                    return idx + 1
-            except Exception as e:
-                pages_text[idx] = ""
-                
-    return 1
+
+def _palabras_clave(texto: str) -> set:
+    """Palabras significativas de un texto (≥4 letras, sin acentos ni palabras
+    estructurales). Sirve para emparejar el bloque de la respuesta con su fuente
+    comparando el nombre del grupo político, no solo la fecha."""
+    texto = texto.lower()
+    for a, b in [("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ñ", "n")]:
+        texto = texto.replace(a, b)
+    stop = {
+        "grupo", "municipal", "politico", "proposicion", "proposamena", "presenta",
+        "cuya", "parte", "dispositiva", "plantea", "adopcion", "acuerdo", "plenario",
+        "propuesta", "pleno", "ayuntamiento", "bilbao", "equipo", "gobierno",
+        "resultado", "argumentos", "fuente", "instar", "insta",
+    }
+    return {w for w in re.findall(r"[a-z]{4,}", texto) if w not in stop}
 
 
 def build_sources_data(retrieved_docs):
     """Construye los datos de las fuentes (una por acta/fecha citada).
 
-    Escanea cada PDF para localizar la página del fragmento. Es la parte lenta,
-    por eso se llama desde un hilo. Devuelve una lista de dicts serializables
-    (sin objetos de Chainlit) para construir los elementos en el hilo async.
+    Usa el nº de página del metadato `page` (lo añade el indexador), así que es
+    instantáneo. Para cada acta calcula el RANGO de páginas del debate (de la
+    primera a la última página de sus fragmentos) para que el usuario localice
+    rápido la propuesta en el PDF. Devuelve dicts serializables (sin objetos de
+    Chainlit) para construir los elementos en el hilo async.
     """
-    sources_data = []
-    seen_dates = set()
+    from collections import OrderedDict
+
+    # Agrupar por (fecha, tema) = una PROPUESTA, conservando el orden de aparición.
+    # Así cada propuesta del acta tiene su propia fuente con su rango de páginas,
+    # aunque varias propuestas sean del mismo día.
+    por_grupo = OrderedDict()
     for doc in retrieved_docs:
         pdf_path = resolve_pdf_path(doc.metadata.get("source", ""))
         if not pdf_path or not os.path.exists(pdf_path):
             continue
-
         date = doc.metadata.get("date", "Fecha desconocida")
-        if date in seen_dates:
-            continue
-        seen_dates.add(date)
-
-        page_num = find_page_in_pdf(pdf_path, doc.page_content)
         topic = doc.metadata.get("topic", "Tema general")
-        short_topic = topic[:80] + "..." if len(topic) > 80 else topic
+        key = (date, topic)
+        por_grupo.setdefault(key, {"pdf_path": pdf_path, "docs": []})["docs"].append(doc)
 
+    import urllib.parse
+
+    sources_data = []
+    for (date, topic), info in por_grupo.items():
+        docs_d = info["docs"]
+        first = docs_d[0]
+        paginas = [d.metadata.get("page") for d in docs_d if d.metadata.get("page")]
+        if not paginas:
+            paginas = [1]
+        p_min, p_max = min(paginas), max(paginas)
+        rango = f"Pág. {p_min}" if p_min == p_max else f"Págs. {p_min}-{p_max}"
+
+        # URL de la ruta propia /acta/{año}/{fichero}#page=N (abre el PDF en una
+        # pestaña del navegador, saltando a la primera página del debate).
+        pdf_path = info["pdf_path"]
+        year = os.path.basename(os.path.dirname(pdf_path))
+        fname = os.path.basename(pdf_path)
+        url = f"/acta/{year}/{urllib.parse.quote(fname)}#page={p_min}"
+
+        short_topic = topic[:80] + "..." if len(topic) > 80 else topic
         sources_data.append({
+            "date": date,
+            "topic": topic,
             "pdf_path": pdf_path,
-            "page": page_num,
-            "content": doc.page_content,
-            "speaker": doc.metadata.get("speaker", "Desconocido"),
-            "party": doc.metadata.get("party", "Desconocido"),
+            "url": url,
+            "page": p_min,
+            "speaker": first.metadata.get("speaker", "Desconocido"),
+            "party": first.metadata.get("party", "Desconocido"),
             "short_topic": short_topic,
-            "pdf_name": f"Ver PDF - Acta {date} (Pág. {page_num})",
-            "text_name": f"Comprobar Fuentes - Acta {date} (Pág. {page_num})",
+            "pdf_name": f"Ver PDF - Acta {date} ({rango})",
         })
     return sources_data
 
@@ -256,32 +269,70 @@ CRÓNICA:"""
         context=formatted_context, question=question
     )
 
-    # Fase 2: Generación con streaming — los tokens aparecen en pantalla en tiempo real
-    answer_msg = cl.Message(content="")
-    async for chunk in rag.llm.astream(prompt_value):
-        token = chunk.content if hasattr(chunk, "content") else str(chunk)
-        await answer_msg.stream_token(token)
+    # Fase 2: Generación + fuentes en UN SOLO mensaje. Las fuentes son hipervínculos
+    # normales a la ruta /acta/... (abren el PDF en una pestaña del navegador en la
+    # página correcta), en lugar de elementos cl.Pdf "side" que se abrían solos.
+    async with cl.Step(name="Redactando la crónica"):
+        respuesta = await rag.llm.ainvoke(prompt_value)
+        answer_text = respuesta.content if hasattr(respuesta, "content") else str(respuesta)
 
-    # Construir fuentes: el escaneo de los PDFs para localizar la página es lento
-    # (cientos de páginas en las actas modernas), así que lo hacemos en un hilo
-    # para no bloquear la interfaz mientras se localizan las fuentes.
-    elements = []
-    sources_markdown = []
-
+    # Localizar las fuentes y colocar el enlace de cada acta DEBAJO de su bloque de fecha.
     if retrieved_docs:
         async with cl.Step(name="Localizando fuentes en los PDFs"):
             sources_data = await asyncio.to_thread(build_sources_data, retrieved_docs)
 
         if sources_data:
-            sources_markdown.append("\n\n**Fuentes consultadas (haz clic para abrirlas):**")
-            for s in sources_data:
-                elements.append(cl.Pdf(name=s["pdf_name"], path=s["pdf_path"], page=s["page"], display="page"))
-                elements.append(cl.Text(name=s["text_name"], content=s["content"], display="page"))
-                sources_markdown.append(
-                    f"* {s['pdf_name']} | {s['text_name']}\n"
-                    f"  *(Orador: {s['speaker']} ({s['party']}) | Asunto: {s['short_topic']})*"
-                )
-            answer_msg.content += "\n" + "\n".join(sources_markdown)
+            from collections import defaultdict
 
-    answer_msg.elements = elements
-    await answer_msg.send()
+            # La conclusión final acota el último bloque (no metemos fuentes dentro de ella).
+            concl = re.search(r'\n\s*(?:CONCLUSI[ÓO]N|En conclusi|En resumen)', answer_text, re.I)
+            concl_pos = concl.start() if concl else len(answer_text)
+
+            # Inicio de cada bloque de propuesta = cada aparición de una fecha conocida.
+            fechas = {s["date"] for s in sources_data}
+            bloques = []  # (pos_inicio, fecha)
+            for date in fechas:
+                for m in re.finditer(re.escape(date), answer_text[:concl_pos]):
+                    bloques.append([m.start(), date])
+            bloques.sort()
+
+            # Fuentes agrupadas por fecha.
+            src_por_fecha = defaultdict(list)
+            for s in sources_data:
+                src_por_fecha[s["date"]].append(s)
+
+            # Asignar a cada bloque la fuente de su misma fecha cuyo GRUPO coincide más
+            # (comparando el nombre del grupo en la cabecera con el tema de la fuente).
+            # Si ninguna coincide, se usa el orden de aparición como respaldo.
+            asignaciones = []  # (pos_fin_bloque, source)
+            usadas = []
+            for idx, (start, date) in enumerate(bloques):
+                candidatos = [s for s in src_por_fecha[date] if id(s) not in usadas]
+                if not candidatos:
+                    continue
+                fin = bloques[idx + 1][0] if idx + 1 < len(bloques) else concl_pos
+                cabecera = answer_text[start:start + 120]  # "fecha — Grupo Municipal ..."
+                cab_words = _palabras_clave(cabecera)
+                mejor = max(candidatos, key=lambda s: len(cab_words & _palabras_clave(s["topic"])))
+                if len(cab_words & _palabras_clave(mejor["topic"])) == 0:
+                    mejor = candidatos[0]  # sin coincidencia de grupo → respaldo por orden
+                asignaciones.append((fin, mejor))
+                usadas.append(id(mejor))
+
+            # Insertar de atrás hacia delante, retrocediendo sobre el formato del
+            # encabezado siguiente (**, #, saltos) para NO romper la negrita del título.
+            for fin, s in sorted(asignaciones, key=lambda x: x[0], reverse=True):
+                f = fin
+                while f > 0 and answer_text[f - 1] in "*#\n\r \t":
+                    f -= 1
+                linea = f"\n\n📄 *Fuente:* [{s['pdf_name']}]({s['url']})\n"
+                answer_text = answer_text[:f] + linea + answer_text[f:]
+
+            # Fuentes que no se pudieron ubicar en el texto: al final, agrupadas.
+            no_ubicadas = [s for s in sources_data if id(s) not in usadas]
+            if no_ubicadas:
+                answer_text += "\n\n**Otras fuentes consultadas:**\n"
+                for s in no_ubicadas:
+                    answer_text += f"* [{s['pdf_name']}]({s['url']})\n"
+
+    await cl.Message(content=answer_text).send()

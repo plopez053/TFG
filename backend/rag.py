@@ -27,57 +27,6 @@ LLM_MODEL = "mistral"
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
-# --- Diccionario Temático Global ---
-# Cada entrada mapea triggers (palabras del usuario) a:
-#   "search"   -> variantes de búsqueda semántica en la BD vectorial
-#   "synonyms" -> stems de 6 chars para enriquecer el scoring de relevancia de temas
-# Añade aquí nuevos temas conforme sea necesario.
-TOPIC_VARIANTS_MAP = [
-    {"triggers": ["tasa", "turis", "ecotasa", "turism"],
-     "search":   ["tasa turística bilbao", "ecotasa turística", "impuesto turismo bilbao"],
-     "synonyms": ["turism", "ecotasa", "alojam", "impost"]},
-    {"triggers": ["vivienda", "alquiler", "piso", "inmobil", "habitac"],
-     "search":   ["vivienda social bilbao", "vivienda proteccion oficial",
-                  "zona tensionada bilbao", "viviendas municipales bilbao"],
-     "synonyms": ["vivien", "alquil", "protec", "habita", "tensan", "inmovi"]},
-    {"triggers": ["transporte", "metro", "autobus", "autobús", "bizi", "movilidad", "bilbobus"],
-     "search":   ["transporte público bilbao", "bilbobus lineas autobus", "movilidad urbana bilbao"],
-     "synonyms": ["transp", "autobu", "movili", "bilbob", "viajero", "trafico"]},
-    {"triggers": ["medio ambiente", "sostenib", "ecolog", "verde", "contaminacion",
-                  "clima", "residuo", "energia", "emisio"],
-     "search":   ["medio ambiente bilbao", "cambio climático bilbao",
-                  "zonas verdes bilbao", "contaminación bilbao",
-                  "residuos urbanos bilbao", "sostenibilidad municipal bilbao",
-                  "transición ecológica bilbao", "emisiones CO2 bilbao",
-                  "energía renovable bilbao", "arbolado urbano bilbao"],
-     "synonyms": ["ambien", "sosten", "ecolog", "climat", "residu",
-                  "contam", "parque", "emisio", "energi", "verdes", "arbolad"]},
-    {"triggers": ["presupuesto", "gasto", "inversion", "financ", "deficit"],
-     "search":   ["presupuesto municipal bilbao", "presupuesto general villa bilbao",
-                  "aprobacion presupuestos bilbao", "gasto publico municipal bilbao"],
-     "synonyms": ["presup", "invers", "financ", "partid", "ejercic", "deficit"]},
-    {"triggers": ["servicio social", "depend", "infanci", "bienestar"],
-     "search":   ["servicios sociales bilbao", "personas mayores bilbao",
-                  "dependencia municipal bilbao", "menores infancia bilbao"],
-     "synonyms": ["social", "depend", "infanc", "bienes", "menor"]},
-    {"triggers": ["urbanismo", "obra", "edificio", "rehabilit", "construc"],
-     "search":   ["plan urbanístico bilbao", "obras municipales bilbao",
-                  "rehabilitación edificios bilbao", "plan general ordenacion"],
-     "synonyms": ["urbani", "rehabi", "edific", "constr", "planea", "zorrot"]},
-    {"triggers": ["cultura", "deporte", "festival", "museo", "teatro"],
-     "search":   ["cultura bilbao", "deporte municipal bilbao", "actividades culturales bilbao"],
-     "synonyms": ["cultur", "deport", "festiv", "museo", "teatro", "instal"]},
-    {"triggers": ["seguridad", "policia", "convivencia", "delincuencia"],
-     "search":   ["seguridad ciudadana bilbao", "policia municipal bilbao", "convivencia vecinal bilbao"],
-     "synonyms": ["seguri", "polici", "conviv", "delict"]},
-    {"triggers": ["empleo", "trabajo", "desempleo", "paro", "economia", "comercio"],
-     "search":   ["empleo bilbao", "desempleo paro bilbao", "economia municipal bilbao"],
-     "synonyms": ["empleo", "trabaj", "desempl", "econom", "comerc"]},
-    {"triggers": ["euskera", "euskara", "idioma", "lengua"],
-     "search":   ["euskera bilbao", "normalizacion linguistica bilbao"],
-     "synonyms": ["eusker", "euskar", "idioma", "lingua"]},
-]
-
 class RAGPipeline:
     def __init__(self):
         """Inicializa el motor RAG con el modelo de embeddings configurado."""
@@ -384,18 +333,6 @@ class RAGPipeline:
         # (ej: "presu" de "presupuesto" matcheando "presencia" con stem[:5])
         q_keywords = [w for w in re.findall(r'\w{6,}', q_clean) if w not in stopwords and not w.isdigit()]
 
-        # MEJORA: Ampliar q_keywords con sinónimos temáticos del diccionario global.
-        # Permite que el scoring detecte temas relacionados aunque el título del acta
-        # use terminología distinta a la de la pregunta del usuario.
-        # Ej: "medio ambiente" → añade ["contam", "residu", "parque", "verdes"...]
-        # así un tema "Proposición sobre zonas verdes" obtiene score alto.
-        q_lower_for_syn = normalize(question)
-        for entry in TOPIC_VARIANTS_MAP:
-            if any(normalize(tr) in q_lower_for_syn for tr in entry["triggers"]):
-                for syn in entry["synonyms"]:
-                    if syn not in q_keywords:
-                        q_keywords.append(syn)
-
         # --- PASADA 1: Puntuar temas de la búsqueda semántica ---
         for doc in initial_docs:
             topic = doc.metadata.get("topic")
@@ -600,26 +537,14 @@ class RAGPipeline:
         
         # Formatear cada grupo como un bloque compacto de debate
         final_text = ""
-        # Regex para extraer resultados de votación del texto
-        # vote_re: captura resultados numéricos de votación.
-        # Usa DOTALL para no cortarse en saltos de línea del PDF.
-        # Anclamos en "Votos emitidos" (inicio real del recuento). Entre cada cifra y
-        # la siguiente etiqueta va la lista de nombres de los concejales (cientos de
-        # caracteres), por eso usamos ventanas amplias no codiciosas. negativos y
-        # abstenciones son opcionales (en votaciones unánimes no aparecen).
-        vote_re = re.compile(
-            r'Votos\s+emitidos[:\s]+(\d+)'
-            r'.{0,80}?Votos\s+afirmativos[:\s]+(\d+)'
-            r'(?:.{0,400}?Votos\s+negativos[:\s]+(\d+))?'
-            r'(?:.{0,400}?Abstenciones?[:\s]+(\d+))?',
-            re.IGNORECASE | re.DOTALL
-        )
         # result_re: captura la frase de resultado textual.
-        # FIX: usa re.DOTALL para no cortarse en saltos de línea del PDF.
-        # Antes: [^\n]{0,100} → se cortaba en mitad de la frase (ej: "se aprueba la\nenmienda")
-        # Ahora: .{0,200} con DOTALL captura la frase completa.
+        # Usa re.DOTALL para no cortarse en saltos de línea del PDF.
+        # IMPORTANTE: el verbo lleva \b (límite de palabra) y debe ir seguido en ~30
+        # caracteres del OBJETO real (enmienda/proposición/propuesta/moción). Así se evita
+        # el falso positivo de "se rechazaban préstamos..." (un concejal hablando, no un voto).
         result_re = re.compile(
-            r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega).{0,200}|'
+            r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega)\b.{0,30}?'
+            r'(?:enmienda|proposici[óo]n|propuesta|moci[óo]n|mozio|proposamen).{0,200}|'
             r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao]).{0,200}|'
             r'resulta\s+(?:aprobad[ao]|rechazad[ao]).{0,150})',
             re.IGNORECASE | re.DOTALL
@@ -636,28 +561,23 @@ class RAGPipeline:
             rm = result_re.search(raw_flat)
             if rm:
                 resultado_text = rm.group(0).strip()
+                # Cortar en el separador de chunks "---" (causaba "Se aprueba [Sin
+                # resultado...]") y en la basura del pie de página del PDF (URLs de
+                # verificación, "Egiaztatzeko", etc.).
+                resultado_text = re.split(
+                    r'\s*-{3,}\s*|\s*https?://|\s+Egiaztatzeko|\s+Verificaci',
+                    resultado_text
+                )[0].strip()
 
-            # Cifras de votación: cogemos la ÚLTIMA votación del debate (la decisión final,
-            # tras las votaciones de enmiendas o cuestiones previas).
-            resultado_num = None
-            votes = list(vote_re.finditer(raw_flat))
-            if votes:
-                vm = votes[-1]
-                emitidos, favor, contra, absten = vm.group(1), vm.group(2), vm.group(3), vm.group(4)
-                # Solo mostramos el recuento si está COMPLETO (a favor Y en contra);
-                # un "a favor: 4" suelto sin los negativos parece un dato erróneo.
-                if favor and contra:
-                    partes = [f"a favor: {favor}", f"en contra: {contra}"]
-                    if absten:
-                        partes.append(f"abstenciones: {absten}")
-                    cab = f"Votos emitidos: {emitidos} | " if emitidos else ""
-                    resultado_num = cab + ", ".join(partes)
-
-            # Combinar texto + cifras cuando ambos existan
-            if resultado_text and resultado_num:
-                resultado = f"{resultado_text} ({resultado_num})"
-            else:
-                resultado = resultado_text or resultado_num
+            # NOTA: las CIFRAS de votación se han desactivado a propósito. Los chunks
+            # se solapan (chunk_overlap) y en los límites entre temas el recuento de
+            # un tema se cuela en los chunks del tema siguiente, así que con regex no se
+            # puede garantizar que el voto mostrado sea el del tema correcto (se vio el
+            # caso 2010: mostraba el voto del tema anterior). Mostrar un voto equivocado
+            # es peor que no mostrarlo. Las cifras volverán de forma fiable cuando el
+            # rebuild guarde `vote_result` como metadato extraído del segmento limpio.
+            # (ver decisiones/votos_no_fiables_en_chunks_solapados.txt)
+            resultado = resultado_text
             
             # Construir el cuerpo: cabecera (texto dispositivo de la propuesta) + primer
             # tramo del DEBATE real. Las actas repiten muchas veces el texto dispositivo
@@ -699,14 +619,6 @@ class RAGPipeline:
         except Exception:
             variations = [question]
 
-        q_lower = question.lower()
-        extra_variants = []
-        for entry in TOPIC_VARIANTS_MAP:
-            if any(kw in q_lower for kw in entry["triggers"]):
-                extra_variants.extend(entry["search"])
-        if extra_variants:
-            seen_vars: set = set()
-            variations = [v for v in (variations + extra_variants) if not (v in seen_vars or seen_vars.add(v))]
         variations = variations[:6]
 
         filter_dict, valid_dates = self._get_temporal_filter(question)
@@ -775,21 +687,6 @@ class RAGPipeline:
             variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
         except Exception: variations = [question]
 
-        # Enriquecer proactivamente con variantes de búsqueda adicionales basadas en keywords
-        # (esto mejora la cobertura semántica sin depender del modelo MultiQuery)
-        q_lower = question.lower()
-        # Usar el diccionario temático global para enriquecer proactivamente la búsqueda.
-        # Antes: solo 3 temas hardcoded (turismo, vivienda, transporte).
-        # Ahora: 11 temas cubriendo toda la agenda municipal (medio ambiente, presupuestos, etc.)
-        # y usando elif → ahora usa extend() para acumular variantes de múltiples temas.
-        extra_variants = []
-        for entry in TOPIC_VARIANTS_MAP:
-            if any(kw in q_lower for kw in entry["triggers"]):
-                extra_variants.extend(entry["search"])
-
-        if extra_variants:
-            seen_vars: set = set()
-            variations = [v for v in (variations + extra_variants) if not (v in seen_vars or seen_vars.add(v))]
         # Limitar variantes para no multiplicar llamadas de embedding innecesariamente
         variations = variations[:6]
 
