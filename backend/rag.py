@@ -19,7 +19,10 @@ from langchain_core.documents import Document
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(os.path.dirname(BASE_DIR), "actas")
+# Autodetecta la ubicación de las actas: dentro del proyecto (portátil) o fuera (equipo potente).
+_ACTAS_DENTRO = os.path.join(BASE_DIR, "actas")
+_ACTAS_FUERA = os.path.join(os.path.dirname(BASE_DIR), "actas")
+DATA_PATH = _ACTAS_DENTRO if os.path.isdir(_ACTAS_DENTRO) else _ACTAS_FUERA
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
 EMBEDDING_MODEL = "nomic-embed-text"
 LLM_MODEL_LOCAL = "gemma3:4b"
@@ -82,18 +85,27 @@ class RAGPipeline:
         """Procesa un único PDF y devuelve sus chunks con metadatos (page + vote_result)."""
         speaker_regex = re.compile(r'(?:(?:EL|LA)\s+)?(?:SR\.|SRA\.)\s+([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)\s*[:.]', re.IGNORECASE)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
+        # Ventanas amplias (0,500) entre etiquetas: en las actas BILINGÜES (euskera+
+        # castellano) entre "Votos emitidos" y "Votos afirmativos" se intercala el
+        # bloque en euskera ("Baiezko botoak: N jaun/andre: [nombres]...") + la lista
+        # de concejales, que supera con creces los 80 caracteres del patrón antiguo.
+        # Con 80 se perdían TODOS los votos de muchos plenos (p.ej. 27-10-2022: 0 de 26).
         vote_re = re.compile(
             r'Votos\s+emitidos[:\s]+(\d+)'
-            r'.{0,80}?Votos\s+afirmativos[:\s]+(\d+)'
-            r'(?:.{0,400}?Votos\s+negativos[:\s]+(\d+))?'
-            r'(?:.{0,400}?Abstenciones?[:\s]+(\d+))?',
+            r'.{0,500}?Votos\s+afirmativos[:\s]+(\d+)'
+            r'(?:.{0,500}?Votos\s+negativos[:\s]+(\d+))?'
+            r'(?:.{0,500}?Abstenciones?[:\s]+(\d+))?',
             re.IGNORECASE | re.DOTALL
         )
+        # [^.] en vez de . para parar en el PUNTO que cierra la frase del resultado
+        # (evita tragarse narración posterior como "- Siendo las 14:05 horas, el
+        # señor Alcalde anuncia el receso..."). Margen amplio (0,400) para no cortar
+        # a media palabra frases largas con varios grupos ("...el Grupo ELKARREKIN...").
         result_re = re.compile(
-            r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega)\b.{0,30}?'
-            r'(?:enmienda|proposici[óo]n|propuesta|moci[óo]n|mozio|proposamen).{0,200}|'
-            r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao]).{0,200}|'
-            r'resulta\s+(?:aprobad[ao]|rechazad[ao]).{0,150})',
+            r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega)\b[^.]{0,30}?'
+            r'(?:enmienda|proposici[óo]n|propuesta|moci[óo]n|mozio|proposamen)[^.]{0,400}|'
+            r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao])[^.]{0,400}|'
+            r'resulta\s+(?:aprobad[ao]|rechazad[ao])[^.]{0,400})',
             re.IGNORECASE | re.DOTALL
         )
         chunks = []
@@ -153,7 +165,7 @@ class RAGPipeline:
             rm = result_re.search(seg_flat)
             if rm:
                 resultado_text = re.split(
-                    r'\s*-{3,}\s*|\s*https?://|\s+Egiaztatzeko|\s+Verificaci',
+                    r'\s*-{3,}\s*|\s+-\s+|\s*https?://|\s+Egiaztatzeko|\s+Verificaci|\s+Siendo\s+las\b',
                     rm.group(0).strip()
                 )[0].strip()
             resultado_num = None
@@ -161,8 +173,12 @@ class RAGPipeline:
             if votes:
                 vm = votes[-1]
                 emitidos, favor, contra, absten = vm.group(1), vm.group(2), vm.group(3), vm.group(4)
-                if favor and contra:
-                    partes = [f"a favor: {favor}", f"en contra: {contra}"]
+                # Basta con "a favor": las votaciones unánimes no traen "en contra"
+                # y antes se descartaban (vote_result quedaba None y se perdía el voto).
+                if favor:
+                    partes = [f"a favor: {favor}"]
+                    if contra:
+                        partes.append(f"en contra: {contra}")
                     if absten:
                         partes.append(f"abstenciones: {absten}")
                     cab = f"Votos emitidos: {emitidos} | " if emitidos else ""

@@ -91,7 +91,29 @@ def _palabras_clave(texto: str) -> set:
     return {w for w in re.findall(r"[a-z]{4,}", texto) if w not in stop}
 
 
-def build_sources_data(retrieved_docs):
+# Vocabulario procedimental común a casi todos los debates/votaciones: se excluye
+# al medir relevancia para que solo cuenten las palabras de ASUNTO (vivienda, IBI...).
+_STOP_PROCEDIMENTAL = {
+    # Trámite y votación (común a todos los debates)
+    "enmienda", "enmiendas", "modificacion", "adicion", "votos", "favor",
+    "contra", "abstenciones", "emitidos", "decae", "decaen", "acepta",
+    "aceptada", "rechaza", "rechazada", "queda", "aprobada", "proposicion",
+    "asunto", "orador", "sesion", "punto", "secretario", "alcalde", "señor",
+    "senor", "senora", "señora", "votacion", "vota", "presentada", "formulada",
+    "tenor", "literal", "siguiente", "udalbatzak", "udalbatzarreko",
+    "idazkaritza", "nagusia", "secretaria",
+    # Relleno (no aportan al asunto)
+    "para", "sobre", "como", "este", "esta", "esto", "unas", "unos", "mas",
+    "sino", "donde", "cuando", "entre", "desde", "hasta", "tambien", "todo",
+    "toda", "todos", "todas", "cada", "otro", "otra", "otros", "otras",
+    "puede", "deben", "debe", "ante", "bien", "muy",
+    # Nombres de grupos/partidos (aparecen en todas sus proposiciones, sea cual sea el tema)
+    "bildu", "elkarrekin", "podemos", "ezker", "anitza", "equo", "berdeak",
+    "partido", "popular", "socialista", "socialistas", "vascos",
+}
+
+
+def build_sources_data(retrieved_docs, answer_text=None):
     """Construye los datos de las fuentes (una por acta/fecha citada).
 
     Usa el nº de página del metadato `page` (lo añade el indexador), así que es
@@ -103,23 +125,30 @@ def build_sources_data(retrieved_docs):
     from collections import OrderedDict
     import urllib.parse
 
-    # Agrupar por (fecha, pdf_path): una entrada por acta, no por tema.
-    # Así evitamos duplicados cuando hay varios temas del mismo PDF.
+    # Agrupar por (fecha, topic): una entrada por DEBATE, no por acta. Un mismo
+    # pleno puede tener muchos debates (12 en el acta de 30-09-2021); agrupar por
+    # acta fusionaba todos en una sola fuente con un rango de páginas absurdo
+    # (1-284) y el voto del primer debate, no el preguntado. Por debate, el rango
+    # y el vote_result salen ajustados al tema correcto.
     por_grupo = OrderedDict()
     for doc in retrieved_docs:
         pdf_path = resolve_pdf_path(doc.metadata.get("source", ""))
         if not pdf_path or not os.path.exists(pdf_path):
             continue
         date = doc.metadata.get("date", "Fecha desconocida")
-        key = (date, pdf_path)
+        topic = doc.metadata.get("topic", "")
+        # La sección de portada/índice del acta no es un debate citable y abarca
+        # decenas de páginas: la excluimos como fuente.
+        if topic in ("", "General", "General / Introducción"):
+            continue
+        key = (date, topic, pdf_path)
         entry = por_grupo.setdefault(key, {"pdf_path": pdf_path, "date": date, "docs": [], "topics": []})
         entry["docs"].append(doc)
-        t = doc.metadata.get("topic", "")
-        if t and t not in entry["topics"]:
-            entry["topics"].append(t)
+        if topic and topic not in entry["topics"]:
+            entry["topics"].append(topic)
 
     sources_data = []
-    for (date, pdf_path), info in por_grupo.items():
+    for (date, _topic_key, pdf_path), info in por_grupo.items():
         docs_d = info["docs"]
         paginas = [d.metadata.get("page") for d in docs_d if d.metadata.get("page")]
         p_min = min(paginas) if paginas else None
@@ -143,6 +172,12 @@ def build_sources_data(retrieved_docs):
         vote_result = next(
             (d.metadata.get("vote_result") for d in docs_d if d.metadata.get("vote_result")), None
         )
+        # Palabras de ASUNTO del debate (de su contenido), para medir relevancia
+        # frente a la respuesta. Sin esto, una pregunta sobre una fecha concreta
+        # con muchos debates listaría TODOS como fuente (también los no tratados).
+        contenido = " ".join(d.page_content for d in docs_d)
+        content_kw = _palabras_clave(contenido) - _STOP_PROCEDIMENTAL
+
         sources_data.append({
             "date": date,
             "topic": topic,
@@ -152,7 +187,22 @@ def build_sources_data(retrieved_docs):
             "short_topic": short_topic,
             "pdf_name": pdf_name,
             "vote_result": vote_result,
+            "content_kw": content_kw,
         })
+
+    # Filtro de relevancia SOLO cuando todos los debates son de la misma fecha
+    # (pregunta de un pleno concreto): ahí el buscador trae muchos debates del día
+    # y hay que quedarse con los que la respuesta trata (≥4 palabras de asunto
+    # compartidas, ya sin trámite, relleno ni nombres de grupo). En multisesión cada
+    # fecha es un debate distinto y el emparejamiento por fecha ya lo resuelve, así
+    # que no se filtra para no descartar plenos legítimamente citados.
+    fechas_distintas = {s["date"] for s in sources_data}
+    if answer_text and len(fechas_distintas) == 1:
+        ans_kw = _palabras_clave(answer_text) - _STOP_PROCEDIMENTAL
+        relevantes = [s for s in sources_data if len(s["content_kw"] & ans_kw) >= 4]
+        if relevantes:  # nunca dejar la respuesta sin ninguna fuente
+            sources_data = relevantes
+
     return sources_data
 
 
@@ -289,7 +339,7 @@ CRÓNICA:"""
     # Insertar enlace de fuente debajo del bloque de cada pleno en la respuesta.
     if retrieved_docs:
         async with cl.Step(name="Localizando fuentes en los PDFs"):
-            sources_data = await asyncio.to_thread(build_sources_data, retrieved_docs)
+            sources_data = await asyncio.to_thread(build_sources_data, retrieved_docs, answer_text)
 
         if sources_data:
             from collections import defaultdict
@@ -370,6 +420,6 @@ CRÓNICA:"""
                 answer_text += f"- **{r['date']}** — *{short}*\n"
             if len(related) > 20:
                 answer_text += f"- *... y {len(related) - 20} más. Puedes preguntar por una fecha concreta para profundizar.*\n"
-            answer_text += "\ *Puedes preguntar, por ejemplo: \"¿Qué se debatió el 23-02-2017 sobre medio ambiente?\"*\n"
+            answer_text += "\n*Puedes preguntar, por ejemplo: \"¿Qué se debatió el 23-02-2017 sobre medio ambiente?\"*\n"
 
     await cl.Message(content=answer_text).send()
