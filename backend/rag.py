@@ -108,6 +108,17 @@ class RAGPipeline:
             r'resulta\s+(?:aprobad[ao]|rechazad[ao])[^.]{0,400})',
             re.IGNORECASE | re.DOTALL
         )
+        # Resultados SIN cifras (acuerdos unánimes / por asentimiento). Muy frecuentes,
+        # sobre todo en actas antiguas: "El Pleno Municipal, por unanimidad de miembros
+        # presentes, acuerda...", "Aprobar por unanimidad...". Anclado en marcadores
+        # formales del resultado para no confundirlo con discurso del debate.
+        unanim_re = re.compile(
+            r'(?:(?:el\s+pleno(?:\s+municipal)?|excmo\.?\s+ayuntamiento\s+pleno|aprobar)'
+            r'[^.]{0,60}por\s+unanimidad[^.]{0,200}'
+            r'|se\s+(?:aprueba|acuerda|aprueban|desestiman?|rechazan?)[^.]{0,60}'
+            r'por\s+(?:unanimidad|asentimiento)[^.]{0,200})',
+            re.IGNORECASE
+        )
         chunks = []
 
         date = self._extract_date_from_filename(path)
@@ -142,10 +153,27 @@ class RAGPipeline:
         )
         segments = split_regex.split(full_text)
 
+        # Tipos de punto del orden del día en el formato ANTIGUO (2002-2009), donde el
+        # marcador es "- N - \n\n TIPO ...". Sirve para distinguir un punto real de un
+        # simple número de PÁGINA (también escrito "- N -"), que NO debe partir el acta.
+        _OLD_TYPES = (r'(?:Proposici[oó]n|Proposizioa|Propuesta|Preguntas?|'
+                      r'Se\s+da\s+cuenta|Dar\s+cuenta|Dictamen|Moci[oó]n|'
+                      r'Comparecencia|Interpelaci[oó]n|Declaraci[oó]n|Aprobar)')
+        split_old_agenda = re.compile(r'(?=\n[\s]*-\s*\d+\s*-\s*\n[\s]*' + _OLD_TYPES + r')', re.IGNORECASE)
+        old_topic_re = re.compile(r'^\s*-\s*(\d+)\s*-\s*\n[\s]*(' + _OLD_TYPES + r'.{0,140})', re.IGNORECASE | re.DOTALL)
+
         is_old_format = len(segments) <= 2
         if is_old_format:
-            split_regex_old = re.compile(r'(?=\n-\s*\d+\s*-\s*\n)')
-            segments = split_regex_old.split(full_text)
+            # 1º intentar partir por los puntos REALES del orden del día (ordinarias
+            # antiguas) → topics limpios y un voto por punto. Si hay varios, usarlo.
+            agenda_segs = [s for s in split_old_agenda.split(full_text) if s.strip()]
+            if len(agenda_segs) > 2:
+                segments = agenda_segs
+            else:
+                # Extraordinarias (p.ej. presupuestos): sin marcadores de orden del día;
+                # se mantiene el troceo por página (comportamiento previo, sin regresión).
+                split_regex_old = re.compile(r'(?=\n-\s*\d+\s*-\s*\n)')
+                segments = split_regex_old.split(full_text)
 
         chunk_index_in_doc = 0
         seg_search_start = 0
@@ -183,20 +211,38 @@ class RAGPipeline:
                         partes.append(f"abstenciones: {absten}")
                     cab = f"Votos emitidos: {emitidos} | " if emitidos else ""
                     resultado_num = cab + ", ".join(partes)
-            # Solo guardar si hay cifras reales (evita falsos positivos del debate)
+            # Prioridad: cifras > texto unánime/asentimiento. Se evita guardar texto de
+            # resultado "a secas" sin cifras (podría ser discurso); solo se acepta sin
+            # cifras si es claramente un acuerdo unánime o por asentimiento.
+            def _limpiar(txt):
+                return re.split(
+                    r'\s*-{3,}\s*|\s+-\s+|\s*https?://|\s+Egiaztatzeko|\s+Verificaci|\s+Siendo\s+las\b',
+                    txt.strip()
+                )[0].strip()
+
             if resultado_num:
                 vote_result = f"{resultado_text} ({resultado_num})" if resultado_text else resultado_num
+            elif resultado_text and re.search(r'unanimidad|asentimiento', resultado_text, re.I):
+                vote_result = resultado_text
             else:
-                vote_result = None
+                um = unanim_re.search(seg_flat)
+                vote_result = _limpiar(um.group(0)) if um else None
 
             if is_old_format:
-                topic_raw = re.search(r'^-\s*\d+\s*-\s*\n\s*(.{0,200})', segment.lstrip('\n'), re.DOTALL)
-                if topic_raw:
-                    first_line = topic_raw.group(1).strip().split('\n')[0].strip()
-                    first_line = re.sub(r' {2,}', ' ', first_line)
-                    current_topic = first_line[:120] if first_line else "General / Introducción"
+                # 1º: encabezado REAL del punto ("- N - \n TIPO ...") → "N. TIPO ...".
+                tm_old = old_topic_re.search(segment.lstrip('\n'))
+                if tm_old:
+                    texto = re.sub(r'\s+', ' ', tm_old.group(2)).strip()
+                    current_topic = f"{tm_old.group(1)}. {texto[:115]}"
                 else:
-                    current_topic = "General / Introducción"
+                    # 2º: fallback (extraordinarias troceadas por página): 1ª línea.
+                    topic_raw = re.search(r'^-\s*\d+\s*-\s*\n\s*(.{0,200})', segment.lstrip('\n'), re.DOTALL)
+                    if topic_raw:
+                        first_line = topic_raw.group(1).strip().split('\n')[0].strip()
+                        first_line = re.sub(r' {2,}', ' ', first_line)
+                        current_topic = first_line[:120] if first_line else "General / Introducción"
+                    else:
+                        current_topic = "General / Introducción"
             else:
                 topic_match_std = re.search(
                     r'^\s*(\d+\.-?\s*(?:PROPUESTA|PROPOSAMENA|MOCIÓN|MOZIOA|DICTAMEN|IRIZPENA|ASUNTO|GAIA|PROPOSICIÓN|PROPOSIZIOA).{0,400})',
@@ -516,7 +562,13 @@ class RAGPipeline:
                 documents=[d.page_content for d in candidates],
                 top_n=min(top_n, len(candidates))
             )
-            reranked = [candidates[r.index] for r in results.results]
+            reranked = []
+            for r in results.results:
+                doc = candidates[r.index]
+                # Guardar el score de relevancia (transitorio) para poder aplicar
+                # un umbral mínimo y responder "no encontrado" a preguntas sin relación.
+                doc.metadata["_rerank_score"] = float(r.relevance_score)
+                reranked.append(doc)
             print(f"[*] Cohere reranking: {len(candidates)} candidatos → top {len(reranked)}")
             return reranked
         except Exception as e:
@@ -641,6 +693,20 @@ class RAGPipeline:
 
         if COHERE_API_KEY:
             all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
+
+            # Umbral de relevancia: si la pregunta NO menciona una fecha concreta y ni
+            # el mejor fragmento alcanza una relevancia mínima, no hay nada que responder.
+            # Evita inventar fuentes con preguntas ajenas a las actas (p.ej. "viajes a Marte":
+            # score top ~0.002, frente a ~0.89 de una pregunta legítima).
+            RELEVANCE_FLOOR = 0.05
+            if not exact_date and all_initial_docs:
+                max_score = max(d.metadata.get("_rerank_score", 0.0) for d in all_initial_docs)
+                if max_score < RELEVANCE_FLOOR:
+                    print(f"[*] Relevancia máxima {max_score:.4f} < {RELEVANCE_FLOOR}: sin resultados.")
+                    return {
+                        "context": "", "is_multi_session": False,
+                        "unique_dates": [], "docs": [], "question": question,
+                    }
 
         if exact_date:
             # Fecha exacta: no expandir — usar los chunks más relevantes directamente
