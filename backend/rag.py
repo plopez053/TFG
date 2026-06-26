@@ -12,7 +12,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, ChatOllama
-from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
@@ -37,6 +36,7 @@ class RAGPipeline:
         self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
         self.vector_store = None
         if GROQ_API_KEY:
+            from langchain_groq import ChatGroq
             self.llm = ChatGroq(model=LLM_MODEL_GROQ, temperature=0, api_key=GROQ_API_KEY)
             print(f"[+] LLM: Groq ({LLM_MODEL_GROQ}) — respuestas rápidas via API")
         else:
@@ -373,6 +373,32 @@ class RAGPipeline:
             return {"date": {"$in": valid_dates}}, valid_dates
         return None, []
 
+    def _detect_party_in_question(self, question: str) -> Optional[str]:
+        """Detecta si la pregunta menciona un grupo político concreto.
+
+        Devuelve el substring normalizado para filtrar metadata['party'] (fuzzy substring),
+        o None si la pregunta es genérica (varios grupos o sin mención).
+        """
+        q = question.lower()
+        # Más específico primero para evitar falsos positivos
+        if re.search(r'eh\s*bildu|euskal\s+herria\s+bildu', q):
+            return "EH BILDU"
+        if re.search(r'elkarrekin', q):
+            return "ELKARREKIN"
+        if re.search(r'pse[\s\-]ee|\bsocialistas?\s+vascos?\b|\bpartido\s+socialista\b|\bpse\b', q):
+            return "PSE"
+        if re.search(r'eaj[\s\-]pnv|\bpnv\b|\bnacionalistas?\s+vascos?\b', q):
+            return "PNV"
+        if re.search(r'\bpartido\s+popular\b|\bgrupo\s+(?:municipal\s+)?pp\b|\bel\s+pp\b|\bdel\s+pp\b', q):
+            return "POPULAR"
+        if re.search(r'udalberri', q):
+            return "UDALBERRI"
+        if re.search(r'ciudadanos', q):
+            return "CIUDADANOS"
+        if re.search(r'ezker\s+batua|izquierda\s+unida', q):
+            return "EZKER"
+        return None
+
     def _expand_context_by_topic(self, initial_docs: List[Document], question: str) -> List[Document]:
         """Técnica de la 'Aspiradora': Expande los fragmentos semánticos a debates completos.
         
@@ -386,10 +412,10 @@ class RAGPipeline:
         # ya se descartan antes por las reglas \w{6,} y not w.isdigit()).
         stopwords = {
             # Omnipresentes en todos los títulos de acta — no aportan señal temática
-            "bilbao", "municipal", "municipales", "partido", "popular",
+            "bilbao", "municipal", "municipales", "partido", "popular", "grupos",
             "acuerdo", "acuerdos", "proposicion", "proposizioa", "propuesta", "propuestas",
             "mocion", "mozioa", "debate", "debates", "sesion", "reunion",
-            "resultado", "votacion", "propone", "propuso", "presenta", "plantea",
+            "resultado", "votacion", "propone", "propuso", "propuesto", "presenta", "plantea",
             "siguiente", "adoptado", "tomado", "tomados", "relacionado", "relacionados",
             "dispositiva", "literal", "adopcion", "decidio", "habido", "habida",
             "cuales", "exacto",
@@ -429,6 +455,27 @@ class RAGPipeline:
                     target_topics.append({"topic": topic, "source": source, "score": score, "basename": source_bn})
 
 
+
+        # PENALIZACIÓN DE TEMAS PRESUPUESTARIOS: Los debates de presupuestos son muy largos
+        # y mencionan de pasada cualquier tema (medio ambiente, pobreza, movilidad…).
+        # Si la pregunta no menciona "presupuesto" ni "modificación", penalizamos esos temas
+        # para que no contaminen búsquedas temáticas específicas.
+        q_mentions_budget = bool(re.search(r'presupuest|modificaci[oó]n\s+presup|ordenanza', q_clean, re.I))
+        if not q_mentions_budget:
+            for t in target_topics:
+                t_norm = normalize(t['topic'])
+                if re.search(r'presupuest|modificac|ordenanza', t_norm):
+                    t['score'] *= 0.2
+
+        # FILTRO DE TÍTULO: Si algún tema tiene una keyword en su título (score ≥ 20),
+        # descartar los que solo puntúan por menciones de pasada en el contenido.
+        # Evita que debates de presupuestos, aparcamientos, etc. entren porque mencionan
+        # "pobreza" o "movilidad" una vez en el debate sin que el punto trate ese tema.
+        # Si ningún tema supera 20 puntos (todos son coincidencias de contenido), se mantiene
+        # el comportamiento actual para no romper consultas sin keywords en los títulos.
+        title_matched = [t for t in target_topics if t['score'] >= 20]
+        if title_matched:
+            target_topics = title_matched
 
         # DOBLE UMBRAL para eliminar ruido:
         # 1) Umbral absoluto: evita que temas con score bajo pasen cuando todos los scores son bajos.
@@ -691,6 +738,19 @@ class RAGPipeline:
                     all_initial_docs.extend([d for d, s in res if s < 1.4])
                 except: pass
 
+        # Filtro de grupo político: si la pregunta menciona un partido concreto,
+        # quedarse solo con los chunks donde ese partido es el ORADOR (no donde otros lo mencionan).
+        target_party = self._detect_party_in_question(question)
+        if target_party:
+            party_filtered = [
+                d for d in all_initial_docs
+                if target_party.lower() in d.metadata.get("party", "").lower()
+                or target_party.lower() in d.page_content.split('\n\n')[0].lower()
+            ]
+            if len(party_filtered) >= 3:
+                all_initial_docs = party_filtered
+                print(f"[*] Filtro de grupo '{target_party}': {len(all_initial_docs)} docs")
+
         if COHERE_API_KEY:
             all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
 
@@ -836,7 +896,18 @@ class RAGPipeline:
                     all_initial_docs.extend([d for d, s in res if s < 1.4])
                 except: pass
 
-        # 2.5 Reranking con Cohere (mejora la selección de temas antes de la expansión)
+        # 2.5 Filtro de grupo político + reranking
+        target_party = self._detect_party_in_question(question)
+        if target_party:
+            party_filtered = [
+                d for d in all_initial_docs
+                if target_party.lower() in d.metadata.get("party", "").lower()
+                or target_party.lower() in d.page_content.split('\n\n')[0].lower()
+            ]
+            if len(party_filtered) >= 3:
+                all_initial_docs = party_filtered
+                print(f"[*] Filtro de grupo '{target_party}': {len(all_initial_docs)} docs")
+
         if COHERE_API_KEY:
             all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
 
@@ -962,12 +1033,21 @@ class RAGPipeline:
                 else:
                     raise
         
-        # 5. Añadir fuentes enriquecidas
+        # 5. Añadir fuentes enriquecidas (deduplicadas por acta+tema)
         sources = "\n\n" + "="*60 + "\nFUENTES UTILIZADAS:\n"
-        for i, d in enumerate(docs):
-            src, top, spk = os.path.basename(d.metadata.get("source", "Acta")), d.metadata.get("topic", ""), d.metadata.get("speaker", "")
+        seen_src_keys: set = set()
+        src_idx = 1
+        for d in docs:
+            src = os.path.basename(d.metadata.get("source", "Acta"))
+            top = d.metadata.get("topic", "")
+            key = (src, top[:60])
+            if key in seen_src_keys:
+                continue
+            seen_src_keys.add(key)
+            spk = d.metadata.get("speaker", "")
             snippet = d.page_content.replace('\n', ' ')[:400] + "..."
-            sources += f" [{i+1}] {src} | {spk} | {top[:60]}\n     -> \"{snippet}\"\n\n"
+            sources += f" [{src_idx}] {src} | {spk} | {top[:60]}\n     -> \"{snippet}\"\n\n"
+            src_idx += 1
         
         return response + sources
 

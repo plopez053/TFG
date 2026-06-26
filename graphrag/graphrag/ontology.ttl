@@ -1,0 +1,90 @@
+@prefix bo:   <http://bilbao.tfg/ontology#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontología del dominio: Plenos del Ayuntamiento de Bilbao
+# TBox: clases, jerarquías, propiedades y axiomas para el razonador OWL-RL.
+#################################################################
+
+bo: a owl:Ontology ;
+    rdfs:label "Ontología de los Plenos del Ayuntamiento de Bilbao"@es ;
+    rdfs:comment "Modela proposiciones, grupos, plenos, temas (SKOS) y entidades para GraphRAG."@es .
+
+### --------------------------------------------------------------
+### CLASES
+### --------------------------------------------------------------
+bo:Proposicion a owl:Class ; rdfs:label "Proposición"@es .
+bo:Pleno       a owl:Class ; rdfs:label "Pleno (sesión)"@es .
+bo:Grupo       a owl:Class ; rdfs:label "Grupo municipal"@es .
+bo:Resultado   a owl:Class ; rdfs:label "Resultado de votación"@es .
+bo:Tema        a owl:Class ; rdfs:label "Tema"@es ;
+    rdfs:comment "Tema tratado; los individuos son skos:Concept en una taxonomía."@es .
+
+bo:Entidad     a owl:Class ; rdfs:label "Entidad mencionada"@es .
+bo:Persona      a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Persona"@es .
+bo:Lugar        a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Lugar"@es .
+bo:Organizacion a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Organización"@es .
+
+### --------------------------------------------------------------
+### PROPIEDADES DE OBJETO (con dominio/rango)
+### --------------------------------------------------------------
+bo:presentadaPor a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Grupo ;
+    rdfs:label "presentada por"@es .
+
+bo:enPleno a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Pleno ;
+    rdfs:label "en pleno"@es .
+
+bo:tieneResultado a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Resultado ;
+    rdfs:label "tiene resultado"@es .
+
+bo:menciona a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Entidad ;
+    rdfs:label "menciona"@es .
+
+bo:trataSobre a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Tema ;
+    rdfs:label "trata sobre"@es .
+
+### --------------------------------------------------------------
+### RAZONAMIENTO: roll-up temático
+### "vivienda social" ⊑ "vivienda" ⇒ una pregunta por "vivienda"
+### agrega automáticamente las proposiciones de sus subtemas.
+### Se materializa con OWL-RL (TransitiveProperty + propertyChainAxiom).
+### --------------------------------------------------------------
+# broaderT = cierre transitivo de skos:broader
+bo:broaderT a owl:ObjectProperty, owl:TransitiveProperty ;
+    rdfs:label "tema más amplio (transitivo)"@es .
+skos:broader rdfs:subPropertyOf bo:broaderT .
+
+# trataTemaAmplio = trataSobre seguido de (0..n) saltos broaderT
+bo:trataTemaAmplio a owl:ObjectProperty ;
+    rdfs:label "trata sobre (incluye temas más amplios)"@es ;
+    owl:propertyChainAxiom ( bo:trataSobre bo:broaderT ) .
+bo:trataSobre rdfs:subPropertyOf bo:trataTemaAmplio .
+
+### --------------------------------------------------------------
+### PROPIEDADES DE DATOS
+### --------------------------------------------------------------
+bo:fecha        a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
+bo:anio         a owl:DatatypeProperty ; rdfs:range xsd:integer .
+bo:tituloTopic  a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
+bo:votosFavor   a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:integer .
+bo:votosContra  a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:integer .
+bo:votoTexto    a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
+
+### --------------------------------------------------------------
+### INDIVIDUOS FIJOS: resultados de votación
+### --------------------------------------------------------------
+bo:Aprobada           a bo:Resultado ; skos:prefLabel "aprobada"@es .
+bo:Rechazada          a bo:Resultado ; skos:prefLabel "rechazada"@es .
+bo:Decae              a bo:Resultado ; skos:prefLabel "decae"@es .
+bo:Retirada           a bo:Resultado ; skos:prefLabel "retirada"@es .
+bo:AprobadaConEnmienda a bo:Resultado ; skos:prefLabel "aprobada con enmienda"@es .
+bo:SinResultado       a bo:Resultado ; skos:prefLabel "sin resultado"@es .

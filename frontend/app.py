@@ -27,6 +27,7 @@ from chainlit.server import app as _fastapi_app
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from backend.rag import get_rag, DATA_PATH
+from graphrag.graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
 
 # ---------------------------------------------------------------------------
 # Ruta propia para servir los PDF de las actas directamente desde actas/.
@@ -53,11 +54,15 @@ _fastapi_app.router.routes.insert(0, _ruta_acta)
 
 
 # ---------------------------------------------------------------------------
-# Pre-carga del RAG al importar el módulo (evita problemas de threading con ChromaDB)
+# Pre-carga de ambos motores al importar el módulo
 # ---------------------------------------------------------------------------
-print("[*] Pre-cargando el motor RAG...")
+print("[*] Pre-cargando el motor RAG vectorial...")
 _rag = get_rag()
-print("[+] Motor RAG listo.")
+print("[+] Motor RAG vectorial listo.")
+
+print("[*] Pre-cargando el grafo RDF (GraphRAG)...")
+_load_rdf_graph()
+print("[+] Grafo RDF listo.")
 
 
 def resolve_pdf_path(source: str) -> str:
@@ -207,6 +212,122 @@ def build_sources_data(retrieved_docs, answer_text=None):
 
 
 # ---------------------------------------------------------------------------
+# Perfiles de chat: RAG Vectorial vs GraphRAG
+# ---------------------------------------------------------------------------
+@cl.set_chat_profiles
+async def set_chat_profiles():
+    return [
+        cl.ChatProfile(
+            name="RAG Vectorial",
+            markdown_description=(
+                "**Búsqueda semántica** sobre el texto completo de las actas.\n\n"
+                "Ideal para preguntas narrativas: argumentos, debates, evolución de temas. "
+                "Usa ChromaDB + embeddings nomic-embed-text + Groq LLaMA 3.3 70B."
+            ),
+            icon="https://em-content.zobj.net/source/twitter/376/magnifying-glass-tilted-left_1f50d.png",
+        ),
+        cl.ChatProfile(
+            name="GraphRAG (SPARQL)",
+            markdown_description=(
+                "**Consultas estructuradas** sobre el grafo RDF de proposiciones.\n\n"
+                "Ideal para preguntas de agregación: conteos, rankings, estadísticas por grupo/año. "
+                "Usa OWL-RL + SPARQL sobre 3.922 proposiciones indexadas."
+            ),
+            icon="https://em-content.zobj.net/source/twitter/376/bar-chart_1f4ca.png",
+        ),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Helpers del modo GraphRAG
+# ---------------------------------------------------------------------------
+def _find_pdf_by_date(fecha: str) -> str:
+    """Dado 'DD-MM-YYYY' devuelve la ruta al PDF del acta (si existe)."""
+    import glob
+    parts = fecha.split("-")
+    if len(parts) != 3:
+        return ""
+    year = parts[-1]
+    patron = os.path.join(DATA_PATH, year, f"{fecha}_*.pdf")
+    matches = glob.glob(patron)
+    return matches[0] if matches else ""
+
+
+def _fuentes_graphrag(rows: list) -> str:
+    """Extrae fechas únicas de las filas SPARQL y genera links a los PDFs.
+
+    Busca en cada fila las claves candidatas a fecha (DD-MM-YYYY).
+    Para preguntas de agregación (solo ?anio, ?n) no hay fechas → devuelve "".
+    """
+    import urllib.parse
+
+    DATE_KEYS = ("fecha", "fechaProp", "fechaPleno", "date")
+    TITLE_KEYS = ("titulo", "tituloProp", "tituloTopic", "label")
+
+    vistas: set = set()
+    links: list[str] = []
+
+    for row in rows[:50]:
+        fecha = next((row[k] for k in DATE_KEYS if k in row and re.match(r"\d{2}-\d{2}-\d{4}", row[k])), None)
+        if not fecha or fecha in vistas:
+            continue
+        vistas.add(fecha)
+
+        pdf = _find_pdf_by_date(fecha)
+        if not pdf:
+            continue
+
+        year_dir = os.path.basename(os.path.dirname(pdf))
+        fname = os.path.basename(pdf)
+        url = f"/acta/{year_dir}/{urllib.parse.quote(fname)}"
+
+        titulo = next((row[k] for k in TITLE_KEYS if k in row and row[k]), "")
+        label = f"Ver PDF — Acta {fecha}"
+        if titulo:
+            short = titulo[:70] + "..." if len(titulo) > 70 else titulo
+            label += f" | {short}"
+
+        links.append(f"- [{label}]({url})")
+
+    if not links:
+        return ""
+    return "\n\n---\n**Actas del grafo consultadas:**\n" + "\n".join(links)
+
+
+# ---------------------------------------------------------------------------
+# Handler del modo GraphRAG
+# ---------------------------------------------------------------------------
+async def handle_graphrag(question: str):
+    async with cl.Step(name="Generando consulta SPARQL") as step:
+        try:
+            result = await asyncio.to_thread(_graph_answer, question, False)
+            sparql_txt = result["sparql"]
+            rows = result["rows"]
+            n = len(rows)
+            step.output = f"**{n} fila{'s' if n != 1 else ''} devuelta{'s' if n != 1 else ''}**"
+        except Exception as exc:
+            step.output = f"Error al ejecutar SPARQL: {exc}"
+            await cl.Message(
+                content=f"No se pudo generar una consulta válida para esta pregunta.\n\n*Error: {exc}*"
+            ).send()
+            return
+
+    # Panel lateral con la consulta SPARQL exacta
+    sparql_element = cl.Text(
+        name="Consulta SPARQL generada",
+        content=f"```sparql\n{sparql_txt}\n```\n*{n} filas devueltas*",
+        display="side",
+    )
+
+    # Fuentes: PDFs enlazables extraídos de las fechas en las filas SPARQL
+    answer = result.get("answer", "(sin respuesta)")
+    fuentes = await asyncio.to_thread(_fuentes_graphrag, rows)
+    answer += fuentes
+
+    await cl.Message(content=answer, elements=[sparql_element]).send()
+
+
+# ---------------------------------------------------------------------------
 # Preguntas de ejemplo que aparecen al abrir el chat (Starters)
 # ---------------------------------------------------------------------------
 @cl.set_starters
@@ -236,11 +357,13 @@ async def set_starters():
 
 
 # ---------------------------------------------------------------------------
-# Inicio de sesión: guarda el RAG ya cargado en la sesión del usuario
+# Inicio de sesión: guarda el motor según el perfil elegido
 # ---------------------------------------------------------------------------
 @cl.on_chat_start
 async def on_chat_start():
+    profile = cl.user_session.get("chat_profile")
     cl.user_session.set("rag", _rag)
+    cl.user_session.set("mode", "graphrag" if profile == "GraphRAG (SPARQL)" else "vectorial")
 
 
 # ---------------------------------------------------------------------------
@@ -248,11 +371,15 @@ async def on_chat_start():
 # ---------------------------------------------------------------------------
 @cl.on_message
 async def on_message(message: cl.Message):
-    rag = cl.user_session.get("rag")
     question = message.content.strip()
-
     if not question:
         return
+
+    if cl.user_session.get("mode") == "graphrag":
+        await handle_graphrag(question)
+        return
+
+    rag = cl.user_session.get("rag")
 
     # Fase 1: Recuperación (embeddings + expansión de topics) en hilo separado
     async with cl.Step(name="Buscando en las actas") as step:

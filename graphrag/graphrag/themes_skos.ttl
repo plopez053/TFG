@@ -1,0 +1,33 @@
+@prefix bo:   <http://bilbao.tfg/ontology#> .
+@prefix br:   <http://bilbao.tfg/resource/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+#################################################################
+# Taxonomía SKOS de temas CANÓNICOS (nivel superior del esquema).
+# Los subtemas libres que extrae el LLM se enlazan bajo estos con
+# skos:broader en build_rdf.py, formando la jerarquía que el
+# razonador usa para el roll-up temático.
+#################################################################
+
+br:tema_concept a skos:ConceptScheme ; skos:prefLabel "Temas del Pleno de Bilbao"@es .
+
+br:t_vivienda          a bo:Tema, skos:Concept ; skos:prefLabel "vivienda"@es ; skos:topConceptOf br:tema_concept .
+br:t_urbanismo         a bo:Tema, skos:Concept ; skos:prefLabel "urbanismo"@es ; skos:topConceptOf br:tema_concept .
+br:t_movilidad         a bo:Tema, skos:Concept ; skos:prefLabel "movilidad y transporte"@es ; skos:topConceptOf br:tema_concept .
+br:t_medioambiente     a bo:Tema, skos:Concept ; skos:prefLabel "medio ambiente"@es ; skos:topConceptOf br:tema_concept .
+br:t_euskera           a bo:Tema, skos:Concept ; skos:prefLabel "euskera"@es ; skos:topConceptOf br:tema_concept .
+br:t_cultura           a bo:Tema, skos:Concept ; skos:prefLabel "cultura"@es ; skos:topConceptOf br:tema_concept .
+br:t_deporte           a bo:Tema, skos:Concept ; skos:prefLabel "deporte"@es ; skos:topConceptOf br:tema_concept .
+br:t_educacion         a bo:Tema, skos:Concept ; skos:prefLabel "educacion"@es ; skos:topConceptOf br:tema_concept .
+br:t_igualdad          a bo:Tema, skos:Concept ; skos:prefLabel "igualdad y feminismo"@es ; skos:topConceptOf br:tema_concept .
+br:t_serviciossociales a bo:Tema, skos:Concept ; skos:prefLabel "servicios sociales"@es ; skos:topConceptOf br:tema_concept .
+br:t_empleoeconomia    a bo:Tema, skos:Concept ; skos:prefLabel "empleo y economia"@es ; skos:topConceptOf br:tema_concept .
+br:t_presupuestos      a bo:Tema, skos:Concept ; skos:prefLabel "presupuestos y fiscalidad"@es ; skos:topConceptOf br:tema_concept .
+br:t_seguridad         a bo:Tema, skos:Concept ; skos:prefLabel "seguridad"@es ; skos:topConceptOf br:tema_concept .
+br:t_participacion     a bo:Tema, skos:Concept ; skos:prefLabel "participacion ciudadana"@es ; skos:topConceptOf br:tema_concept .
+br:t_turismo           a bo:Tema, skos:Concept ; skos:prefLabel "turismo"@es ; skos:topConceptOf br:tema_concept .
+br:t_sanidad           a bo:Tema, skos:Concept ; skos:prefLabel "sanidad"@es ; skos:topConceptOf br:tema_concept .
+br:t_memoriahistorica  a bo:Tema, skos:Concept ; skos:prefLabel "memoria historica"@es ; skos:topConceptOf br:tema_concept .
+br:t_derechoshumanos   a bo:Tema, skos:Concept ; skos:prefLabel "derechos humanos"@es ; skos:topConceptOf br:tema_concept .
+br:t_otros             a bo:Tema, skos:Concept ; skos:prefLabel "otros"@es ; skos:topConceptOf br:tema_concept .

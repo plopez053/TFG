@@ -1,11 +1,19 @@
+# RAG vectorial
 langchain
 langchain-community
 langchain-ollama
 langchain-chroma
 langchain-text-splitters
+langchain-groq
 chromadb
 pypdf
 tqdm
 beautifulsoup4
 requests
+
+# Frontend
 chainlit>=1.3.0
+
+# GraphRAG (RDF/OWL/SPARQL)
+rdflib>=7.0.0
+owlrl>=7.0.0
