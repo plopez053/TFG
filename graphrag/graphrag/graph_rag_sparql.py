@@ -106,8 +106,17 @@ REGLAS obligatorias:
   o usa OPTIONAL + FILTER para combinar condiciones alternativas.
 - Si la pregunta pide detalles de proposiciones concretas, incluye ?titulo, ?fecha, ?anio en el SELECT.
 - Si la pregunta pide evolución temporal, agrupa por ?anio y ordena por ?anio ASC.
+- NUNCA añadas un filtro bo:trataSobre a menos que la pregunta mencione explícitamente un tema concreto.
+  Si la pregunta es sobre TODAS las proposiciones, omite ese triple completamente.
+- PARA CALCULAR RATIOS (total + subconjunto filtrado): USA SIEMPRE OPTIONAL+BIND, NUNCA FILTER.
+  Un FILTER en el WHERE elimina las filas que no lo cumplen → el COUNT total queda incorrecto.
+  CORRECTO:  OPTIONAL {{ ?prop bo:tieneResultado bo:Rechazada . BIND(?prop AS ?rechazada) }}
+             → SELECT ... (COUNT(?prop) AS ?total) (COUNT(?rechazada) AS ?rechazadas)
+  INCORRECTO: FILTER(?resultado = bo:Rechazada)  ← destruye el total y el COUNT queda a 0
+- NUNCA uses LIMIT 1 si la pregunta pide COMPARAR grupos: LIMIT 1 elimina toda la comparación.
+  Usa LIMIT 20 (o más) para mostrar todos los grupos relevantes en comparaciones.
 
-EJEMPLO — proposiciones de vivienda por grupo (con URI exacta, más preciso):
+EJEMPLO — proposiciones por grupo en un tema concreto:
   SELECT ?grupo ?nombreGrupo (COUNT(?prop) AS ?n)
   WHERE {{
     ?prop a bo:Proposicion ;
@@ -118,15 +127,43 @@ EJEMPLO — proposiciones de vivienda por grupo (con URI exacta, más preciso):
   }}
   GROUP BY ?grupo ?nombreGrupo ORDER BY DESC(?n) LIMIT 20
 
-EJEMPLO — evolución temporal de proposiciones aprobadas sobre euskera:
+EJEMPLO — evolución temporal de todas las proposiciones aprobadas por año (sin filtro de tema):
   SELECT ?anio (COUNT(?prop) AS ?n)
   WHERE {{
     ?prop a bo:Proposicion ;
-          bo:trataSobre br:t_euskera ;
           bo:tieneResultado bo:Aprobada ;
           bo:anio ?anio .
   }}
   GROUP BY ?anio ORDER BY ASC(?anio)
+
+EJEMPLO — evolución temporal de proposiciones sobre un tema específico por año:
+  SELECT ?anio (COUNT(?prop) AS ?n)
+  WHERE {{
+    ?prop a bo:Proposicion ;
+          bo:trataSobre br:t_euskera ;
+          bo:anio ?anio .
+  }}
+  GROUP BY ?anio ORDER BY ASC(?anio)
+
+EJEMPLO — tasa de rechazo por grupo (ratio: rechazadas / total):
+  SELECT ?grupo ?nombreGrupo (COUNT(?prop) AS ?total)
+         (COUNT(?rechazada) AS ?rechazadas)
+  WHERE {{
+    ?prop a bo:Proposicion ;
+          bo:presentadaPor ?grupo .
+    ?grupo rdfs:label ?nombreGrupo .
+    FILTER(?grupo != br:grupo_desconocido)
+    OPTIONAL {{ ?prop bo:tieneResultado bo:Rechazada . BIND(?prop AS ?rechazada) }}
+  }}
+  GROUP BY ?grupo ?nombreGrupo ORDER BY DESC(?rechazadas) LIMIT 20
+
+EJEMPLO — doble conteo (total de un tema + cuántas aprobadas):
+  SELECT (COUNT(?prop) AS ?total) (COUNT(?aprobada) AS ?aprobadas)
+  WHERE {{
+    ?prop a bo:Proposicion ;
+          bo:trataSobre br:t_medioambiente .
+    OPTIONAL {{ ?prop bo:tieneResultado bo:Aprobada . BIND(?prop AS ?aprobada) }}
+  }}
 """
 
 SPARQL_PROMPT = """Eres experto en SPARQL. Genera UNA consulta SPARQL válida que responda la pregunta.

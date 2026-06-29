@@ -259,7 +259,9 @@ def build():
         # Tema principal (canónico) + temas libres como subtemas (skos:broader)
         tp = (r.get("tema_principal") or "otros").lower().strip()
         tp_uri = canon.get(tp, BR[f"t_{slug(tp)}"])
-        if tp not in canon:  # tema_principal no canónico → cuélgalo de "otros"
+        if tp not in canon and tp_uri not in canon.values():
+            # Solo crear nodo libre si la URI generada no coincide ya con una canónica
+            # (ej: slug("movilidad")="movilidad" → BR["t_movilidad"] = canónica de "movilidad y transporte")
             g.add((tp_uri, RDF.type, BO.Tema)); g.add((tp_uri, SKOS.prefLabel, Literal(tp)))
             g.add((tp_uri, SKOS.broader, canon.get("otros")))
         g.add((pr, BO.trataSobre, tp_uri))

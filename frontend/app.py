@@ -2,6 +2,9 @@ import sys
 import os
 import asyncio
 import re
+import glob
+import urllib.parse
+from collections import OrderedDict, defaultdict
 
 # Fix Python 3.14 + sniffio incompatibility: current_task() returns None in some
 # ASGI contexts even though a loop is running, causing anyio.NoEventLoopError.
@@ -26,8 +29,9 @@ import chainlit as cl
 from chainlit.server import app as _fastapi_app
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
+from langchain_core.prompts import ChatPromptTemplate
 from backend.rag import get_rag, DATA_PATH
-from graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
+from graphrag.graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
 
 # ---------------------------------------------------------------------------
 # Ruta propia para servir los PDF de las actas directamente desde actas/.
@@ -127,9 +131,6 @@ def build_sources_data(retrieved_docs, answer_text=None):
     rápido la propuesta en el PDF. Devuelve dicts serializables (sin objetos de
     Chainlit) para construir los elementos en el hilo async.
     """
-    from collections import OrderedDict
-    import urllib.parse
-
     # Agrupar por (fecha, topic): una entrada por DEBATE, no por acta. Un mismo
     # pleno puede tener muchos debates (12 en el acta de 30-09-2021); agrupar por
     # acta fusionaba todos en una sola fuente con un rango de páginas absurdo
@@ -239,7 +240,6 @@ async def set_chat_profiles():
 # ---------------------------------------------------------------------------
 def _find_pdf_by_date(fecha: str) -> str:
     """Dado 'DD-MM-YYYY' devuelve la ruta al PDF del acta (si existe)."""
-    import glob
     parts = fecha.split("-")
     if len(parts) != 3:
         return ""
@@ -255,8 +255,6 @@ def _fuentes_graphrag(rows: list) -> str:
     Busca en cada fila las claves candidatas a fecha (DD-MM-YYYY).
     Para preguntas de agregación (solo ?anio, ?n) no hay fechas → devuelve "".
     """
-    import urllib.parse
-
     DATE_KEYS = ("fecha", "fechaProp", "fechaPleno", "date")
     TITLE_KEYS = ("titulo", "tituloProp", "tituloTopic", "label")
 
@@ -392,13 +390,14 @@ async def on_message(message: cl.Message):
     # Construir el prompt según el tipo de pregunta
     if is_multi_session:
         dates_found = ', '.join(sorted(unique_dates))
-        sys_prompt = f"""Eres el Cronista Oficial de Bilbao, experto en historia municipal.
+        sys_prompt = f"""Eres el Cronista Oficial de Bilbao, experto en historia municipal. RESPONDE SIEMPRE EN ESPAÑOL.
 
 INSTRUCCION: Se te proporcionan fragmentos de MULTIPLES plenos del Ayuntamiento de Bilbao.
 Las fechas de los plenos en este contexto son: {dates_found}
 Responde a la pregunta haciendo un RESUMEN CRONOLOGICO de los debates y propuestas encontrados.
 
 REGLAS CRUCIALES:
+- IDIOMA: responde ÚNICAMENTE en español castellano. Está PROHIBIDO usar inglés, ni una sola frase.
 - USA SOLO la informacion que esta explicitamente en las actas proporcionadas abajo.
 - NUNCA inventes fechas, cifras, nombres, resultados o detalles que no esten en el texto.
 - Si no sabes el resultado de una votacion, escribe: [Sin resultado en acta]
@@ -424,13 +423,14 @@ ACTAS:
 {{context}}
 
 PREGUNTA: {{question}}
-RESUMEN CRONOLOGICO DETALLADO:"""
+RESUMEN CRONOLOGICO DETALLADO EN ESPAÑOL:"""
     else:
-        sys_prompt = """Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno.
+        sys_prompt = """Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno. RESPONDE SIEMPRE EN ESPAÑOL.
 
 INSTRUCCIÓN: Basándote en el ACTA de abajo, responde a: {question}
 
 REGLAS:
+- IDIOMA: responde ÚNICAMENTE en español castellano. Prohibido usar inglés.
 - Empieza directamente con: "En la sesión del Pleno de Bilbao..."
 - Detalla los puntos de la propuesta (qué se pide exactamente).
 - Indica el resultado final de la votación si consta.
@@ -439,9 +439,8 @@ ACTA:
 {context}
 
 PREGUNTA: {question}
-CRÓNICA:"""
+CRÓNICA EN ESPAÑOL:"""
 
-    from langchain_core.prompts import ChatPromptTemplate
     prompt_value = ChatPromptTemplate.from_template(sys_prompt).format_messages(
         context=formatted_context, question=question
     )
@@ -461,8 +460,6 @@ CRÓNICA:"""
             sources_data = await asyncio.to_thread(build_sources_data, retrieved_docs, answer_text)
 
         if sources_data:
-            from collections import defaultdict
-
             concl = re.search(r'\n\s*(?:CONCLUSI[ÓO]N|En conclusi|En resumen)', answer_text, re.I)
             concl_pos = concl.start() if concl else len(answer_text)
 

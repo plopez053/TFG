@@ -3,10 +3,11 @@ import argparse
 import re
 import glob
 import sys
+import time
 from tqdm import tqdm
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -29,6 +30,25 @@ LLM_MODEL_GROQ = "llama-3.3-70b-versatile"
 COHERE_RERANK_MODEL = "rerank-multilingual-v3.0"
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
+# Umbral de distancia para descartar resultados semánticos irrelevantes.
+SIMILARITY_DISTANCE_MAX = 1.4
+# Prompt de MultiQuery: genera variantes de la pregunta para ampliar el recall.
+MULTIQUERY_PROMPT = "Genera 3 variantes de: '{question}' centradas en el sujeto principal. Una por línea:"
+# Relevancia mínima del reranker para considerar que hay algo que responder.
+RELEVANCE_FLOOR = 0.01
+
+
+def _date_sort_key(doc: Document) -> Tuple[int, int, int]:
+    """Clave de orden cronológico (año, mes, día) a partir del metadato 'date' (DD-MM-YYYY)."""
+    try:
+        parts = doc.metadata.get('date', '01-01-1900').split('-')
+        if len(parts) == 3:
+            return (int(parts[2]), int(parts[1]), int(parts[0]))
+    except (ValueError, AttributeError):
+        pass
+    return (1900, 1, 1)
+
 
 class RAGPipeline:
     def __init__(self):
@@ -122,7 +142,6 @@ class RAGPipeline:
         chunks = []
 
         date = self._extract_date_from_filename(path)
-        from langchain_community.document_loaders import PyPDFLoader
         pdf_loader = PyPDFLoader(path)
         pages = pdf_loader.load()
         party_map = self._get_party_mapping(pages)
@@ -698,6 +717,122 @@ class RAGPipeline:
 
 
 
+    # --- Pipeline de recuperación compartido (usado por retrieve_context y query) ---
+
+    def _query_variations(self, question: str) -> List[str]:
+        """MultiQuery: genera variantes de búsqueda para ampliar el recall (más la original)."""
+        try:
+            vars_txt = self.llm.invoke(MULTIQUERY_PROMPT.format(question=question)).content
+            variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
+        except Exception:
+            variations = [question]
+        return variations[:6]
+
+    def _initial_search(self, variations: List[str], valid_dates: list,
+                        exact_date: bool, k: int) -> List[Document]:
+        """Búsqueda semántica inicial sobre todas las variantes (con o sin filtro de fecha).
+
+        Con fecha exacta se toman todos los chunks de ese día; en el resto se descartan
+        los que superan la distancia máxima de similitud.
+        """
+        docs: List[Document] = []
+        for v in variations:
+            targets = valid_dates if valid_dates else [None]
+            for d_val in targets:
+                flt = {"date": {"$eq": d_val}} if d_val else None
+                try:
+                    if exact_date:
+                        # Fecha única: tomar todo el pleno sin filtrar por score
+                        docs.extend(self.vector_store.similarity_search(v, k=k, filter=flt))
+                    else:
+                        res = self.vector_store.similarity_search_with_score(v, k=k, filter=flt)
+                        docs.extend([d for d, s in res if s < SIMILARITY_DISTANCE_MAX])
+                except Exception:
+                    pass
+        return docs
+
+    def _apply_party_filter(self, docs: List[Document], question: str,
+                            min_docs: int = 3) -> List[Document]:
+        """Si la pregunta menciona un grupo concreto, conserva solo los chunks donde ese
+        grupo es el ORADOR (no donde otros lo mencionan).
+
+        min_docs: mínimo de docs filtrados para aplicar el filtro. En la búsqueda inicial
+        (semántica) se usa 3 para evitar sobreajuste con ruido; después de la aspiradora
+        se llama con 1 porque los docs ya son del tema correcto.
+        """
+        target_party = self._detect_party_in_question(question)
+        if not target_party:
+            return docs
+        party_filtered = [
+            d for d in docs
+            if target_party.lower() in d.metadata.get("party", "").lower()
+            or target_party.lower() in d.page_content.split('\n\n')[0].lower()
+        ]
+        if len(party_filtered) >= min_docs:
+            print(f"[*] Filtro de grupo '{target_party}': {len(party_filtered)} docs")
+            return party_filtered
+        return docs
+
+    def _dedup_docs(self, docs: List[Document], limit: Optional[int] = None) -> List[Document]:
+        """Elimina duplicados por (source, chunk_index) conservando el orden de entrada."""
+        seen, out = set(), []
+        for d in docs:
+            key = (d.metadata.get('source', ''), d.metadata.get('chunk_index', d.page_content[:50]))
+            if key not in seen:
+                seen.add(key)
+                out.append(d)
+        return out[:limit] if limit else out
+
+    def _filter_by_target_topics(self, docs: List[Document], target_topics: list) -> List[Document]:
+        """Elimina docs cuyo topic no esté entre los temas priorizados (si el filtro no vacía todo)."""
+        if not target_topics:
+            return docs
+        valid_prefixes = []
+        for t in target_topics:
+            tp = t['topic']
+            num = tp.split('.')[0].strip()
+            valid_prefixes.append((num + ".") if num.isdigit() else tp[:80])
+        filtered = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
+        return filtered if filtered else docs
+
+    def _retrieve_and_rank(self, question: str, k: int) -> Tuple[List[Document], bool]:
+        """MultiQuery → búsqueda inicial → filtro de grupo → reranking de Cohere.
+
+        Devuelve (docs candidatos, exact_date). `exact_date` es True cuando la pregunta
+        apunta a un único pleno concreto (cambia la estrategia de expansión posterior).
+        """
+        variations = self._query_variations(question)
+        _, valid_dates = self._get_temporal_filter(question)
+        exact_date = len(valid_dates) == 1
+        docs = self._initial_search(variations, valid_dates, exact_date, k)
+        docs = self._apply_party_filter(docs, question)
+        if COHERE_API_KEY:
+            docs = self._rerank_with_cohere(docs, question, top_n=30)
+        return docs, exact_date
+
+    def _select_final_docs(self, candidates: List[Document], question: str,
+                           exact_date: bool) -> List[Document]:
+        """A partir de los candidatos rankeados, decide el conjunto final de docs.
+
+        Fecha exacta → chunks más relevantes sin expandir (la expansión traería ruido de
+        otros temas del mismo pleno). En el resto → expansión "aspiradora" por tema.
+        Siempre se devuelve ordenado cronológicamente.
+        """
+        if exact_date:
+            docs = self._dedup_docs(candidates, limit=40)
+        else:
+            docs, target_topics = self._expand_context_by_topic(candidates, question)
+            docs = self._filter_by_target_topics(docs, target_topics)
+            # Re-aplicar filtro de partido sobre el corpus completo recuperado por la aspiradora.
+            # Umbral min_docs=1: los docs ya son del tema correcto, el filtro puede ser agresivo.
+            docs = self._apply_party_filter(docs, question, min_docs=1)
+        return sorted(docs, key=_date_sort_key)
+
+    def _dump_debug_context(self, formatted_context: str) -> None:
+        """Vuelca el contexto enviado al LLM para inspección técnica."""
+        with open("debug_context.txt", "w", encoding="utf-8") as f:
+            f.write(formatted_context)
+
     # --- Punto de Entrada Principal ---
 
     def retrieve_context(self, question: str) -> dict:
@@ -708,99 +843,25 @@ class RAGPipeline:
         """
         if not self.vector_store: self.create_vector_store()
 
-        mq_prompt = "Genera 3 variantes de: '{question}' centradas en el sujeto principal. Una por línea:"
-        try:
-            vars_txt = self.llm.invoke(mq_prompt.format(question=question)).content
-            variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
-        except Exception:
-            variations = [question]
+        all_initial_docs, exact_date = self._retrieve_and_rank(question, k=80)
 
-        variations = variations[:6]
+        # Umbral de relevancia: si la pregunta NO menciona una fecha concreta y ni el mejor
+        # fragmento alcanza una relevancia mínima, no hay nada que responder. Evita inventar
+        # fuentes con preguntas ajenas a las actas (p.ej. "viajes a Marte": score top ~0.002,
+        # frente a ~0.89 de una pregunta legítima).
+        # Solo aplicar el umbral si Cohere realmente asignó scores (si falló,
+        # los docs no tienen '_rerank_score' y no debemos bloquear por eso).
+        if COHERE_API_KEY and not exact_date and all_initial_docs:
+            rerank_scores = [d.metadata["_rerank_score"] for d in all_initial_docs if "_rerank_score" in d.metadata]
+            max_score = max(rerank_scores) if rerank_scores else None
+            if max_score is not None and max_score < RELEVANCE_FLOOR:
+                print(f"[*] Relevancia máxima {max_score:.4f} < {RELEVANCE_FLOOR}: sin resultados.")
+                return {
+                    "context": "", "is_multi_session": False,
+                    "unique_dates": [], "docs": [], "question": question,
+                }
 
-        filter_dict, valid_dates = self._get_temporal_filter(question)
-        exact_date = len(valid_dates) == 1  # fecha exacta: sin filtro de score
-        all_initial_docs = []
-        for v in variations:
-            if filter_dict:
-                for d_val in valid_dates:
-                    try:
-                        if exact_date:
-                            # Fecha única: tomar todo sin filtrar por score
-                            res_docs = self.vector_store.similarity_search(v, k=80, filter={"date": {"$eq": d_val}})
-                            all_initial_docs.extend(res_docs)
-                        else:
-                            res = self.vector_store.similarity_search_with_score(v, k=80, filter={"date": {"$eq": d_val}})
-                            all_initial_docs.extend([d for d, s in res if s < 1.4])
-                    except: pass
-            else:
-                try:
-                    res = self.vector_store.similarity_search_with_score(v, k=80)
-                    all_initial_docs.extend([d for d, s in res if s < 1.4])
-                except: pass
-
-        # Filtro de grupo político: si la pregunta menciona un partido concreto,
-        # quedarse solo con los chunks donde ese partido es el ORADOR (no donde otros lo mencionan).
-        target_party = self._detect_party_in_question(question)
-        if target_party:
-            party_filtered = [
-                d for d in all_initial_docs
-                if target_party.lower() in d.metadata.get("party", "").lower()
-                or target_party.lower() in d.page_content.split('\n\n')[0].lower()
-            ]
-            if len(party_filtered) >= 3:
-                all_initial_docs = party_filtered
-                print(f"[*] Filtro de grupo '{target_party}': {len(all_initial_docs)} docs")
-
-        if COHERE_API_KEY:
-            all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
-
-            # Umbral de relevancia: si la pregunta NO menciona una fecha concreta y ni
-            # el mejor fragmento alcanza una relevancia mínima, no hay nada que responder.
-            # Evita inventar fuentes con preguntas ajenas a las actas (p.ej. "viajes a Marte":
-            # score top ~0.002, frente a ~0.89 de una pregunta legítima).
-            RELEVANCE_FLOOR = 0.05
-            if not exact_date and all_initial_docs:
-                max_score = max(d.metadata.get("_rerank_score", 0.0) for d in all_initial_docs)
-                if max_score < RELEVANCE_FLOOR:
-                    print(f"[*] Relevancia máxima {max_score:.4f} < {RELEVANCE_FLOOR}: sin resultados.")
-                    return {
-                        "context": "", "is_multi_session": False,
-                        "unique_dates": [], "docs": [], "question": question,
-                    }
-
-        if exact_date:
-            # Fecha exacta: no expandir — usar los chunks más relevantes directamente
-            # La expansión traería ruido de otros temas del mismo pleno
-            seen_keys = set()
-            docs = []
-            for d in all_initial_docs:
-                k = (d.metadata.get('source',''), d.metadata.get('chunk_index', d.page_content[:50]))
-                if k not in seen_keys:
-                    seen_keys.add(k)
-                    docs.append(d)
-            docs = docs[:40]
-        else:
-            docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
-
-            if target_topics:
-                valid_prefixes = []
-                for t in target_topics:
-                    tp = t['topic']
-                    num = tp.split('.')[0].strip()
-                    valid_prefixes.append((num + ".") if num.isdigit() else tp[:80])
-                filtered = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
-                if filtered:
-                    docs = filtered
-
-        def _date_sort_key(d):
-            date_str = d.metadata.get('date', '01-01-1900')
-            try:
-                parts = date_str.split('-')
-                if len(parts) == 3:
-                    return (int(parts[2]), int(parts[1]), int(parts[0]))
-            except: pass
-            return (1900, 1, 1)
-        docs = sorted(docs, key=_date_sort_key)
+        docs = self._select_final_docs(all_initial_docs, question, exact_date)
         self.last_retrieved_docs = docs
 
         formatted_context = self._format_context(docs)
@@ -809,8 +870,7 @@ class RAGPipeline:
         if len(formatted_context) > 34000:
             formatted_context = formatted_context[:34000] + "\n\n[...CONTEXTO TRUNCADO POR TAMAÑO...]"
 
-        with open("debug_context.txt", "w", encoding="utf-8") as f:
-            f.write(formatted_context)
+        self._dump_debug_context(formatted_context)
 
         unique_dates = list(set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")))
         is_multi_session = len(unique_dates) > 1
@@ -862,96 +922,18 @@ class RAGPipeline:
         return related
 
     def query(self, question: str) -> str:
-        """Flujo principal: Recuperación, Expansión y Generación."""
+        """Flujo principal de la CLI: Recuperación, Expansión y Generación con fuentes."""
         if not self.vector_store: self.create_vector_store()
 
-        # 1. MultiQuery: Generar variantes de búsqueda
-        mq_prompt = "Genera 3 variantes de: '{question}' centradas en el sujeto principal. Una por línea:"
-        try:
-            vars_txt = self.llm.invoke(mq_prompt.format(question=question)).content
-            variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
-        except Exception: variations = [question]
+        # 1-2. Recuperación compartida (MultiQuery, búsqueda, filtro de grupo, rerank)
+        all_initial_docs, exact_date = self._retrieve_and_rank(question, k=50)
 
-        # Limitar variantes para no multiplicar llamadas de embedding innecesariamente
-        variations = variations[:6]
-
-        # 2. Búsqueda Inicial con Filtros
-        filter_dict, valid_dates = self._get_temporal_filter(question)
-        exact_date = len(valid_dates) == 1
-        all_initial_docs = []
-        for v in variations:
-            if filter_dict:
-                for d_val in valid_dates:
-                    try:
-                        if exact_date:
-                            res_docs = self.vector_store.similarity_search(v, k=50, filter={"date": {"$eq": d_val}})
-                            all_initial_docs.extend(res_docs)
-                        else:
-                            res = self.vector_store.similarity_search_with_score(v, k=50, filter={"date": {"$eq": d_val}})
-                            all_initial_docs.extend([d for d, s in res if s < 1.4])
-                    except: pass
-            else:
-                try:
-                    res = self.vector_store.similarity_search_with_score(v, k=50)
-                    all_initial_docs.extend([d for d, s in res if s < 1.4])
-                except: pass
-
-        # 2.5 Filtro de grupo político + reranking
-        target_party = self._detect_party_in_question(question)
-        if target_party:
-            party_filtered = [
-                d for d in all_initial_docs
-                if target_party.lower() in d.metadata.get("party", "").lower()
-                or target_party.lower() in d.page_content.split('\n\n')[0].lower()
-            ]
-            if len(party_filtered) >= 3:
-                all_initial_docs = party_filtered
-                print(f"[*] Filtro de grupo '{target_party}': {len(all_initial_docs)} docs")
-
-        if COHERE_API_KEY:
-            all_initial_docs = self._rerank_with_cohere(all_initial_docs, question, top_n=30)
-
-        # 3. Expansión y Formateo
-        if exact_date:
-            seen_keys: set = set()
-            docs = []
-            for d in all_initial_docs:
-                k = (d.metadata.get('source', ''), d.metadata.get('chunk_index', d.page_content[:50]))
-                if k not in seen_keys:
-                    seen_keys.add(k)
-                    docs.append(d)
-            docs = docs[:40]
-            target_topics = []
-        else:
-            docs, target_topics = self._expand_context_by_topic(all_initial_docs, question)
-
-        # Filtro de ruido: eliminamos docs de temas que NO están en la lista de target_topics
-        if target_topics:
-            valid_prefixes = []
-            for t in target_topics:
-                tp = t['topic']
-                num = tp.split('.')[0].strip()
-                valid_prefixes.append((num + ".") if num.isdigit() else tp[:80])
-            filtered = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
-            if filtered:
-                docs = filtered
-        # Ordenar docs cronológicamente (más antiguo primero)
-        # Esto garantiza que el contexto represente todos los años de forma equilibrada
-        # en lugar de meter todos los docs de un año juntos al principio
-        def _date_sort_key(d):
-            date_str = d.metadata.get('date', '01-01-1900')
-            try:
-                parts = date_str.split('-')
-                if len(parts) == 3:
-                    return (int(parts[2]), int(parts[1]), int(parts[0]))
-            except:
-                pass
-            return (1900, 1, 1)
-        docs = sorted(docs, key=_date_sort_key)
+        # 3. Expansión/selección y ordenación cronológica (más antiguo primero)
+        docs = self._select_final_docs(all_initial_docs, question, exact_date)
         self.last_retrieved_docs = docs
 
         formatted_context = self._format_context(docs)
-        
+
         # FILTRO DE SEGURIDAD CONTRA CUELGUES (MÁXIMO 12000 CARACTERES)
         # Esto asegura que el prompt sea de aprox 3000 tokens como máximo,
         # lo que previene que el modelo local se quede pillado.
@@ -962,8 +944,7 @@ class RAGPipeline:
         unique_dates = list(set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")))
         is_multi_session = len(unique_dates) > 1
 
-        # Guardar para inspección técnica
-        with open("debug_context.txt", "w", encoding="utf-8") as f: f.write(formatted_context)
+        self._dump_debug_context(formatted_context)
 
         # Guarda contra alucinaciones: si el contexto está vacío no se invoca el LLM
         if not formatted_context.strip():
@@ -973,7 +954,7 @@ class RAGPipeline:
 
         if is_multi_session:
             dates_found = ', '.join(sorted(unique_dates))
-            sys_prompt = f"""Eres el Cronista Oficial de Bilbao, experto en historia municipal.
+            sys_prompt = f"""Eres el Cronista Oficial de Bilbao, experto en historia municipal. RESPONDE SIEMPRE EN ESPAÑOL.
 
         INSTRUCCION: Se te proporcionan fragmentos de MULTIPLES plenos del Ayuntamiento de Bilbao.
         Las fechas de los plenos en este contexto son: {dates_found}
@@ -998,8 +979,8 @@ class RAGPipeline:
         PREGUNTA: {{question}}
         RESUMEN CRONOLOGICO:"""
         else:
-            sys_prompt = """Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno.
-        
+            sys_prompt = """Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno. RESPONDE SIEMPRE EN ESPAÑOL.
+
         INSTRUCCIÓN: Basándote en el ACTA de abajo, responde a: {question}
         
         REGLAS CRUCIALES:
@@ -1020,7 +1001,6 @@ class RAGPipeline:
         # Reintento automático: en máquinas con poca RAM ollama puede tardar en recargar
         # el modelo LLM después de las llamadas de embedding, rechazando la conexión
         # durante ese breve intervalo. Reintentos con backoff corto solucionan el problema.
-        import time
         response = None
         for attempt in range(3):
             try:
@@ -1084,7 +1064,6 @@ def main():
     # Precalentar mistral ANTES de que empiece cualquier query para evitar que
     # el primer LLM call (MultiQuery) falle por RAM y corrompa el pool HTTP de httpx
     print("[*] Cargando modelo LLM...")
-    import time
     for attempt in range(3):
         try:
             rag.llm.invoke("ok")
