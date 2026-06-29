@@ -27,7 +27,7 @@ from chainlit.server import app as _fastapi_app
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from backend.rag import get_rag, DATA_PATH
-from graphrag.graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
+from graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
 
 # ---------------------------------------------------------------------------
 # Ruta propia para servir los PDF de las actas directamente desde actas/.
@@ -220,20 +220,16 @@ async def set_chat_profiles():
         cl.ChatProfile(
             name="RAG Vectorial",
             markdown_description=(
-                "**Búsqueda semántica** sobre el texto completo de las actas.\n\n"
-                "Ideal para preguntas narrativas: argumentos, debates, evolución de temas. "
-                "Usa ChromaDB + embeddings nomic-embed-text + Groq LLaMA 3.3 70B."
+                "Busca en el texto de las actas.\n\n"
+                "Mejor para preguntas abiertas: qué se debatió, propuestas y argumentos."
             ),
-            icon="https://em-content.zobj.net/source/twitter/376/magnifying-glass-tilted-left_1f50d.png",
         ),
         cl.ChatProfile(
             name="GraphRAG (SPARQL)",
             markdown_description=(
-                "**Consultas estructuradas** sobre el grafo RDF de proposiciones.\n\n"
-                "Ideal para preguntas de agregación: conteos, rankings, estadísticas por grupo/año. "
-                "Usa OWL-RL + SPARQL sobre 3.922 proposiciones indexadas."
+                "Consulta el grafo de proposiciones.\n\n"
+                "Mejor para números: cuántas proposiciones, rankings por grupo, tema o año."
             ),
-            icon="https://em-content.zobj.net/source/twitter/376/bar-chart_1f4ca.png",
         ),
     ]
 
@@ -336,22 +332,18 @@ async def set_starters():
         cl.Starter(
             label="Tasa turística",
             message="¿Qué debates sobre la tasa turística ha habido en el Pleno de Bilbao a lo largo de los años?",
-            icon="https://em-content.zobj.net/source/twitter/376/hotel_1f3e8.png",
         ),
         cl.Starter(
             label="Vivienda social",
             message="¿Qué propuestas sobre vivienda social se han debatido en el Pleno de Bilbao?",
-            icon="https://em-content.zobj.net/source/twitter/376/house_1f3e0.png",
         ),
         cl.Starter(
             label="Medio ambiente",
             message="¿Qué acuerdos sobre medio ambiente y sostenibilidad se han tomado en los plenos?",
-            icon="https://em-content.zobj.net/source/twitter/376/evergreen-tree_1f332.png",
         ),
         cl.Starter(
             label="Presupuesto 2024",
             message="¿Qué se debatió sobre el presupuesto municipal de Bilbao en 2024?",
-            icon="https://em-content.zobj.net/source/twitter/376/euro-banknote_1f4b6.png",
         ),
     ]
 
@@ -526,27 +518,17 @@ CRÓNICA:"""
                             linea_extra += f" — *{s['vote_result']}*"
                         answer_text += linea_extra + "\n"
 
-    # Sección de descubrimiento: otros plenos relacionados no incluidos en el resumen.
-    # Solo en preguntas multisesión (temas amplios). No pasa contexto al LLM.
-    if is_multi_session and retrieved_docs:
-        main_keys = {
-            (d.metadata.get("date", ""), d.metadata.get("topic", "")[:60])
-            for d in retrieved_docs
-        }
-        async with cl.Step(name="Buscando más plenos relacionados"):
-            related = await asyncio.to_thread(rag.search_related, question, main_keys, 80)
-
-        if related:
-            related_sorted = sorted(related, key=lambda x: (
-                tuple(reversed(x["date"].split("-"))) if len(x["date"].split("-")) == 3 else ("",)
-            ))
-            answer_text += "\n\n---\n🔍 **Otros plenos disponibles sobre este tema** (no incluidos en el resumen anterior):\n"
-            for r in related_sorted[:20]:
-                snippet = r.get("snippet", r["topic"])
-                short = snippet[:120] + "..." if len(snippet) > 120 else snippet
-                answer_text += f"- **{r['date']}** — *{short}*\n"
-            if len(related) > 20:
-                answer_text += f"- *... y {len(related) - 20} más. Puedes preguntar por una fecha concreta para profundizar.*\n"
-            answer_text += "\n*Puedes preguntar, por ejemplo: \"¿Qué se debatió el 23-02-2017 sobre medio ambiente?\"*\n"
+        # Red de seguridad: garantiza que SIEMPRE aparezcan fuentes si hay docs.
+        # Cubre cualquier camino en que la inserción anterior no añadiera ninguna
+        # (p.ej. el filtro de relevancia dejó sources_data vacío o el emparejado falló).
+        if "📄" not in answer_text and "Otras fuentes" not in answer_text:
+            fallback = sources_data or build_sources_data(retrieved_docs)
+            if fallback:
+                answer_text += "\n\n**Fuentes:**\n"
+                for s in fallback:
+                    linea = f"* [{s['pdf_name']}]({s['url']})"
+                    if s.get("vote_result"):
+                        linea += f" — *{s['vote_result']}*"
+                    answer_text += linea + "\n"
 
     await cl.Message(content=answer_text).send()
