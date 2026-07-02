@@ -12,6 +12,7 @@ Uso:
 import os
 import re
 import sys
+import threading
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -216,15 +217,20 @@ DATOS DEL GRAFO:
 RESPUESTA:"""
 
 _graph = None
+_graph_lock = threading.Lock()
 _llm_cache: dict = {}
+_llm_cache_lock = threading.Lock()
 
 
 def _load_graph():
     global _graph
     if _graph is None:
-        from rdflib import Graph
-        _graph = Graph()
-        _graph.parse(GRAPH_TTL, format="turtle")
+        with _graph_lock:
+            if _graph is None:
+                from rdflib import Graph
+                g = Graph()
+                g.parse(GRAPH_TTL, format="turtle")
+                _graph = g
     return _graph
 
 
@@ -240,17 +246,19 @@ def _ping_ollama(timeout: float = 3.0) -> bool:
 def _get_llm(provider: str):
     """Devuelve el LLM del proveedor indicado, con caché por proveedor."""
     if provider not in _llm_cache:
-        if provider == "ollama":
-            from langchain_ollama import ChatOllama
-            _llm_cache[provider] = ChatOllama(model=GRAPHRAG_LLM_MODEL, temperature=0)
-            print(f"[+] GraphRAG LLM: Ollama ({GRAPHRAG_LLM_MODEL})", flush=True)
-        elif provider == "groq":
-            from langchain_groq import ChatGroq
-            groq_key = os.environ.get("GROQ_API_KEY", "")
-            _llm_cache[provider] = ChatGroq(
-                model="llama-3.3-70b-versatile", temperature=0, api_key=groq_key
-            )
-            print("[+] GraphRAG LLM: Groq (llama-3.3-70b-versatile)", flush=True)
+        with _llm_cache_lock:
+            if provider not in _llm_cache:
+                if provider == "ollama":
+                    from langchain_ollama import ChatOllama
+                    _llm_cache[provider] = ChatOllama(model=GRAPHRAG_LLM_MODEL, temperature=0)
+                    print(f"[+] GraphRAG LLM: Ollama ({GRAPHRAG_LLM_MODEL})", flush=True)
+                elif provider == "groq":
+                    from langchain_groq import ChatGroq
+                    groq_key = os.environ.get("GROQ_API_KEY", "")
+                    _llm_cache[provider] = ChatGroq(
+                        model="llama-3.3-70b-versatile", temperature=0, api_key=groq_key
+                    )
+                    print("[+] GraphRAG LLM: Groq (llama-3.3-70b-versatile)", flush=True)
     return _llm_cache[provider]
 
 

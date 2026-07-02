@@ -4,6 +4,7 @@ import re
 import glob
 import sys
 import time
+import threading
 from tqdm import tqdm
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -33,6 +34,10 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # Umbral de distancia para descartar resultados semánticos irrelevantes.
 SIMILARITY_DISTANCE_MAX = 1.4
+
+_DEBUG_CONTEXT_PATH = os.path.join(BASE_DIR, "debug_context.txt")
+_DEBUG_CONTEXT_LOCK = threading.Lock()
+_RAG_SINGLETON_LOCK = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +78,9 @@ class RAGPipeline:
         self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
         self.vector_store = None
         self._llm, self._llm_fallback = self._build_llm_providers()
+        self._known_dates: Optional[List[str]] = None  # caché de os.walk
+        self._cohere_client = None                      # caché del cliente Cohere
+        self.last_retrieved_docs: List[Document] = []
 
     def _build_llm_providers(self):
         """Construye el LLM principal y el de respaldo en orden de preferencia.
@@ -276,6 +284,12 @@ class RAGPipeline:
                 split_regex_old = re.compile(r'(?=\n-\s*\d+\s*-\s*\n)')
                 segments = split_regex_old.split(full_text)
 
+        def _limpiar(txt):
+            return re.split(
+                r'\s*-{3,}\s*|\s+-\s+|\s*https?://|\s+Egiaztatzeko|\s+Verificaci|\s+Siendo\s+las\b',
+                txt.strip()
+            )[0].strip()
+
         chunk_index_in_doc = 0
         seg_search_start = 0
         for segment in segments:
@@ -315,11 +329,6 @@ class RAGPipeline:
             # Prioridad: cifras > texto unánime/asentimiento. Se evita guardar texto de
             # resultado "a secas" sin cifras (podría ser discurso); solo se acepta sin
             # cifras si es claramente un acuerdo unánime o por asentimiento.
-            def _limpiar(txt):
-                return re.split(
-                    r'\s*-{3,}\s*|\s+-\s+|\s*https?://|\s+Egiaztatzeko|\s+Verificaci|\s+Siendo\s+las\b',
-                    txt.strip()
-                )[0].strip()
 
             if resultado_num:
                 vote_result = f"{resultado_text} ({resultado_num})" if resultado_text else resultado_num
@@ -433,14 +442,16 @@ class RAGPipeline:
 
     def _get_temporal_filter(self, question: str) -> Optional[Dict[str, Any]]:
         """Analiza la pregunta para aplicar filtros de fecha inteligentes."""
-        # Recopilar fechas conocidas del sistema de archivos
-        known_dates = []
-        for root, dirs, files in os.walk(DATA_PATH):
-            for file in files:
-                if file.endswith(".pdf"):
-                    d = self._extract_date_from_filename(file)
-                    if d: known_dates.append(d)
-        known_dates = list(set(known_dates))
+        # Recopilar fechas conocidas del sistema de archivos (una sola vez por instancia)
+        if self._known_dates is None:
+            dates = []
+            for root, dirs, files in os.walk(DATA_PATH):
+                for file in files:
+                    if file.endswith(".pdf"):
+                        d = self._extract_date_from_filename(file)
+                        if d: dates.append(d)
+            self._known_dates = list(set(dates))
+        known_dates = self._known_dates
 
         # Prioridad 1: fecha exacta DD-MM-YYYY en la pregunta
         exact_match = re.search(r'\b(\d{2})-(\d{2})-(20\d{2})\b', question)
@@ -690,7 +701,9 @@ class RAGPipeline:
             return docs
         try:
             import cohere
-            co = cohere.Client(COHERE_API_KEY)
+            if self._cohere_client is None:
+                self._cohere_client = cohere.Client(COHERE_API_KEY)
+            co = self._cohere_client
 
             # Deduplicar por contenido antes de enviar a la API
             seen_content: set = set()
@@ -704,14 +717,10 @@ class RAGPipeline:
             # Limitar a 60 candidatos para no desperdiciar cuota de la API
             candidates = unique_docs[:60]
 
-            # Sanitizar caracteres no-ASCII que causan crash de encoding en Windows (CP1252)
-            def _safe_text(t: str) -> str:
-                return t.encode("cp1252", errors="replace").decode("cp1252")
-
             results = co.rerank(
                 model=COHERE_RERANK_MODEL,
-                query=_safe_text(question),
-                documents=[_safe_text(d.page_content) for d in candidates],
+                query=question,
+                documents=[d.page_content for d in candidates],
                 top_n=min(top_n, len(candidates))
             )
             reranked = []
@@ -834,8 +843,8 @@ class RAGPipeline:
                     else:
                         res = self.vector_store.similarity_search_with_score(v, k=k, filter=flt)
                         docs.extend([d for d, s in res if s < SIMILARITY_DISTANCE_MAX])
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"[!] ChromaDB búsqueda fallida: {type(e).__name__}: {e}", flush=True)
         return docs
 
     def _apply_party_filter(self, docs: List[Document], question: str,
@@ -917,8 +926,9 @@ class RAGPipeline:
 
     def _dump_debug_context(self, formatted_context: str) -> None:
         """Vuelca el contexto enviado al LLM para inspección técnica."""
-        with open("debug_context.txt", "w", encoding="utf-8") as f:
-            f.write(formatted_context)
+        with _DEBUG_CONTEXT_LOCK:
+            with open(_DEBUG_CONTEXT_PATH, "w", encoding="utf-8") as f:
+                f.write(formatted_context)
 
     # --- Punto de Entrada Principal ---
 
@@ -969,44 +979,6 @@ class RAGPipeline:
             "docs": docs,
             "question": question,
         }
-
-    def search_related(self, question: str, exclude_keys: set, k: int = 80) -> List[Dict[str, str]]:
-        """Búsqueda amplia para descubrir propuestas relacionadas no incluidas en los resultados principales."""
-        if not self.vector_store:
-            return []
-        docs = self.vector_store.similarity_search(question, k=k)
-        seen: set = set()
-        related = []
-        _SKIP = {"General / Introducción", "General", "GENERAL / INTRODUCCIÓN", "GENERAL"}
-        for d in docs:
-            date = d.metadata.get("date", "")
-            topic = d.metadata.get("topic", "")
-            if not topic or topic.strip() in _SKIP:
-                continue
-            t = topic.strip()
-            is_numbered = bool(re.match(r'^\d+', t))
-            has_keyword = bool(re.search(
-                r'[Pp]roposici[oó]n|[Pp]roposamen|PROPOSAMENA|MOZIO|MOC?I[OÓ]N|DICTAMEN|IRIZPENA',
-                t
-            ))
-            # Cabecera formal sin número: >55% de letras en mayúscula con longitud suficiente.
-            # Cubre partidos, organizaciones y cualquier cabecera de formato antiguo sin
-            # necesidad de hardcodear ningún nombre concreto.
-            letters = [c for c in t if c.isalpha()]
-            is_formal_header = (
-                len(letters) >= 10
-                and sum(1 for c in letters if c.isupper()) / len(letters) > 0.55
-            )
-            if not (is_numbered or has_keyword or is_formal_header):
-                continue
-            key = (date, t[:60])
-            if key in exclude_keys or key in seen:
-                continue
-            seen.add(key)
-            body = d.page_content.split('\n\n', 1)[-1] if '\n\n' in d.page_content else d.page_content
-            snippet = re.sub(r'\s+', ' ', body).strip()[:130]
-            related.append({"date": date, "topic": topic, "snippet": snippet})
-        return related
 
     def query(self, question: str) -> str:
         """Flujo principal de la CLI: Recuperación, Expansión y Generación con fuentes."""
@@ -1127,17 +1099,18 @@ _rag_instance: Optional[RAGPipeline] = None
 def get_rag() -> RAGPipeline:
     """Devuelve la instancia global del RAG (la crea la primera vez que se llama)."""
     global _rag_instance
-    if _rag_instance is None:
-        _rag_instance = RAGPipeline()
-        _rag_instance.vector_store = Chroma(
-            persist_directory=CHROMA_PATH,
-            embedding_function=_rag_instance.embeddings
-        )
-        # Precalentar el LLM para que el primer query no espere la carga del modelo
-        try:
-            _rag_instance.invoke_llm("ok")
-        except Exception:
-            pass
+    with _RAG_SINGLETON_LOCK:
+        if _rag_instance is None:
+            _rag_instance = RAGPipeline()
+            _rag_instance.vector_store = Chroma(
+                persist_directory=CHROMA_PATH,
+                embedding_function=_rag_instance.embeddings
+            )
+            # Precalentar el LLM para que el primer query no espere la carga del modelo
+            try:
+                _rag_instance.invoke_llm("ok")
+            except Exception:
+                pass
     return _rag_instance
 
 def main():
