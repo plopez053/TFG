@@ -1,31 +1,43 @@
-# Python cache and compiled files
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Virtual environments (if any are created locally)
+# Entornos virtuales
 .venv/
 venv/
 env/
 
-# OS files
+# OS
 Thumbs.db
 .DS_Store
 
-# IDE settings
+# IDE
 .vscode/
 .idea/
-
-# Temporary and log files
-*.log
-debug_context.txt
 
 # API keys — nunca subir al repo
 .env
 
-# Datos pesados — no subir al repo (regenerables localmente)
-# chroma_db: base de datos vectorial (~2.5 GB)
-# actas: PDFs de las actas (~251 MB)
+# Datos pesados — no caben en GitHub (transferir por USB/nube)
 chroma_db/
+chroma_db.rar
 actas/
+
+# Chainlit: archivos subidos por usuarios en el chat (caché temporal)
+.files/
+frontend/.files/
+*.sqlite
+
+# Logs y salidas de depuración
+*.log
+debug_context.txt
+frontend/debug_context.txt
+
+# Resultados de comparaciones (opcionales, regenerables)
+compare_output*.txt
+compare_nar*.txt
+compare_q*.txt
+graphrag/graphrag/compare_output*.txt
+graphrag/graphrag/compare_final*.txt

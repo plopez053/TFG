@@ -99,6 +99,15 @@ REGLAS obligatorias:
 - Para filtrar por resultado: ?prop bo:tieneResultado bo:Rechazada
 - Para filtrar por grupo: ?prop bo:presentadaPor br:grupo_pp
 - Para el label del grupo: ?grupo rdfs:label ?nombreGrupo
+- bo:anio se almacena como xsd:integer. Para filtrar por año usa FILTER(?anio = 2023) con entero sin comillas.
+  CORRECTO:   FILTER(?anio = 2023)
+  INCORRECTO: FILTER(?anio = "2023") ← cadena de texto, no coincide
+  INCORRECTO: FILTER(?anio = "2023"^^xsd:int) ← tipo incorrecto (es xsd:integer, no xsd:int)
+- Si filtras por un grupo concreto Y quieres su label, SIEMPRE enlaza ?grupo como variable primero:
+  CORRECTO:   ?prop bo:presentadaPor ?grupo . ?grupo rdfs:label ?nombreGrupo .
+              FILTER(?grupo = br:grupo_eh_bildu)
+  INCORRECTO: ?prop bo:presentadaPor br:grupo_eh_bildu . ?grupo rdfs:label ?nombreGrupo .
+              (aquí ?grupo queda desligado → error o 0 resultados)
 - Para rankings usa COUNT + GROUP BY + ORDER BY DESC + LIMIT 50.
 - EXCLUYE br:grupo_desconocido de los rankings a menos que se pida explícitamente.
 - NUNCA uses bo:votoTexto para filtrar resultados, es un literal de texto libre.
@@ -164,6 +173,19 @@ EJEMPLO — doble conteo (total de un tema + cuántas aprobadas):
           bo:trataSobre br:t_medioambiente .
     OPTIONAL {{ ?prop bo:tieneResultado bo:Aprobada . BIND(?prop AS ?aprobada) }}
   }}
+
+EJEMPLO — total presentadas y aprobadas por un grupo en un año concreto:
+  SELECT ?nombreGrupo (COUNT(?prop) AS ?total) (COUNT(?aprobada) AS ?aprobadas)
+  WHERE {{
+    ?prop a bo:Proposicion ;
+          bo:presentadaPor ?grupo ;
+          bo:anio ?anio .
+    ?grupo rdfs:label ?nombreGrupo .
+    FILTER(?grupo = br:grupo_eh_bildu)
+    FILTER(?anio = 2023)
+    OPTIONAL {{ ?prop bo:tieneResultado bo:Aprobada . BIND(?prop AS ?aprobada) }}
+  }}
+  GROUP BY ?nombreGrupo
 """
 
 SPARQL_PROMPT = """Eres experto en SPARQL. Genera UNA consulta SPARQL válida que responda la pregunta.
@@ -182,6 +204,10 @@ Basándote ÚNICAMENTE en los datos del grafo que te proporciono, genera una res
 - Contextual: si hay datos temporales, describe la evolución; si hay varios grupos, compáralos
 - Completa: menciona los casos más destacados y cualquier patrón interesante
 
+REGLA CRÍTICA: si los datos están vacíos ("sin resultados en el grafo"), responde honestamente que
+no se encontraron datos para esa consulta. NUNCA inventes cifras hipotéticas ni pongas ejemplos
+ilustrativos: cualquier cifra que no aparezca en los datos es una alucinación.
+
 PREGUNTA: {pregunta}
 
 DATOS DEL GRAFO:
@@ -190,6 +216,7 @@ DATOS DEL GRAFO:
 RESPUESTA:"""
 
 _graph = None
+_llm_cache: dict = {}
 
 
 def _load_graph():
@@ -201,9 +228,52 @@ def _load_graph():
     return _graph
 
 
-def _get_llm():
-    from langchain_ollama import ChatOllama
-    return ChatOllama(model=GRAPHRAG_LLM_MODEL, temperature=0)
+def _ping_ollama(timeout: float = 3.0) -> bool:
+    """True si Ollama responde en localhost:11434."""
+    try:
+        import httpx
+        return httpx.get("http://localhost:11434/api/tags", timeout=timeout).status_code == 200
+    except Exception:
+        return False
+
+
+def _get_llm(provider: str):
+    """Devuelve el LLM del proveedor indicado, con caché por proveedor."""
+    if provider not in _llm_cache:
+        if provider == "ollama":
+            from langchain_ollama import ChatOllama
+            _llm_cache[provider] = ChatOllama(model=GRAPHRAG_LLM_MODEL, temperature=0)
+            print(f"[+] GraphRAG LLM: Ollama ({GRAPHRAG_LLM_MODEL})", flush=True)
+        elif provider == "groq":
+            from langchain_groq import ChatGroq
+            groq_key = os.environ.get("GROQ_API_KEY", "")
+            _llm_cache[provider] = ChatGroq(
+                model="llama-3.3-70b-versatile", temperature=0, api_key=groq_key
+            )
+            print("[+] GraphRAG LLM: Groq (llama-3.3-70b-versatile)", flush=True)
+    return _llm_cache[provider]
+
+
+def _llm_invoke(prompt: str) -> str:
+    """Invoca el LLM con fallback Ollama → Groq. Registra errores en terminal."""
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+
+    if _ping_ollama():
+        try:
+            return _get_llm("ollama").invoke(prompt).content
+        except Exception as e:
+            print(f"\n[!] GraphRAG Ollama falló — {type(e).__name__}: {e}", flush=True)
+    else:
+        print("[!] GraphRAG: Ollama no disponible en localhost:11434", flush=True)
+
+    if groq_key:
+        try:
+            print("[~] GraphRAG usando Groq como fallback...", flush=True)
+            return _get_llm("groq").invoke(prompt).content
+        except Exception as e:
+            print(f"[!] GraphRAG Groq también falló — {type(e).__name__}: {e}", flush=True)
+
+    raise RuntimeError("GraphRAG: ningún LLM disponible (Ollama y Groq fallaron)")
 
 
 def _clean_sparql(txt: str) -> str:
@@ -213,12 +283,10 @@ def _clean_sparql(txt: str) -> str:
 
 
 def graph_answer(pregunta: str, verbose=True):
-    llm = _get_llm()
     g = _load_graph()
 
     # 1. Generar SPARQL
-    sparql = _clean_sparql(llm.invoke(
-        SPARQL_PROMPT.format(schema=SCHEMA, pregunta=pregunta)).content)
+    sparql = _clean_sparql(_llm_invoke(SPARQL_PROMPT.format(schema=SCHEMA, pregunta=pregunta)))
     if verbose:
         print(f"\n[SPARQL]\n{sparql}\n")
 
@@ -226,8 +294,9 @@ def graph_answer(pregunta: str, verbose=True):
     try:
         rows = [{str(v): str(row[v]) for v in row.labels} for row in g.query(sparql)]
     except Exception as e:
-        fix = llm.invoke(
-            f"Esta consulta SPARQL dio error: {e}\nCorrígela. Devuelve SOLO SPARQL.\n\n{sparql}").content
+        fix = _llm_invoke(
+            f"Esta consulta SPARQL dio error: {e}\nCorrígela. Devuelve SOLO SPARQL.\n\n{sparql}"
+        )
         sparql = _clean_sparql(fix)
         if verbose:
             print(f"[SPARQL corregido]\n{sparql}\n")
@@ -238,9 +307,7 @@ def graph_answer(pregunta: str, verbose=True):
         print(f"[FILAS] {len(rows)}")
 
     # 3. Respuesta narrativa basada solo en los datos del grafo
-    answer = llm.invoke(
-        ANSWER_PROMPT.format(pregunta=pregunta, filas=filas)
-    ).content
+    answer = _llm_invoke(ANSWER_PROMPT.format(pregunta=pregunta, filas=filas))
     return {"sparql": sparql, "rows": rows, "answer": answer}
 
 

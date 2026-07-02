@@ -26,13 +26,25 @@ DATA_PATH = _ACTAS_DENTRO if os.path.isdir(_ACTAS_DENTRO) else _ACTAS_FUERA
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
 EMBEDDING_MODEL = "nomic-embed-text"
 LLM_MODEL_LOCAL = "gemma3:4b"
-LLM_MODEL_GROQ = "llama-3.3-70b-versatile"
+LLM_MODEL_GROQ = "openai/gpt-oss-120b"
 COHERE_RERANK_MODEL = "rerank-multilingual-v3.0"
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # Umbral de distancia para descartar resultados semánticos irrelevantes.
 SIMILARITY_DISTANCE_MAX = 1.4
+
+
+# ---------------------------------------------------------------------------
+# Utilidades de disponibilidad de proveedores
+# ---------------------------------------------------------------------------
+def _ping_ollama(timeout: float = 3.0) -> bool:
+    """True si Ollama está activo en localhost:11434."""
+    try:
+        import httpx
+        return httpx.get("http://localhost:11434/api/tags", timeout=timeout).status_code == 200
+    except Exception:
+        return False
 # Prompt de MultiQuery: genera variantes de la pregunta para ampliar el recall.
 MULTIQUERY_PROMPT = "Genera 3 variantes de: '{question}' centradas en el sujeto principal. Una por línea:"
 # Relevancia mínima del reranker para considerar que hay algo que responder.
@@ -53,15 +65,85 @@ def _date_sort_key(doc: Document) -> Tuple[int, int, int]:
 class RAGPipeline:
     def __init__(self):
         """Inicializa el motor RAG con el modelo de embeddings configurado."""
+        self._ollama_ok = _ping_ollama()
+        if not self._ollama_ok:
+            print("[!] ADVERTENCIA: Ollama no responde en localhost:11434 "
+                  "— embeddings y LLM local no disponibles", flush=True)
+
         self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
         self.vector_store = None
+        self._llm, self._llm_fallback = self._build_llm_providers()
+
+    def _build_llm_providers(self):
+        """Construye el LLM principal y el de respaldo en orden de preferencia.
+
+        Orden: Groq (rápido, sin GPU) → Ollama local.
+        Registra en terminal qué proveedor queda activo y cuál es el fallback.
+        """
+        providers = []
+
         if GROQ_API_KEY:
-            from langchain_groq import ChatGroq
-            self.llm = ChatGroq(model=LLM_MODEL_GROQ, temperature=0, api_key=GROQ_API_KEY)
-            print(f"[+] LLM: Groq ({LLM_MODEL_GROQ}) — respuestas rápidas via API")
+            try:
+                from langchain_groq import ChatGroq
+                llm = ChatGroq(model=LLM_MODEL_GROQ, temperature=0, api_key=GROQ_API_KEY)
+                providers.append((f"Groq/{LLM_MODEL_GROQ}", llm))
+                print(f"[+] LLM disponible: Groq ({LLM_MODEL_GROQ})", flush=True)
+            except Exception as e:
+                print(f"[!] Groq no inicializado: {e}", flush=True)
         else:
-            self.llm = ChatOllama(model=LLM_MODEL_LOCAL, temperature=0, num_ctx=8192)
-            print(f"[+] LLM: Ollama local ({LLM_MODEL_LOCAL})")
+            print("[!] GROQ_API_KEY no configurada — Groq no disponible", flush=True)
+
+        if self._ollama_ok:
+            try:
+                llm_local = ChatOllama(model=LLM_MODEL_LOCAL, temperature=0, num_ctx=8192)
+                providers.append((f"Ollama/{LLM_MODEL_LOCAL}", llm_local))
+                print(f"[+] LLM disponible: Ollama local ({LLM_MODEL_LOCAL})", flush=True)
+            except Exception as e:
+                print(f"[!] Ollama LLM no inicializado: {e}", flush=True)
+
+        if not providers:
+            print("[FATAL] Sin proveedor LLM: configura GROQ_API_KEY "
+                  "o arranca Ollama.", flush=True)
+            raise RuntimeError("Ningún proveedor LLM disponible")
+
+        primary_name, primary = providers[0]
+        fallback = None
+        if len(providers) > 1:
+            fallback_name, fallback = providers[1]
+            print(f"[*] LLM principal: {primary_name} | Fallback: {fallback_name}", flush=True)
+        else:
+            print(f"[*] LLM principal: {primary_name} | Sin fallback", flush=True)
+
+        return primary, fallback
+
+    # --- Invocación con fallback automático ---
+
+    def invoke_llm(self, prompt):
+        """Invoca el LLM principal; si falla, registra el error y usa el fallback."""
+        try:
+            return self._llm.invoke(prompt)
+        except Exception as e:
+            if self._llm_fallback:
+                print(f"\n[!] LLM principal falló — {type(e).__name__}: {e}", flush=True)
+                print(f"[~] Usando LLM de respaldo...", flush=True)
+                return self._llm_fallback.invoke(prompt)
+            raise
+
+    async def ainvoke_llm(self, prompt):
+        """Versión async de invoke_llm con fallback automático."""
+        try:
+            return await self._llm.ainvoke(prompt)
+        except Exception as e:
+            if self._llm_fallback:
+                print(f"\n[!] LLM principal falló (async) — {type(e).__name__}: {e}", flush=True)
+                print(f"[~] Usando LLM de respaldo (async)...", flush=True)
+                return await self._llm_fallback.ainvoke(prompt)
+            raise
+
+    @property
+    def llm(self):
+        """LLM principal (para compatibilidad con código externo)."""
+        return self._llm
 
     # --- Métodos de Utilidad ---
 
@@ -534,9 +616,9 @@ class RAGPipeline:
                     # Segundo tema del mismo año solo si es casi tan bueno
                     diverse_topics.append(t)
             
-            # Para preguntas multi-año, subimos el límite a 8 temas
-            # El filtro de 12.000 chars impide que el contexto se desborde
-            target_topics = diverse_topics[:8]
+            # Para preguntas multi-año, subimos el límite a 15 temas
+            # El filtro de 34.000 chars en retrieve_context impide que el contexto se desborde
+            target_topics = diverse_topics[:15]
 
         docs, final_seen = [], set()
         if not target_topics: return initial_docs[:15], []
@@ -622,10 +704,14 @@ class RAGPipeline:
             # Limitar a 60 candidatos para no desperdiciar cuota de la API
             candidates = unique_docs[:60]
 
+            # Sanitizar caracteres no-ASCII que causan crash de encoding en Windows (CP1252)
+            def _safe_text(t: str) -> str:
+                return t.encode("cp1252", errors="replace").decode("cp1252")
+
             results = co.rerank(
                 model=COHERE_RERANK_MODEL,
-                query=question,
-                documents=[d.page_content for d in candidates],
+                query=_safe_text(question),
+                documents=[_safe_text(d.page_content) for d in candidates],
                 top_n=min(top_n, len(candidates))
             )
             reranked = []
@@ -635,7 +721,7 @@ class RAGPipeline:
                 # un umbral mínimo y responder "no encontrado" a preguntas sin relación.
                 doc.metadata["_rerank_score"] = float(r.relevance_score)
                 reranked.append(doc)
-            print(f"[*] Cohere reranking: {len(candidates)} candidatos → top {len(reranked)}")
+            print(f"[*] Cohere reranking: {len(candidates)} candidatos -> top {len(reranked)}")
             return reranked
         except Exception as e:
             print(f"[!] Cohere reranking fallido, usando ChromaDB directo: {e}")
@@ -722,9 +808,10 @@ class RAGPipeline:
     def _query_variations(self, question: str) -> List[str]:
         """MultiQuery: genera variantes de búsqueda para ampliar el recall (más la original)."""
         try:
-            vars_txt = self.llm.invoke(MULTIQUERY_PROMPT.format(question=question)).content
+            vars_txt = self.invoke_llm(MULTIQUERY_PROMPT.format(question=question)).content
             variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
-        except Exception:
+        except Exception as e:
+            print(f"[!] MultiQuery falló, usando pregunta original: {e}", flush=True)
             variations = [question]
         return variations[:6]
 
@@ -807,7 +894,7 @@ class RAGPipeline:
         docs = self._initial_search(variations, valid_dates, exact_date, k)
         docs = self._apply_party_filter(docs, question)
         if COHERE_API_KEY:
-            docs = self._rerank_with_cohere(docs, question, top_n=30)
+            docs = self._rerank_with_cohere(docs, question, top_n=50)
         return docs, exact_date
 
     def _select_final_docs(self, candidates: List[Document], question: str,
@@ -995,7 +1082,9 @@ class RAGPipeline:
         PREGUNTA: {question}
         CRÓNICA:"""
         
-        chain = ChatPromptTemplate.from_template(sys_prompt) | self.llm | StrOutputParser()
+        prompt_msgs = ChatPromptTemplate.from_template(sys_prompt).format_messages(
+            context=formatted_context, question=question
+        )
         print(f"[*] Generando crónica detallada (Fuerza Bruta de Contexto)...")
 
         # Reintento automático: en máquinas con poca RAM ollama puede tardar en recargar
@@ -1004,11 +1093,12 @@ class RAGPipeline:
         response = None
         for attempt in range(3):
             try:
-                response = chain.invoke({"context": formatted_context, "question": question})
+                resp = self.invoke_llm(prompt_msgs)
+                response = resp.content if hasattr(resp, "content") else str(resp)
                 break
             except Exception as e:
                 if attempt < 2 and any(msg in str(e) for msg in ("Connection refused", "RemoteProtocolError", "Server disconnected", "ConnectError")):
-                    print(f"[!] Ollama cargando modelo, reintentando ({attempt+2}/3)...")
+                    print(f"[!] LLM cargando modelo, reintentando ({attempt+2}/3)...", flush=True)
                     time.sleep(10)
                 else:
                     raise
@@ -1045,7 +1135,7 @@ def get_rag() -> RAGPipeline:
         )
         # Precalentar el LLM para que el primer query no espere la carga del modelo
         try:
-            _rag_instance.llm.invoke("ok")
+            _rag_instance.invoke_llm("ok")
         except Exception:
             pass
     return _rag_instance

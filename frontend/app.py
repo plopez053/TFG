@@ -323,25 +323,47 @@ async def handle_graphrag(question: str):
 
 # ---------------------------------------------------------------------------
 # Preguntas de ejemplo que aparecen al abrir el chat (Starters)
+# Diferenciadas por perfil: RAG Vectorial vs GraphRAG (SPARQL)
 # ---------------------------------------------------------------------------
 @cl.set_starters
-async def set_starters():
+async def set_starters(chat_profile: str):
+    if chat_profile == "GraphRAG (SPARQL)":
+        return [
+            cl.Starter(
+                label="Ranking por grupo político",
+                message="¿Qué grupo político ha presentado más proposiciones en el Pleno de Bilbao?",
+            ),
+            cl.Starter(
+                label="Propuestas aprobadas por año",
+                message="¿Cuántas proposiciones se aprobaron cada año entre 2015 y 2024?",
+            ),
+            cl.Starter(
+                label="Temas más debatidos",
+                message="¿Cuáles son los 10 temas sobre los que más proposiciones se han presentado en el Pleno?",
+            ),
+            cl.Starter(
+                label="Actividad de un grupo",
+                message="¿Cuántas proposiciones presentó EH Bildu en 2023 y cuántas se aprobaron?",
+            ),
+        ]
+    # RAG Vectorial: preguntas abiertas que aprovechan la búsqueda semántica y
+    # el resumen cronológico de debates con argumentos y contexto textual.
     return [
         cl.Starter(
-            label="Tasa turística",
-            message="¿Qué debates sobre la tasa turística ha habido en el Pleno de Bilbao a lo largo de los años?",
+            label="Turismo e impacto en la ciudad",
+            message="¿Qué debates ha habido en el Pleno de Bilbao sobre el turismo, su regulación y su impacto en la ciudad?",
         ),
         cl.Starter(
-            label="Vivienda social",
-            message="¿Qué propuestas sobre vivienda social se han debatido en el Pleno de Bilbao?",
+            label="Argumentos sobre vivienda",
+            message="¿Qué argumentos han dado los distintos grupos políticos en los debates sobre vivienda social?",
         ),
         cl.Starter(
-            label="Medio ambiente",
-            message="¿Qué acuerdos sobre medio ambiente y sostenibilidad se han tomado en los plenos?",
+            label="Movilidad sostenible",
+            message="¿Qué propuestas y acuerdos sobre movilidad sostenible y transporte público se han debatido en los plenos?",
         ),
         cl.Starter(
-            label="Presupuesto 2024",
-            message="¿Qué se debatió sobre el presupuesto municipal de Bilbao en 2024?",
+            label="Debate presupuesto 2024",
+            message="¿Qué se debatió y argumentó en torno al presupuesto municipal de Bilbao en 2024?",
         ),
     ]
 
@@ -413,6 +435,9 @@ REGLAS CRUCIALES:
     si esa idea no aparece en el acta).
   - Resultado: indica el resultado e INCLUYE LAS CIFRAS DE LA VOTACION si aparecen en el texto
     (ej: "Aprobada. Votos a favor: 29, en contra: 0"). Si no hay cifras, escribe solo el resultado textual.
+  - COHERENCIA VOTOS: si los votos en contra son 0 o no aparecen, el resultado NO puede ser "rechazada".
+    Un bloque de 29 votos a favor sin votos en contra = Aprobada. No mezcles el resultado de una enmienda
+    con los votos de la votación principal.
 - Ordena de mas antiguo a mas reciente.
 - Termina con un parrafo de CONCLUSION que sintetice la evolucion del tema a lo largo de los anos:
   como han cambiado las propuestas, que grupos han sido mas activos y que tendencia se observa.
@@ -449,7 +474,7 @@ CRÓNICA EN ESPAÑOL:"""
     # normales a la ruta /acta/... (abren el PDF en una pestaña del navegador en la
     # página correcta), en lugar de elementos cl.Pdf "side" que se abrían solos.
     async with cl.Step(name="Redactando la crónica"):
-        respuesta = await rag.llm.ainvoke(prompt_value)
+        respuesta = await rag.ainvoke_llm(prompt_value)
         answer_text = respuesta.content if hasattr(respuesta, "content") else str(respuesta)
         # Eliminar eco del prompt (PREGUNTA:/RESPUESTA: que el LLM a veces repite al final)
         answer_text = re.sub(r'\n+PREGUNTA\s*:.*', '', answer_text, flags=re.DOTALL | re.IGNORECASE)
