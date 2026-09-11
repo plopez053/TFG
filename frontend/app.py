@@ -4,7 +4,7 @@ import asyncio
 import re
 import glob
 import urllib.parse
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 
 # Fix Python 3.14 + sniffio incompatibility: current_task() returns None in some
 # ASGI contexts even though a loop is running, causing anyio.NoEventLoopError.
@@ -29,8 +29,10 @@ import chainlit as cl
 from chainlit.server import app as _fastapi_app
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
-from langchain_core.prompts import ChatPromptTemplate
-from backend.rag import get_rag, DATA_PATH
+from backend.rag import (
+    get_rag, DATA_PATH, strip_accents,
+    resolve_pdf_path, _palabras_clave, _STOP_PROCEDIMENTAL, build_sources_data,
+)
 from graphrag.graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
 
 # ---------------------------------------------------------------------------
@@ -69,148 +71,6 @@ _load_rdf_graph()
 print("[+] Grafo RDF listo.")
 
 
-def resolve_pdf_path(source: str) -> str:
-    """Convierte rutas Windows de la BD al path local equivalente."""
-    normalized = source.replace("\\", "/")
-    parts = normalized.split("/")
-    # Buscar el año (carpeta numérica de 4 dígitos) y el nombre del archivo
-    for i, part in enumerate(parts):
-        if re.match(r"^\d{4}$", part) and i + 1 < len(parts):
-            year, filename = part, parts[i + 1]
-            local_path = os.path.join(DATA_PATH, year, filename)
-            if os.path.exists(local_path):
-                return local_path
-    # Si ya es una ruta local válida, devolverla tal cual
-    return source
-
-
-def _palabras_clave(texto: str) -> set:
-    """Palabras significativas de un texto (≥4 letras, sin acentos ni palabras
-    estructurales). Sirve para emparejar el bloque de la respuesta con su fuente
-    comparando el nombre del grupo político, no solo la fecha."""
-    texto = texto.lower()
-    for a, b in [("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ñ", "n")]:
-        texto = texto.replace(a, b)
-    stop = {
-        "grupo", "municipal", "politico", "proposicion", "proposamena", "presenta",
-        "cuya", "parte", "dispositiva", "plantea", "adopcion", "acuerdo", "plenario",
-        "propuesta", "pleno", "ayuntamiento", "bilbao", "equipo", "gobierno",
-        "resultado", "argumentos", "fuente", "instar", "insta",
-    }
-    return {w for w in re.findall(r"[a-z]{4,}", texto) if w not in stop}
-
-
-# Vocabulario procedimental común a casi todos los debates/votaciones: se excluye
-# al medir relevancia para que solo cuenten las palabras de ASUNTO (vivienda, IBI...).
-_STOP_PROCEDIMENTAL = {
-    # Trámite y votación (común a todos los debates)
-    "enmienda", "enmiendas", "modificacion", "adicion", "votos", "favor",
-    "contra", "abstenciones", "emitidos", "decae", "decaen", "acepta",
-    "aceptada", "rechaza", "rechazada", "queda", "aprobada", "proposicion",
-    "asunto", "orador", "sesion", "punto", "secretario", "alcalde", "señor",
-    "senor", "senora", "señora", "votacion", "vota", "presentada", "formulada",
-    "tenor", "literal", "siguiente", "udalbatzak", "udalbatzarreko",
-    "idazkaritza", "nagusia", "secretaria",
-    # Relleno (no aportan al asunto)
-    "para", "sobre", "como", "este", "esta", "esto", "unas", "unos", "mas",
-    "sino", "donde", "cuando", "entre", "desde", "hasta", "tambien", "todo",
-    "toda", "todos", "todas", "cada", "otro", "otra", "otros", "otras",
-    "puede", "deben", "debe", "ante", "bien", "muy",
-    # Nombres de grupos/partidos (aparecen en todas sus proposiciones, sea cual sea el tema)
-    "bildu", "elkarrekin", "podemos", "ezker", "anitza", "equo", "berdeak",
-    "partido", "popular", "socialista", "socialistas", "vascos",
-}
-
-
-def build_sources_data(retrieved_docs, answer_text=None):
-    """Construye los datos de las fuentes (una por acta/fecha citada).
-
-    Usa el nº de página del metadato `page` (lo añade el indexador), así que es
-    instantáneo. Para cada acta calcula el RANGO de páginas del debate (de la
-    primera a la última página de sus fragmentos) para que el usuario localice
-    rápido la propuesta en el PDF. Devuelve dicts serializables (sin objetos de
-    Chainlit) para construir los elementos en el hilo async.
-    """
-    # Agrupar por (fecha, topic): una entrada por DEBATE, no por acta. Un mismo
-    # pleno puede tener muchos debates (12 en el acta de 30-09-2021); agrupar por
-    # acta fusionaba todos en una sola fuente con un rango de páginas absurdo
-    # (1-284) y el voto del primer debate, no el preguntado. Por debate, el rango
-    # y el vote_result salen ajustados al tema correcto.
-    por_grupo = OrderedDict()
-    for doc in retrieved_docs:
-        pdf_path = resolve_pdf_path(doc.metadata.get("source", ""))
-        if not pdf_path or not os.path.exists(pdf_path):
-            continue
-        date = doc.metadata.get("date", "Fecha desconocida")
-        topic = doc.metadata.get("topic", "")
-        # La sección de portada/índice del acta no es un debate citable y abarca
-        # decenas de páginas: la excluimos como fuente.
-        if topic in ("", "General", "General / Introducción"):
-            continue
-        key = (date, topic, pdf_path)
-        entry = por_grupo.setdefault(key, {"pdf_path": pdf_path, "date": date, "docs": [], "topics": []})
-        entry["docs"].append(doc)
-        if topic and topic not in entry["topics"]:
-            entry["topics"].append(topic)
-
-    sources_data = []
-    for (date, _topic_key, pdf_path), info in por_grupo.items():
-        docs_d = info["docs"]
-        paginas = [d.metadata.get("page") for d in docs_d if d.metadata.get("page")]
-        p_min = min(paginas) if paginas else None
-        p_max = max(paginas) if paginas else None
-        if p_min is not None:
-            rango = f"Pág. {p_min}" if p_min == p_max else f"Págs. {p_min}-{p_max}"
-        else:
-            rango = None
-
-        year = os.path.basename(os.path.dirname(pdf_path))
-        fname = os.path.basename(pdf_path)
-        anchor = f"#page={p_min}" if p_min else ""
-        url = f"/acta/{year}/{urllib.parse.quote(fname)}{anchor}"
-
-        pdf_name = f"Ver PDF - Acta {date}"
-        if rango:
-            pdf_name += f" ({rango})"
-
-        topic = info["topics"][0] if info["topics"] else "Tema general"
-        short_topic = topic[:80] + "..." if len(topic) > 80 else topic
-        vote_result = next(
-            (d.metadata.get("vote_result") for d in docs_d if d.metadata.get("vote_result")), None
-        )
-        # Palabras de ASUNTO del debate (de su contenido), para medir relevancia
-        # frente a la respuesta. Sin esto, una pregunta sobre una fecha concreta
-        # con muchos debates listaría TODOS como fuente (también los no tratados).
-        contenido = " ".join(d.page_content for d in docs_d)
-        content_kw = _palabras_clave(contenido) - _STOP_PROCEDIMENTAL
-
-        sources_data.append({
-            "date": date,
-            "topic": topic,
-            "pdf_path": pdf_path,
-            "url": url,
-            "page": p_min or 1,
-            "short_topic": short_topic,
-            "pdf_name": pdf_name,
-            "vote_result": vote_result,
-            "content_kw": content_kw,
-        })
-
-    # Filtro de relevancia SOLO cuando todos los debates son de la misma fecha
-    # (pregunta de un pleno concreto): ahí el buscador trae muchos debates del día
-    # y hay que quedarse con los que la respuesta trata (≥4 palabras de asunto
-    # compartidas, ya sin trámite, relleno ni nombres de grupo). En multisesión cada
-    # fecha es un debate distinto y el emparejamiento por fecha ya lo resuelve, así
-    # que no se filtra para no descartar plenos legítimamente citados.
-    fechas_distintas = {s["date"] for s in sources_data}
-    if answer_text and len(fechas_distintas) == 1:
-        ans_kw = _palabras_clave(answer_text) - _STOP_PROCEDIMENTAL
-        relevantes = [s for s in sources_data if len(s["content_kw"] & ans_kw) >= 4]
-        if relevantes:  # nunca dejar la respuesta sin ninguna fuente
-            sources_data = relevantes
-
-    return sources_data
-
 
 # ---------------------------------------------------------------------------
 # Perfiles de chat: RAG Vectorial vs GraphRAG
@@ -235,11 +95,10 @@ async def set_chat_profiles():
     ]
 
 
-# ---------------------------------------------------------------------------
-# Helpers del modo GraphRAG
-# ---------------------------------------------------------------------------
+# --- Helpers del modo GraphRAG ---
+
+# ruta del PDF del acta de una fecha 'DD-MM-YYYY', o "" si no se encuentra
 def _find_pdf_by_date(fecha: str) -> str:
-    """Dado 'DD-MM-YYYY' devuelve la ruta al PDF del acta (si existe)."""
     parts = fecha.split("-")
     if len(parts) != 3:
         return ""
@@ -249,12 +108,8 @@ def _find_pdf_by_date(fecha: str) -> str:
     return matches[0] if matches else ""
 
 
+# extrae fechas únicas de las filas SPARQL y genera links a los PDFs
 def _fuentes_graphrag(rows: list) -> str:
-    """Extrae fechas únicas de las filas SPARQL y genera links a los PDFs.
-
-    Busca en cada fila las claves candidatas a fecha (DD-MM-YYYY).
-    Para preguntas de agregación (solo ?anio, ?n) no hay fechas → devuelve "".
-    """
     DATE_KEYS = ("fecha", "fechaProp", "fechaPleno", "date")
     TITLE_KEYS = ("titulo", "tituloProp", "tituloTopic", "label")
 
@@ -288,9 +143,7 @@ def _fuentes_graphrag(rows: list) -> str:
     return "\n\n---\n**Actas del grafo consultadas:**\n" + "\n".join(links)
 
 
-# ---------------------------------------------------------------------------
-# Handler del modo GraphRAG
-# ---------------------------------------------------------------------------
+# genera la SPARQL, la ejecuta y devuelve la respuesta narrada + fuentes (modo GraphRAG)
 async def handle_graphrag(question: str):
     async with cl.Step(name="Generando consulta SPARQL") as step:
         try:
@@ -400,7 +253,6 @@ async def on_message(message: cl.Message):
 
     formatted_context = ctx["context"]
     is_multi_session = ctx["is_multi_session"]
-    unique_dates = ctx["unique_dates"]
     retrieved_docs = ctx["docs"]
 
     if not formatted_context.strip():
@@ -409,66 +261,10 @@ async def on_message(message: cl.Message):
         ).send()
         return
 
-    # Construir el prompt según el tipo de pregunta
-    if is_multi_session:
-        dates_found = ', '.join(sorted(unique_dates))
-        sys_prompt = f"""Eres el Cronista Oficial de Bilbao, experto en historia municipal. RESPONDE SIEMPRE EN ESPAÑOL.
-
-INSTRUCCION: Se te proporcionan fragmentos de MULTIPLES plenos del Ayuntamiento de Bilbao.
-Las fechas de los plenos en este contexto son: {dates_found}
-Responde a la pregunta haciendo un RESUMEN CRONOLOGICO de los debates y propuestas encontrados.
-
-REGLAS CRUCIALES:
-- IDIOMA: responde ÚNICAMENTE en español castellano. Está PROHIBIDO usar inglés, ni una sola frase.
-- USA SOLO la informacion que esta explicitamente en las actas proporcionadas abajo.
-- NUNCA inventes fechas, cifras, nombres, resultados o detalles que no esten en el texto.
-- Si no sabes el resultado de una votacion, escribe: [Sin resultado en acta]
-- SIEMPRE escribe las fechas en formato DD-MM-YYYY exacto tal como aparecen en el contexto (ej: 26-10-2010), nunca solo el año.
-- Para cada pleno relevante desarrolla un parrafo con este formato:
-  **[fecha DD-MM-YYYY] — [grupo proponente]**
-  - Propuesta: explica con DETALLE que pedia exactamente (los puntos concretos, cifras y medidas).
-  - Argumentos: si el acta recoge la justificacion o los argumentos del debate, resumelos CON
-    TUS PROPIAS PALABRAS (no hace falta citar textualmente; parafrasear o interpretar fielmente
-    lo que dice el texto esta bien). PERO si el acta NO dice nada sobre el porque de la propuesta,
-    OMITE esta linea por completo: NO te inventes una justificacion generica que no este respaldada
-    por el texto (prohibido rellenar con frases como "para satisfacer la demanda de los ciudadanos"
-    si esa idea no aparece en el acta).
-  - Resultado: indica el resultado e INCLUYE LAS CIFRAS DE LA VOTACION si aparecen en el texto
-    (ej: "Aprobada. Votos a favor: 29, en contra: 0"). Si no hay cifras, escribe solo el resultado textual.
-  - COHERENCIA VOTOS: si los votos en contra son 0 o no aparecen, el resultado NO puede ser "rechazada".
-    Un bloque de 29 votos a favor sin votos en contra = Aprobada. No mezcles el resultado de una enmienda
-    con los votos de la votación principal.
-- Ordena de mas antiguo a mas reciente.
-- Termina con un parrafo de CONCLUSION que sintetice la evolucion del tema a lo largo de los anos:
-  como han cambiado las propuestas, que grupos han sido mas activos y que tendencia se observa.
-  Esta conclusion es la UNICA parte donde puedes hacer una sintesis propia; el resto debe ser
-  estrictamente fiel al texto.
-
-ACTAS:
-{{context}}
-
-PREGUNTA: {{question}}
-RESUMEN CRONOLOGICO DETALLADO EN ESPAÑOL:"""
-    else:
-        sys_prompt = """Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno. RESPONDE SIEMPRE EN ESPAÑOL.
-
-INSTRUCCIÓN: Basándote en el ACTA de abajo, responde a: {question}
-
-REGLAS:
-- IDIOMA: responde ÚNICAMENTE en español castellano. Prohibido usar inglés.
-- Empieza directamente con: "En la sesión del Pleno de Bilbao..."
-- Detalla los puntos de la propuesta (qué se pide exactamente).
-- Indica el resultado final de la votación si consta.
-
-ACTA:
-{context}
-
-PREGUNTA: {question}
-CRÓNICA EN ESPAÑOL:"""
-
-    prompt_value = ChatPromptTemplate.from_template(sys_prompt).format_messages(
-        context=formatted_context, question=question
-    )
+    # Prompt canónico compartido con la CLI (backend/rag.py → build_answer_prompt).
+    # La lógica multi-sesión / sesión única y las reglas del cronista
+    # se gestionan allí: aquí solo delegamos y obtenemos los mensajes listos.
+    prompt_value = rag.build_answer_prompt(ctx)
 
     # Fase 2: Generación + fuentes en UN SOLO mensaje. Las fuentes son hipervínculos
     # normales a la ruta /acta/... (abren el PDF en una pestaña del navegador en la

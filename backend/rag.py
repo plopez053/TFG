@@ -5,6 +5,9 @@ import glob
 import sys
 import time
 import threading
+import unicodedata
+import urllib.parse
+from collections import OrderedDict
 from tqdm import tqdm
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
@@ -13,38 +16,50 @@ from typing import List, Dict, Any, Optional, Tuple
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_ollama import OllamaEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Añadido de forma defensiva (funciona tanto si rag.py se ejecuta directo como
+# CLI, como si se importa desde otro módulo que ya lo tenga en el path) para
+# poder importar la normalización de grupos, compartida con el pipeline de GraphRAG.
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+from graphrag.graphrag.grupos import (  # noqa: E402
+    normaliza_grupo as _normaliza_grupo_partido,
+    extrae_grupo as _extrae_grupo_partido,
+)
+from backend.providers import (  # noqa: E402
+    EMBEDDING_MODEL, LLM_MODEL_LOCAL, LLM_MODEL_GROQ, LLM_MODEL_GRAPHRAG,
+    COHERE_RERANK_MODEL, COHERE_API_KEY, GROQ_API_KEY,
+    ping_ollama as _ping_ollama, LLMProvider, rerank as _cohere_rerank,
+)
+
 # Autodetecta la ubicación de las actas: dentro del proyecto (portátil) o fuera (equipo potente).
 _ACTAS_DENTRO = os.path.join(BASE_DIR, "actas")
 _ACTAS_FUERA = os.path.join(os.path.dirname(BASE_DIR), "actas")
 DATA_PATH = _ACTAS_DENTRO if os.path.isdir(_ACTAS_DENTRO) else _ACTAS_FUERA
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
-EMBEDDING_MODEL = "nomic-embed-text"
-LLM_MODEL_LOCAL = "gemma3:4b"
-LLM_MODEL_GROQ = "openai/gpt-oss-120b"
-COHERE_RERANK_MODEL = "rerank-multilingual-v3.0"
-COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # Umbral de distancia para descartar resultados semánticos irrelevantes.
 SIMILARITY_DISTANCE_MAX = 1.4
+
+# Límite de caracteres del contexto que se pasa al LLM. Se usa el valor LOCAL
+# siempre que Ollama pueda responder (num_ctx=8192), porque invoke_llm cae al
+# fallback local ante cualquier fallo de Groq.
+CONTEXT_CHAR_LIMIT_LOCAL = 12000
+CONTEXT_CHAR_LIMIT_GROQ = 24000
 
 _DEBUG_CONTEXT_PATH = os.path.join(BASE_DIR, "debug_context.txt")
 _DEBUG_CONTEXT_LOCK = threading.Lock()
 _RAG_SINGLETON_LOCK = threading.Lock()
 
 
-# ---------------------------------------------------------------------------
-# Utilidades de disponibilidad de proveedores
-# ---------------------------------------------------------------------------
+# True si Ollama está activo en localhost:11434
 def _ping_ollama(timeout: float = 3.0) -> bool:
-    """True si Ollama está activo en localhost:11434."""
     try:
         import httpx
         return httpx.get("http://localhost:11434/api/tags", timeout=timeout).status_code == 200
@@ -55,11 +70,184 @@ MULTIQUERY_PROMPT = "Genera 3 variantes de: '{question}' centradas en el sujeto 
 # Relevancia mínima del reranker para considerar que hay algo que responder.
 RELEVANCE_FLOOR = 0.01
 
+# ---------------------------------------------------------------------------
+# Prompts canónicos — punto único de definición, compartidos por CLI y frontend
+# (build_answer_prompt los usa para las dos vías). Usar .format(dates_found=,
+# context=, question=).
+# ---------------------------------------------------------------------------
+_PROMPT_MULTI_SESSION = (
+    "Eres el Cronista Oficial de Bilbao, experto en historia municipal. RESPONDE SIEMPRE EN ESPAÑOL.\n\n"
+    "INSTRUCCION: Se te proporcionan fragmentos de MULTIPLES plenos del Ayuntamiento de Bilbao.\n"
+    "Las fechas de los plenos en este contexto son: {dates_found}\n"
+    "Responde a la pregunta haciendo un RESUMEN CRONOLOGICO de los debates y propuestas encontrados.\n\n"
+    "REGLAS CRUCIALES:\n"
+    "- IDIOMA: responde ÚNICAMENTE en español castellano. Está PROHIBIDO usar inglés, ni una sola frase.\n"
+    "- USA SOLO la informacion que esta explicitamente en las actas proporcionadas abajo.\n"
+    "- NUNCA inventes fechas, cifras, nombres, resultados o detalles que no esten en el texto.\n"
+    "- Si no sabes el resultado de una votacion, escribe: [Sin resultado en acta]\n"
+    "- SIEMPRE escribe las fechas en formato DD-MM-YYYY exacto tal como aparecen en el contexto "
+    "(ej: 26-10-2010), nunca solo el año.\n"
+    "- Para cada pleno relevante desarrolla un parrafo con este formato:\n"
+    "  **[fecha DD-MM-YYYY] — [grupo proponente]**\n"
+    "  - Propuesta: explica con DETALLE que pedia exactamente (los puntos concretos, cifras y medidas).\n"
+    "  - Argumentos: si el acta recoge la justificacion o los argumentos del debate, resumelos CON\n"
+    "    TUS PROPIAS PALABRAS. PERO si el acta NO dice nada sobre el porque, OMITE esta linea por\n"
+    "    completo: NO te inventes una justificacion generica no respaldada por el texto.\n"
+    "  - Resultado: indica el resultado e INCLUYE LAS CIFRAS DE LA VOTACION si aparecen en el texto\n"
+    "    (ej: \"Aprobada. Votos a favor: 29, en contra: 0\"). Si no hay cifras, escribe solo el resultado.\n"
+    "  - COHERENCIA VOTOS: si los votos en contra son 0 o no aparecen, el resultado NO puede ser\n"
+    "    \"rechazada\". No mezcles el resultado de una enmienda con los votos de la votación principal.\n"
+    "- Ordena de mas antiguo a mas reciente.\n"
+    "- Termina con un parrafo de CONCLUSION que sintetice la evolucion del tema a lo largo de los anos.\n\n"
+    "ACTAS:\n{context}\n\n"
+    "PREGUNTA: {question}\n"
+    "RESUMEN CRONOLOGICO DETALLADO EN ESPAÑOL:"
+)
 
-def _date_sort_key(doc: Document) -> Tuple[int, int, int]:
-    """Clave de orden cronológico (año, mes, día) a partir del metadato 'date' (DD-MM-YYYY)."""
+_PROMPT_SINGLE_SESSION = (
+    "Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno. RESPONDE SIEMPRE EN ESPAÑOL.\n\n"
+    "INSTRUCCIÓN: Basándote en el ACTA de abajo, responde a: {question}\n\n"
+    "REGLAS:\n"
+    "- IDIOMA: responde ÚNICAMENTE en español castellano. Prohibido usar inglés.\n"
+    "- Empieza directamente con: \"En la sesión del Pleno de Bilbao...\"\n"
+    "- Detalla los puntos de la propuesta (qué se pide exactamente).\n"
+    "- Indica el resultado final de la votación si consta.\n\n"
+    "ACTA:\n{context}\n\n"
+    "PREGUNTA: {question}\n"
+    "CRÓNICA EN ESPAÑOL:"
+)
+
+# funcion para quitar acentos y diacríticios
+def strip_accents(text: str) -> str:
+    return unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
+
+
+# Palabras omnipresentes en cualquier título/pregunta sobre el Pleno de Bilbao
+# que no aportan señal temática. Único punto de esta lista: la usan tanto
+# _expand_context_by_topic() (aspiradora) como _extraer_keywords_pregunta()
+# (búsqueda literal complementaria a la semántica, ver _initial_search).
+_STOPWORDS_TEMATICAS = {
+    "bilbao", "municipal", "municipales", "partido", "popular", "grupos",
+    "acuerdo", "acuerdos", "proposicion", "proposizioa", "propuesta", "propuestas",
+    "mocion", "mozioa", "debate", "debates", "sesion", "reunion",
+    "resultado", "votacion", "propone", "propuso", "propuesto", "presenta", "plantea",
+    "siguiente", "adoptado", "tomado", "tomados", "relacionado", "relacionados",
+    "dispositiva", "literal", "adopcion", "decidio", "habido", "habida",
+    "cuales", "exacto",
+    "febrero", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+}
+
+
+# palabras >=6 caracteres de la pregunta, sin acentos ni términos omnipresentes en actas
+def _extraer_keywords_pregunta(question: str) -> List[str]:
+    q_clean = re.sub(r'[^a-z0-9\s]', '', strip_accents(question.lower()))
+    return [w for w in re.findall(r'\w{6,}', q_clean) if w not in _STOPWORDS_TEMATICAS and not w.isdigit()]
+
+
+# palabras >=6 caracteres CONSERVANDO tildes, para la búsqueda literal por substring en ChromaDB
+def _extraer_keywords_literales(question: str) -> List[str]:
+    q_raw = re.sub(r'[^\w\s]', '', question.lower(), flags=re.UNICODE)
+    out = []
+    for w in re.findall(r'\w{6,}', q_raw, flags=re.UNICODE):
+        if w.isdigit():
+            continue
+        if strip_accents(w) in _STOPWORDS_TEMATICAS:
+            continue
+        out.append(w)
+    return out
+
+
+_TEMA_ROLLUP_CACHE: Optional[Dict[str, Any]] = None
+_TEMA_ROLLUP_LOCK = threading.Lock()
+
+
+# tabla cacheada 'tema nivel 1 <- subtemas' de la taxonomía SKOS (ver memoria/decisiones_tecnicas.md 1.2)
+def _load_tema_rollup() -> Dict[str, Any]:
+    global _TEMA_ROLLUP_CACHE
+    if _TEMA_ROLLUP_CACHE is not None:
+        return _TEMA_ROLLUP_CACHE
+    # Lock: retrieve_context corre en threads separados por petición
+    # (asyncio.to_thread desde el frontend); sin esto dos preguntas
+    # concurrentes en frío parsean el TTL dos veces a la vez.
+    with _TEMA_ROLLUP_LOCK:
+        if _TEMA_ROLLUP_CACHE is not None:  # otro hilo ya lo cargó mientras esperábamos
+            return _TEMA_ROLLUP_CACHE
+        result = _build_tema_rollup()
+        if result is not None:
+            # Un fallo NO se cachea: así la siguiente pregunta lo reintenta
+            # en vez de dejar el canal temático apagado en todo el proceso.
+            _TEMA_ROLLUP_CACHE = result
+            return result
+        return {"detect": [], "filter_values": {}}
+
+
+# construye el roll-up de temas desde la taxonomía SKOS; None si falla (no se cachea)
+def _build_tema_rollup() -> Optional[Dict[str, Any]]:
     try:
-        parts = doc.metadata.get('date', '01-01-1900').split('-')
+        from rdflib import Graph, RDF
+        from rdflib.namespace import SKOS
+        from graphrag.graphrag.build_rdf import ONTOLOGY, THEMES, BO
+        g = Graph()
+        g.parse(ONTOLOGY, format="turtle")
+        g.parse(THEMES, format="turtle")
+
+        def es_labels(concept) -> List[str]:
+            # Etiquetas en cualquier idioma: canon_theme_map() en build_rdf.py
+            # (la función gemela para el grafo) también acepta prefLabel/altLabel
+            # en euskera, y los dos sistemas deben clasificar igual.
+            labs = [g.value(concept, SKOS.prefLabel)]
+            labs += list(g.objects(concept, SKOS.altLabel))
+            return [str(l) for l in labs if l]
+
+        toplevel = {}  # uri -> prefLabel
+        for c, _, _ in g.triples((None, RDF.type, BO.Tema)):
+            if not list(g.triples((c, SKOS.broader, None))):
+                lbl = g.value(c, SKOS.prefLabel)
+                if lbl:
+                    toplevel[c] = str(lbl)
+
+        detect: List[Tuple[str, str]] = []
+        filter_values: Dict[str, set] = {pref: {pref} for pref in toplevel.values()}
+        for c, pref in toplevel.items():
+            for lbl in es_labels(c):
+                detect.append((strip_accents(lbl.lower()), pref))
+
+        for c, _, _ in g.triples((None, RDF.type, BO.Tema)):
+            parent = g.value(c, SKOS.broader)
+            if parent is None or parent not in toplevel:
+                continue
+            parent_pref = toplevel[parent]
+            sub_pref = g.value(c, SKOS.prefLabel)
+            if sub_pref:
+                filter_values[parent_pref].add(str(sub_pref))
+            for lbl in es_labels(c):
+                detect.append((strip_accents(lbl.lower()), parent_pref))
+
+        # slug de nivel 1 por prefLabel (br:t_medioambiente -> "medioambiente"),
+        # para filtrar en Chroma por la bandera tf_<slug> que escribe
+        # enrich_vector_metadata.py (cubre tema_principal Y secundarios).
+        parent_slug = {}
+        for uri, pref in toplevel.items():
+            local = str(uri).rsplit("/", 1)[-1].split("#")[-1]
+            parent_slug[pref] = local[2:] if local.startswith("t_") else local
+
+        # Más largas primero: para que "medio ambiente" no quede tapado por
+        # una coincidencia parcial de un término más corto y genérico.
+        detect.sort(key=lambda x: len(x[0]), reverse=True)
+        return {
+            "detect": detect,
+            "filter_values": {p: sorted(v) for p, v in filter_values.items()},
+            "parent_slug": parent_slug,
+        }
+    except Exception as e:
+        print(f"[!] No se pudo cargar la taxonomía de temas: {type(e).__name__}: {e}", flush=True)
+        return None
+
+
+# clave de orden cronológico (año, mes, día) a partir de una fecha 'DD-MM-YYYY'
+def _date_str_sort_key(date_str: str) -> Tuple[int, int, int]:
+    try:
+        parts = (date_str or '01-01-1900').split('-')
         if len(parts) == 3:
             return (int(parts[2]), int(parts[1]), int(parts[0]))
     except (ValueError, AttributeError):
@@ -67,9 +255,126 @@ def _date_sort_key(doc: Document) -> Tuple[int, int, int]:
     return (1900, 1, 1)
 
 
+# clave de orden cronológico a partir del metadato 'date' (DD-MM-YYYY) de un Document
+def _date_sort_key(doc: Document) -> Tuple[int, int, int]:
+    return _date_str_sort_key(doc.metadata.get('date', ''))
+
+
+# ---------------------------------------------------------------------------
+# Utilidades de fuentes/presentación movidas desde frontend/app.py al backend
+# para que la CLI y Chainlit compartan exactamente la misma lógica.
+# ---------------------------------------------------------------------------
+
+# convierte rutas de la BD vectorial (Windows o Unix) al path local equivalente
+def resolve_pdf_path(source: str) -> str:
+    normalized = source.replace("\\", "/")
+    parts = normalized.split("/")
+    for i, part in enumerate(parts):
+        if re.match(r"^\d{4}$", part) and i + 1 < len(parts):
+            year, filename = part, parts[i + 1]
+            local_path = os.path.join(DATA_PATH, year, filename)
+            if os.path.exists(local_path):
+                return local_path
+    return source
+
+
+# Vocabulario procedimental común a casi todos los debates: se excluye al medir
+# relevancia temática para que solo cuenten las palabras de ASUNTO del debate.
+_STOP_PROCEDIMENTAL = {
+    "enmienda", "enmiendas", "modificacion", "adicion", "votos", "favor",
+    "contra", "abstenciones", "emitidos", "decae", "decaen", "acepta",
+    "aceptada", "rechaza", "rechazada", "queda", "aprobada", "proposicion",
+    "asunto", "orador", "sesion", "punto", "secretario", "alcalde", "señor",
+    "senor", "senora", "señora", "votacion", "vota", "presentada", "formulada",
+    "tenor", "literal", "siguiente", "udalbatzak", "udalbatzarreko",
+    "idazkaritza", "nagusia", "secretaria",
+    "para", "sobre", "como", "este", "esta", "esto", "unas", "unos", "mas",
+    "sino", "donde", "cuando", "entre", "desde", "hasta", "tambien", "todo",
+    "toda", "todos", "todas", "cada", "otro", "otra", "otros", "otras",
+    "puede", "deben", "debe", "ante", "bien", "muy",
+    "bildu", "elkarrekin", "podemos", "ezker", "anitza", "equo", "berdeak",
+    "partido", "popular", "socialista", "socialistas", "vascos",
+}
+
+
+# palabras significativas de un texto (≥4 letras, sin acentos ni ruido estructural)
+def _palabras_clave(texto: str) -> set:
+    texto = strip_accents(texto.lower())
+    stop = {
+        "grupo", "municipal", "politico", "proposicion", "proposamena", "presenta",
+        "cuya", "parte", "dispositiva", "plantea", "adopcion", "acuerdo", "plenario",
+        "propuesta", "pleno", "ayuntamiento", "bilbao", "equipo", "gobierno",
+        "resultado", "argumentos", "fuente", "instar", "insta",
+        "votacion", "sesion",
+    }
+    return {w for w in re.findall(r"[a-z]{4,}", texto) if w not in stop}
+
+
+# construye los metadatos de fuentes (una entrada por debate citado)
+def build_sources_data(retrieved_docs, answer_text=None):
+    por_grupo = OrderedDict()
+    for doc in retrieved_docs:
+        pdf_path = resolve_pdf_path(doc.metadata.get("source", ""))
+        if not pdf_path or not os.path.exists(pdf_path):
+            continue
+        date = doc.metadata.get("date", "Fecha desconocida")
+        topic = doc.metadata.get("topic", "")
+        # Excluir portada/índice: no es un debate citable.
+        if topic in ("", "General", "General / Introducción"):
+            continue
+        key = (date, topic, pdf_path)
+        entry = por_grupo.setdefault(key, {"pdf_path": pdf_path, "date": date, "docs": [], "topics": []})
+        entry["docs"].append(doc)
+        if topic and topic not in entry["topics"]:
+            entry["topics"].append(topic)
+
+    sources_data = []
+    for (date, _topic_key, pdf_path), info in por_grupo.items():
+        docs_d = info["docs"]
+        paginas = [d.metadata.get("page") for d in docs_d if d.metadata.get("page")]
+        p_min = min(paginas) if paginas else None
+        p_max = max(paginas) if paginas else None
+        rango = (f"Pág. {p_min}" if p_min == p_max else f"Págs. {p_min}-{p_max}") if p_min else None
+
+        year = os.path.basename(os.path.dirname(pdf_path))
+        fname = os.path.basename(pdf_path)
+        anchor = f"#page={p_min}" if p_min else ""
+        url = f"/acta/{year}/{urllib.parse.quote(fname)}{anchor}"
+
+        pdf_name = f"Ver PDF - Acta {date}"
+        if rango:
+            pdf_name += f" ({rango})"
+
+        topic = info["topics"][0] if info["topics"] else "Tema general"
+        short_topic = topic[:80] + "..." if len(topic) > 80 else topic
+        vote_result = next(
+            (d.metadata.get("vote_result") for d in docs_d if d.metadata.get("vote_result")), None
+        )
+        contenido = " ".join(d.page_content for d in docs_d)
+        content_kw = _palabras_clave(contenido) - _STOP_PROCEDIMENTAL
+
+        sources_data.append({
+            "date": date, "topic": topic, "pdf_path": pdf_path,
+            "url": url, "page": p_min or 1, "short_topic": short_topic,
+            "pdf_name": pdf_name, "vote_result": vote_result, "content_kw": content_kw,
+        })
+
+    # Filtro de relevancia SOLO en sesión única (pregunta de un pleno concreto):
+    # el buscador trae muchos debates del día y hay que quedarse con los que la
+    # respuesta trata (≥4 palabras de asunto compartidas, ya sin ruido procedimental).
+    fechas_distintas = {s["date"] for s in sources_data}
+    if answer_text and len(fechas_distintas) == 1:
+        ans_kw = _palabras_clave(answer_text) - _STOP_PROCEDIMENTAL
+        relevantes = [s for s in sources_data if len(s["content_kw"] & ans_kw) >= 4]
+        if relevantes:
+            sources_data = relevantes
+
+    return sources_data
+
+
 class RAGPipeline:
+    # inicializa el motor RAG con el modelo de embeddings configurado
     def __init__(self):
-        """Inicializa el motor RAG con el modelo de embeddings configurado."""
         self._ollama_ok = _ping_ollama()
         if not self._ollama_ok:
             print("[!] ADVERTENCIA: Ollama no responde en localhost:11434 "
@@ -77,122 +382,75 @@ class RAGPipeline:
 
         self.embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
         self.vector_store = None
-        self._llm, self._llm_fallback = self._build_llm_providers()
+        self._llm_provider = LLMProvider(prefer="groq")
         self._known_dates: Optional[List[str]] = None  # caché de os.walk
-        self._cohere_client = None                      # caché del cliente Cohere
         self.last_retrieved_docs: List[Document] = []
 
-    def _build_llm_providers(self):
-        """Construye el LLM principal y el de respaldo en orden de preferencia.
-
-        Orden: Groq (rápido, sin GPU) → Ollama local.
-        Registra en terminal qué proveedor queda activo y cuál es el fallback.
-        """
-        providers = []
-
-        if GROQ_API_KEY:
-            try:
-                from langchain_groq import ChatGroq
-                llm = ChatGroq(model=LLM_MODEL_GROQ, temperature=0, api_key=GROQ_API_KEY)
-                providers.append((f"Groq/{LLM_MODEL_GROQ}", llm))
-                print(f"[+] LLM disponible: Groq ({LLM_MODEL_GROQ})", flush=True)
-            except Exception as e:
-                print(f"[!] Groq no inicializado: {e}", flush=True)
-        else:
-            print("[!] GROQ_API_KEY no configurada — Groq no disponible", flush=True)
-
-        if self._ollama_ok:
-            try:
-                llm_local = ChatOllama(model=LLM_MODEL_LOCAL, temperature=0, num_ctx=8192)
-                providers.append((f"Ollama/{LLM_MODEL_LOCAL}", llm_local))
-                print(f"[+] LLM disponible: Ollama local ({LLM_MODEL_LOCAL})", flush=True)
-            except Exception as e:
-                print(f"[!] Ollama LLM no inicializado: {e}", flush=True)
-
-        if not providers:
-            print("[FATAL] Sin proveedor LLM: configura GROQ_API_KEY "
-                  "o arranca Ollama.", flush=True)
-            raise RuntimeError("Ningún proveedor LLM disponible")
-
-        primary_name, primary = providers[0]
-        fallback = None
-        if len(providers) > 1:
-            fallback_name, fallback = providers[1]
-            print(f"[*] LLM principal: {primary_name} | Fallback: {fallback_name}", flush=True)
-        else:
-            print(f"[*] LLM principal: {primary_name} | Sin fallback", flush=True)
-
-        return primary, fallback
-
-    # --- Invocación con fallback automático ---
-
+    # invoca el LLM (Groq -> Ollama con fallback automático, ver backend/providers.py)
     def invoke_llm(self, prompt):
-        """Invoca el LLM principal; si falla, registra el error y usa el fallback."""
-        try:
-            return self._llm.invoke(prompt)
-        except Exception as e:
-            if self._llm_fallback:
-                print(f"\n[!] LLM principal falló — {type(e).__name__}: {e}", flush=True)
-                print(f"[~] Usando LLM de respaldo...", flush=True)
-                return self._llm_fallback.invoke(prompt)
-            raise
+        return self._llm_provider.invoke(prompt)
 
     async def ainvoke_llm(self, prompt):
-        """Versión async de invoke_llm con fallback automático."""
-        try:
-            return await self._llm.ainvoke(prompt)
-        except Exception as e:
-            if self._llm_fallback:
-                print(f"\n[!] LLM principal falló (async) — {type(e).__name__}: {e}", flush=True)
-                print(f"[~] Usando LLM de respaldo (async)...", flush=True)
-                return await self._llm_fallback.ainvoke(prompt)
-            raise
+        return await self._llm_provider.ainvoke(prompt)
 
+    # LLM principal (para compatibilidad con código externo)
     @property
     def llm(self):
-        """LLM principal (para compatibilidad con código externo)."""
-        return self._llm
+        return self._llm_provider.primary
+
+    # límite de caracteres de contexto seguro dado qué proveedor puede
+    def _context_char_limit(self) -> int:
+        return CONTEXT_CHAR_LIMIT_LOCAL if self._ollama_ok else CONTEXT_CHAR_LIMIT_GROQ
 
     # --- Métodos de Utilidad ---
 
+    # extrae la fecha de un nombre de archivo (ej: '27-02-2025_...pdf')
     def _extract_date_from_filename(self, path: str) -> str:
-        """Extrae la fecha de un nombre de archivo (ej: '27-02-2025_...pdf')."""
         filename = os.path.basename(path)
         match = re.search(r'(\d{2}-\d{2}-\d{4})', filename)
         return match.group(1) if match else "Fecha desconocida"
 
+    # escanea las primeras páginas del acta para mapear nombres de concejales a partidos
     def _get_party_mapping(self, pages: List[Any]) -> Dict[str, str]:
-        """Escanea las primeras páginas del acta para mapear nombres de concejales a partidos."""
         party_mapping = {}
         header_text = "\n".join([p.page_content for p in pages[:10]])
-        current_party = "Goberno Local/Otros"
-        
+        # "Gobierno", no "Goberno": una errata aquí haría que
+        # grupos.normaliza_grupo() no reconociera este valor por defecto como
+        # "GOBIERNO" y se quedara sin normalizar, invisible para cualquier
+        # filtro que busque "EQUIPO DE GOBIERNO".
+        current_party = "Gobierno Local/Otros"
+
         for line in header_text.split('\n'):
             line = line.strip()
             if not line: continue
-            
+
             re_esp = re.search(r"En representación del grupo municipal\s+([A-Z\s-]+)", line, re.IGNORECASE)
             re_eus = re.search(r"([A-Z\s-]+)\s+udal talde politikoaren izenean", line, re.IGNORECASE)
-            
+
             if re_esp:
                 current_party = re_esp.group(1).strip().strip(':')
                 continue
             if re_eus:
                 current_party = re_eus.group(1).strip().strip(':')
                 continue
-            
+
             re_member = re.search(r"^\d+\.-?\s*(?:DON|DOÑA|SR\.|SRA\.)?\s*([A-ZÁÉÍÓÚÑ]{4,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)", line, re.IGNORECASE)
             if re_member:
                 name = re_member.group(1).strip()
                 paren = re.search(r'\(([^)]+)\)', line)
-                party_mapping[name] = paren.group(1).strip() if paren else current_party
-                    
+                raw_party = paren.group(1).strip() if paren else current_party
+                normalized = _normaliza_grupo_partido(raw_party)
+                # "Desconocido" solo si el texto crudo también lo era; si no,
+                # conservamos el texto original en vez de perder la información
+                # (mejor un partido sin canonizar que ninguno).
+                party_mapping[name] = normalized if normalized != "Desconocido" else raw_party
+
         return party_mapping
 
     # --- Fase de Ingesta (ETL) ---
 
+    # procesa un único PDF y devuelve sus chunks con metadatos (page + vote_result)
     def _process_single_pdf(self, path: str) -> List[Document]:
-        """Procesa un único PDF y devuelve sus chunks con metadatos (page + vote_result)."""
         speaker_regex = re.compile(r'(?:(?:EL|LA)\s+)?(?:SR\.|SRA\.)\s+([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)\s*[:.]', re.IGNORECASE)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
         # Ventanas amplias (0,500) entre etiquetas: en las actas BILINGÜES (euskera+
@@ -407,8 +665,8 @@ class RAGPipeline:
                 chunk_index_in_doc += 1
         return chunks
 
+    # carga los PDFs y los divide en fragmentos con metadatos de forma recursiva
     def load_and_split_documents(self) -> List[Document]:
-        """Carga los PDFs y los divide en fragmentos con metadatos de forma recursiva."""
         pdf_files = glob.glob(os.path.join(DATA_PATH, "**", "*.pdf"), recursive=True)
 
         if not pdf_files:
@@ -426,8 +684,8 @@ class RAGPipeline:
 
         return all_chunks
 
+    # crea o carga la base de datos vectorial ChromaDB
     def create_vector_store(self):
-        """Crea o carga la base de datos vectorial ChromaDB."""
         if os.path.exists(CHROMA_PATH):
             print(f"[*] Cargando base de datos vectorial desde {CHROMA_PATH}...")
             self.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=self.embeddings)
@@ -440,8 +698,8 @@ class RAGPipeline:
 
     # --- Fase de Recuperación (Retrieval) ---
 
+    # analiza la pregunta para aplicar filtros de fecha inteligentes
     def _get_temporal_filter(self, question: str) -> Optional[Dict[str, Any]]:
-        """Analiza la pregunta para aplicar filtros de fecha inteligentes."""
         # Recopilar fechas conocidas del sistema de archivos (una sola vez por instancia)
         if self._known_dates is None:
             dates = []
@@ -485,68 +743,52 @@ class RAGPipeline:
             return {"date": {"$in": valid_dates}}, valid_dates
         return None, []
 
+    # detecta si la pregunta menciona un grupo político concreto
     def _detect_party_in_question(self, question: str) -> Optional[str]:
-        """Detecta si la pregunta menciona un grupo político concreto.
-
-        Devuelve el substring normalizado para filtrar metadata['party'] (fuzzy substring),
-        o None si la pregunta es genérica (varios grupos o sin mención).
-        """
         q = question.lower()
         # Más específico primero para evitar falsos positivos
-        if re.search(r'eh\s*bildu|euskal\s+herria\s+bildu', q):
+        if re.search(r'eh\s*bildu|euskal\s+herria\s+bildu|herri\s+batasuna|\bhb\b', q):
             return "EH BILDU"
-        if re.search(r'elkarrekin', q):
-            return "ELKARREKIN"
+        if re.search(r'elkarrekin|bilbao\s+en\s+com[uú]n|\bpodemos\b', q):
+            return "ELKARREKIN BILBAO"
+        if re.search(r'\bgoazen\b', q):
+            return "GOAZEN BILBAO"
         if re.search(r'pse[\s\-]ee|\bsocialistas?\s+vascos?\b|\bpartido\s+socialista\b|\bpse\b', q):
-            return "PSE"
+            return "PSE-EE"
         if re.search(r'eaj[\s\-]pnv|\bpnv\b|\bnacionalistas?\s+vascos?\b', q):
-            return "PNV"
-        if re.search(r'\bpartido\s+popular\b|\bgrupo\s+(?:municipal\s+)?pp\b|\bel\s+pp\b|\bdel\s+pp\b', q):
-            return "POPULAR"
+            return "EAJ-PNV"
+        if re.search(r'\bpartido\s+popular\b|\bgrupo\s+(?:municipal\s+)?pp\b|\bel\s+pp\b|\bdel\s+pp\b|\bpopulares\b', q):
+            return "PP"
         if re.search(r'udalberri', q):
             return "UDALBERRI"
-        if re.search(r'ciudadanos', q):
+        if re.search(r'\bciudadanos\b', q):
             return "CIUDADANOS"
         if re.search(r'ezker\s+batua|izquierda\s+unida', q):
-            return "EZKER"
+            return "EZKER BATUA-IU"
+        if re.search(r'\baralar\b', q):
+            return "ARALAR"
+        if re.search(r'\bvox\b', q):
+            return "VOX"
+        if re.search(r'equipo\s+de\s+gobierno|gobierno\s+municipal', q):
+            return "EQUIPO DE GOBIERNO"
+        if re.search(r'grupo\s+mixto', q):
+            return "GRUPO MIXTO"
         return None
 
+    # técnica de la 'Aspiradora': Expande los fragmentos semánticos a debates completos
     def _expand_context_by_topic(self, initial_docs: List[Document], question: str) -> List[Document]:
-        """Técnica de la 'Aspiradora': Expande los fragmentos semánticos a debates completos.
-        
-        Usa dos pasadas:
-        1. Puntuar los temas que ya llegaron de la búsqueda semántica.
-        2. Búsqueda directa en los títulos de tema de la BD para garantizar cobertura total.
-        """
         target_topics, seen = [], set()
 
-        # Solo palabras ≥6 chars que llegan al check (las <6 chars y los años numéricos
-        # ya se descartan antes por las reglas \w{6,} y not w.isdigit()).
-        stopwords = {
-            # Omnipresentes en todos los títulos de acta — no aportan señal temática
-            "bilbao", "municipal", "municipales", "partido", "popular", "grupos",
-            "acuerdo", "acuerdos", "proposicion", "proposizioa", "propuesta", "propuestas",
-            "mocion", "mozioa", "debate", "debates", "sesion", "reunion",
-            "resultado", "votacion", "propone", "propuso", "propuesto", "presenta", "plantea",
-            "siguiente", "adoptado", "tomado", "tomados", "relacionado", "relacionados",
-            "dispositiva", "literal", "adopcion", "decidio", "habido", "habida",
-            "cuales", "exacto",
-            # Meses ≥6 chars (los ≤5 chars ya los filtra la regla \w{6,})
-            "febrero", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-        }
         # Normalizamos acentos y caracteres especiales para asegurar coincidencia robusta
         def normalize(txt: str) -> str:
-            replacements = {"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ü": "u", "ñ": "n"}
-            txt = txt.lower()
-            for k, v in replacements.items():
-                txt = txt.replace(k, v)
+            txt = strip_accents(txt.lower())
             txt = re.sub(r'[^a-z0-9\s]', '', txt)
             return txt
 
         q_clean = normalize(question)
-        # Mínimo 6 caracteres: reduce falsos positivos por stems cortos
-        # (ej: "presu" de "presupuesto" matcheando "presencia" con stem[:5])
-        q_keywords = [w for w in re.findall(r'\w{6,}', q_clean) if w not in stopwords and not w.isdigit()]
+        # Lista de stopwords y extracción de keywords compartidas con la búsqueda
+        # literal complementaria de _initial_search (ver _extraer_keywords_pregunta).
+        q_keywords = _extraer_keywords_pregunta(question)
 
         # --- PASADA 1: Puntuar temas de la búsqueda semántica ---
         for doc in initial_docs:
@@ -579,12 +821,9 @@ class RAGPipeline:
                 if re.search(r'presupuest|modificac|ordenanza', t_norm):
                     t['score'] *= 0.2
 
-        # FILTRO DE TÍTULO: Si algún tema tiene una keyword en su título (score ≥ 20),
-        # descartar los que solo puntúan por menciones de pasada en el contenido.
-        # Evita que debates de presupuestos, aparcamientos, etc. entren porque mencionan
-        # "pobreza" o "movilidad" una vez en el debate sin que el punto trate ese tema.
-        # Si ningún tema supera 20 puntos (todos son coincidencias de contenido), se mantiene
-        # el comportamiento actual para no romper consultas sin keywords en los títulos.
+        # FILTRO DE TÍTULO: si algún tema tiene una keyword en su título (score
+        # >= 20), se descartan los que solo puntúan por menciones de pasada en
+        # el contenido. Si ninguno llega a 20, se mantienen todos.
         title_matched = [t for t in target_topics if t['score'] >= 20]
         if title_matched:
             target_topics = title_matched
@@ -691,59 +930,12 @@ class RAGPipeline:
 
 
 
+    # reordena los candidatos por relevancia con Cohere (ver backend/providers.py)
     def _rerank_with_cohere(self, docs: List[Document], question: str, top_n: int = 30) -> List[Document]:
-        """Reordena los documentos candidatos usando Cohere rerank-multilingual-v3.0.
+        return _cohere_rerank(docs, question, top_n)
 
-        Si la API key no está configurada o hay un error, devuelve los docs originales
-        sin modificar (degradación elegante).
-        """
-        if not COHERE_API_KEY or not docs:
-            return docs
-        try:
-            import cohere
-            if self._cohere_client is None:
-                self._cohere_client = cohere.Client(COHERE_API_KEY)
-            co = self._cohere_client
-
-            # Deduplicar por contenido antes de enviar a la API
-            seen_content: set = set()
-            unique_docs: List[Document] = []
-            for d in docs:
-                key = d.page_content[:200]
-                if key not in seen_content:
-                    seen_content.add(key)
-                    unique_docs.append(d)
-
-            # Limitar a 60 candidatos para no desperdiciar cuota de la API
-            candidates = unique_docs[:60]
-
-            results = co.rerank(
-                model=COHERE_RERANK_MODEL,
-                query=question,
-                documents=[d.page_content for d in candidates],
-                top_n=min(top_n, len(candidates))
-            )
-            reranked = []
-            for r in results.results:
-                doc = candidates[r.index]
-                # Guardar el score de relevancia (transitorio) para poder aplicar
-                # un umbral mínimo y responder "no encontrado" a preguntas sin relación.
-                doc.metadata["_rerank_score"] = float(r.relevance_score)
-                reranked.append(doc)
-            print(f"[*] Cohere reranking: {len(candidates)} candidatos -> top {len(reranked)}")
-            return reranked
-        except Exception as e:
-            print(f"[!] Cohere reranking fallido, usando ChromaDB directo: {e}")
-            return docs
-
+    # formatea los documentos agrupando por (fecha, tema) para compactar el contexto
     def _format_context(self, docs: List[Document]) -> str:
-        """Formatea los documentos agrupando por (fecha, tema) para compactar el contexto.
-        
-        En lugar de un bloque por chunk, genera un bloque por debate completo.
-        Esto reduce el tamaño del contexto cuando hay múltiples chunks del mismo debate.
-        """
-        from collections import OrderedDict
-        
         # Agrupar por (fecha, topic) para unir el inicio y el final del debate
         groups = OrderedDict()
         for d in docs:
@@ -810,12 +1002,35 @@ class RAGPipeline:
             
         return final_text.strip()
 
+    # construye los mensajes del prompt de respuesta; punto único compartido por CLI y frontend
+    def build_answer_prompt(self, ctx: dict) -> List[Any]:
+        from langchain_core.messages import HumanMessage
+        formatted_context = ctx["context"]
+        question = ctx["question"]
+        is_multi_session = ctx["is_multi_session"]
+        unique_dates = ctx["unique_dates"]
+
+        if is_multi_session:
+            # unique_dates ya viene ordenado cronológicamente desde retrieve_context()
+            # (NO usar sorted() sobre strings DD-MM-YYYY: ordena por día, no por fecha real).
+            dates_found = ', '.join(unique_dates)
+            text = _PROMPT_MULTI_SESSION.format(
+                dates_found=dates_found,
+                context=formatted_context,
+                question=question,
+            )
+        else:
+            text = _PROMPT_SINGLE_SESSION.format(
+                context=formatted_context,
+                question=question,
+            )
+        return [HumanMessage(content=text)]
 
 
     # --- Pipeline de recuperación compartido (usado por retrieve_context y query) ---
 
+    # multiQuery: genera variantes de búsqueda para ampliar el recall (más la original)
     def _query_variations(self, question: str) -> List[str]:
-        """MultiQuery: genera variantes de búsqueda para ampliar el recall (más la original)."""
         try:
             vars_txt = self.invoke_llm(MULTIQUERY_PROMPT.format(question=question)).content
             variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
@@ -824,13 +1039,9 @@ class RAGPipeline:
             variations = [question]
         return variations[:6]
 
+    # búsqueda semántica inicial sobre todas las variantes (con o sin filtro de fecha)
     def _initial_search(self, variations: List[str], valid_dates: list,
                         exact_date: bool, k: int) -> List[Document]:
-        """Búsqueda semántica inicial sobre todas las variantes (con o sin filtro de fecha).
-
-        Con fecha exacta se toman todos los chunks de ese día; en el resto se descartan
-        los que superan la distancia máxima de similitud.
-        """
         docs: List[Document] = []
         for v in variations:
             targets = valid_dates if valid_dates else [None]
@@ -847,30 +1058,181 @@ class RAGPipeline:
                     print(f"[!] ChromaDB búsqueda fallida: {type(e).__name__}: {e}", flush=True)
         return docs
 
+    # búsqueda LITERAL complementaria a la semántica
+    def _keyword_search(self, question: str, valid_dates: list, k_per_kw: int = 15) -> List[Document]:
+        keywords = _extraer_keywords_literales(question)
+        if not keywords:
+            return []
+        # Las 3 más largas: más distintivas, menos probabilidad de aparecer por
+        # casualidad dentro de un fragmento no relacionado con la pregunta.
+        keywords = sorted(set(keywords), key=len, reverse=True)[:3]
+
+        # Filtro de fecha en UNA sola llamada por keyword (con $in si hay varias
+        # fechas válidas), en vez de una llamada por cada (keyword, fecha) — con
+        # un filtro de año completo (~12 actas) el bucle por fecha tardaba ~7s;
+        # con $in tarda igual que con una fecha sola.
+        if len(valid_dates) == 1:
+            where = {"date": {"$eq": valid_dates[0]}}
+        elif valid_dates:
+            where = {"date": {"$in": valid_dates}}
+        else:
+            where = None
+
+        docs: List[Document] = []
+        for kw in keywords:
+            # Variante SIN tilde como respaldo: cubre al usuario que escribe sin
+            # acentos y a actas antiguas cuyo texto perdió la tilde por OCR. No
+            # sustituye a la variante con tilde, que cubre la mayoría del corpus.
+            variantes = {kw}
+            sin_tilde = strip_accents(kw)
+            if sin_tilde != kw:
+                variantes.add(sin_tilde)
+            # Variante SINGULAR: la pregunta suele ir en plural ("bibliotecas")
+            # y el corpus en singular ("biblioteca"); `$contains` no salva ese
+            # salto. Buscar la raíz sin la marca de plural lo cubre en los dos
+            # sentidos. Cohere descarta luego el ruido de una raíz demasiado laxa.
+            for base in (kw, sin_tilde):
+                if base.endswith("es") and len(base) >= 7:
+                    variantes.add(strip_accents(base[:-2]))
+                elif base.endswith("s") and len(base) >= 6:
+                    variantes.add(strip_accents(base[:-1]))
+            # Variante CAPITALIZADA: `$contains` distingue mayúsculas y las
+            # keywords van en minúscula, pero los nombres propios ("Tubacex",
+            # "Zorrotzaurre") van en mayúscula en las actas. Sin esto una empresa
+            # con una sola mención se pierde.
+            for v in list(variantes):
+                variantes.add(v.capitalize())
+                variantes.add(v.title())
+            for variante in variantes:
+                try:
+                    res = self.vector_store.get(
+                        where=where, where_document={"$contains": variante},
+                        limit=k_per_kw, include=["metadatas", "documents"],
+                    )
+                    for content, meta in zip(res["documents"], res["metadatas"]):
+                        m = dict(meta)
+                        m["_kw"] = kw  # marca de canal literal (ver _rerank_with_cohere)
+                        docs.append(Document(page_content=content, metadata=m))
+                except Exception as e:
+                    print(f"[!] Búsqueda literal fallida para '{variante}': {type(e).__name__}: {e}", flush=True)
+        return docs
+
+    # busca proposiciones clasificadas con el tema de la pregunta aunque el texto no repita la palabra (ver memoria 1.1)
+    def _thematic_search(self, question: str, valid_dates: list,
+                         max_proposals: int = 40, pool_limit: int = 20000) -> List[Document]:
+        rollup = _load_tema_rollup()
+        if not rollup["detect"]:
+            return []
+        q_norm = strip_accents(question.lower())
+        matched_label = None
+        for label_norm, label_display in rollup["detect"]:
+            if re.search(rf'\b{re.escape(label_norm)}\b', q_norm):
+                matched_label = label_display
+                break
+        if not matched_label:
+            return []
+
+        # Filtro por la bandera tf_<slug>, que cubre tanto el tema_principal
+        # como los temas secundarios rodados a nivel 1 (una proposición con
+        # tema_principal="movilidad" y un secundario "calidad del aire" aparece
+        # al preguntar por medio ambiente). Fallback al filtro por
+        # tema_principal + subtemas si el chunk aún no tiene banderas.
+        slug = rollup.get("parent_slug", {}).get(matched_label)
+        filter_values = rollup["filter_values"].get(matched_label, [matched_label])
+        tema_clause = (
+            {"$or": [{f"tf_{slug}": True}, {"tema_principal": {"$in": filter_values}}]}
+            if slug else {"tema_principal": {"$in": filter_values}}
+        )
+        clauses = [tema_clause]
+        if len(valid_dates) == 1:
+            clauses.append({"date": {"$eq": valid_dates[0]}})
+        elif valid_dates:
+            clauses.append({"date": {"$in": valid_dates}})
+        where = clauses[0] if len(clauses) == 1 else {"$and": clauses}
+
+        # Fetch SOLO metadata (sin documents): un tema grande puede tener
+        # >10.000 chunks y traer el texto de todos para descartar casi todos
+        # después es lento. pool_limit alto (20.000): con un límite bajo, los
+        # temas grandes (movilidad, presupuestos...) se truncaban antes del
+        # muestreo y se perdían silenciosamente los años más recientes.
+        try:
+            res = self.vector_store.get(where=where, limit=pool_limit, include=["metadatas"])
+        except Exception as e:
+            print(f"[!] Búsqueda temática fallida: {type(e).__name__}: {e}", flush=True)
+            return []
+
+        # Se agrupa por prop_id y se muestrea repartido cronológicamente para
+        # cubrir MUCHAS proposiciones distintas sobre profundizar en pocas.
+        by_prop: Dict[str, List[Tuple[str, int]]] = {}
+        prop_date: Dict[str, str] = {}
+        for cid, meta in zip(res["ids"], res["metadatas"]):
+            pid = meta.get("prop_id")
+            if not pid:
+                continue
+            by_prop.setdefault(pid, []).append((cid, meta.get("chunk_index", 0)))
+            prop_date.setdefault(pid, meta.get("date", ""))
+
+        pids = sorted(by_prop, key=lambda p: _date_str_sort_key(prop_date.get(p, "")))
+        if len(pids) > max_proposals:
+            # Paso normalizado por (n-1)/(k-1): así el primer y el último
+            # elemento siempre entran (con n/k la proposición más reciente
+            # quedaba siempre fuera).
+            step = (len(pids) - 1) / (max_proposals - 1)
+            pids = [pids[round(i * step)] for i in range(max_proposals)]
+
+        print(f"[*] Tema detectado en la pregunta: '{matched_label}' "
+              f"-> {len(by_prop)} proposiciones distintas (muestra de {len(pids)})")
+        if not pids:
+            return []
+
+        # Segundo fetch CON texto: de cada proposición se coge el chunk del
+        # cuerpo MÁS LARGO (descartando el primero y los 2 últimos, que suelen
+        # ser el orden del día y el recuento de votos, que Cohere puntúa ~0).
+        ids_cuerpo = []
+        for p in pids:
+            orden = [cid for cid, _ in sorted(by_prop[p], key=lambda ci: ci[1])]
+            ids_cuerpo += (orden[1:-2] or orden)[:8]
+        res2 = self.vector_store.get(ids=ids_cuerpo, include=["metadatas", "documents"])
+        mejor: Dict[str, Tuple[str, dict, int]] = {}
+        for c, m in zip(res2["documents"], res2["metadatas"]):
+            pid = m.get("prop_id")
+            if not pid:
+                continue
+            cuerpo = re.sub(r"votos\s+emitidos.*", "", c, flags=re.I | re.S)
+            n = len(cuerpo.strip())
+            if pid not in mejor or n > mejor[pid][2]:
+                mejor[pid] = (c, m, n)
+        return [Document(page_content=c, metadata=m) for c, m, _ in mejor.values()]
+
+    # si la pregunta menciona un grupo, conserva solo los chunks de ese grupo (con margen si quedan pocos)
     def _apply_party_filter(self, docs: List[Document], question: str,
                             min_docs: int = 3) -> List[Document]:
-        """Si la pregunta menciona un grupo concreto, conserva solo los chunks donde ese
-        grupo es el ORADOR (no donde otros lo mencionan).
-
-        min_docs: mínimo de docs filtrados para aplicar el filtro. En la búsqueda inicial
-        (semántica) se usa 3 para evitar sobreajuste con ruido; después de la aspiradora
-        se llama con 1 porque los docs ya son del tema correcto.
-        """
         target_party = self._detect_party_in_question(question)
         if not target_party:
             return docs
+        # metadata['party'] ya está normalizado: se compara canónico contra
+        # canónico, no como substring ("PP" no está literal en "Grupo Municipal
+        # Partido Popular").
+        def es_proponente(d: Document) -> bool:
+            # grupo_proponente se calcula en la indexación con más contexto;
+            # solo se recalcula al vuelo (sobre metadata['topic']) si falta.
+            grupo_meta = d.metadata.get("grupo_proponente")
+            if grupo_meta:
+                return grupo_meta == target_party
+            return _extrae_grupo_partido(d.metadata.get("topic", "")) == target_party
+
         party_filtered = [
             d for d in docs
             if target_party.lower() in d.metadata.get("party", "").lower()
-            or target_party.lower() in d.page_content.split('\n\n')[0].lower()
+            or es_proponente(d)
         ]
         if len(party_filtered) >= min_docs:
             print(f"[*] Filtro de grupo '{target_party}': {len(party_filtered)} docs")
             return party_filtered
         return docs
 
+    # elimina duplicados por (source, chunk_index) conservando el orden de entrada
     def _dedup_docs(self, docs: List[Document], limit: Optional[int] = None) -> List[Document]:
-        """Elimina duplicados por (source, chunk_index) conservando el orden de entrada."""
         seen, out = set(), []
         for d in docs:
             key = (d.metadata.get('source', ''), d.metadata.get('chunk_index', d.page_content[:50]))
@@ -879,8 +1241,8 @@ class RAGPipeline:
                 out.append(d)
         return out[:limit] if limit else out
 
+    # elimina docs cuyo topic no esté entre los temas priorizados (si el filtro no vacía todo)
     def _filter_by_target_topics(self, docs: List[Document], target_topics: list) -> List[Document]:
-        """Elimina docs cuyo topic no esté entre los temas priorizados (si el filtro no vacía todo)."""
         if not target_topics:
             return docs
         valid_prefixes = []
@@ -891,63 +1253,75 @@ class RAGPipeline:
         filtered = [d for d in docs if any(d.metadata.get('topic', '').startswith(p) for p in valid_prefixes)]
         return filtered if filtered else docs
 
+    # multiQuery -> búsqueda híbrida (semántica+literal+temática) -> filtro de grupo -> rerank Cohere
     def _retrieve_and_rank(self, question: str, k: int) -> Tuple[List[Document], bool]:
-        """MultiQuery → búsqueda inicial → filtro de grupo → reranking de Cohere.
-
-        Devuelve (docs candidatos, exact_date). `exact_date` es True cuando la pregunta
-        apunta a un único pleno concreto (cambia la estrategia de expansión posterior).
-        """
         variations = self._query_variations(question)
         _, valid_dates = self._get_temporal_filter(question)
         exact_date = len(valid_dates) == 1
         docs = self._initial_search(variations, valid_dates, exact_date, k)
+        # Búsqueda híbrida: semántica + literal + temática. Cada canal aporta
+        # máx ~22 docs (Cohere solo rerankea los primeros ~64 por orden de
+        # entrada). Orden: literal -> temático -> semántico.
+        docs = self._dedup_docs(
+            self._keyword_search(question, valid_dates)[:22]
+            + self._thematic_search(question, valid_dates)[:22]
+            + docs
+        )
         docs = self._apply_party_filter(docs, question)
         if COHERE_API_KEY:
             docs = self._rerank_with_cohere(docs, question, top_n=50)
         return docs, exact_date
 
+    # conjunto final de docs: sin expandir si es un pleno concreto, aspiradora + rescate si no (ver memoria 1.5)
     def _select_final_docs(self, candidates: List[Document], question: str,
                            exact_date: bool) -> List[Document]:
-        """A partir de los candidatos rankeados, decide el conjunto final de docs.
-
-        Fecha exacta → chunks más relevantes sin expandir (la expansión traería ruido de
-        otros temas del mismo pleno). En el resto → expansión "aspiradora" por tema.
-        Siempre se devuelve ordenado cronológicamente.
-        """
         if exact_date:
             docs = self._dedup_docs(candidates, limit=40)
         else:
             docs, target_topics = self._expand_context_by_topic(candidates, question)
             docs = self._filter_by_target_topics(docs, target_topics)
-            # Re-aplicar filtro de partido sobre el corpus completo recuperado por la aspiradora.
-            # Umbral min_docs=1: los docs ya son del tema correcto, el filtro puede ser agresivo.
-            docs = self._apply_party_filter(docs, question, min_docs=1)
+            # RESCATE: la aspiradora descarta chunks de "General / Introducción"
+            # o de "dación de cuenta" aunque Cohere los puntúe alto (ahí vive
+            # parte del contenido de preguntas generales). Los 8 mejores de
+            # Cohere sobreviven siempre y van los PRIMEROS del contexto.
+            ranked = [d for d in candidates if "_rerank_score" in d.metadata]
+            # Los chunks del canal LITERAL (mencionan textualmente un término de
+            # la pregunta) tampoco los puede tirar el filtro de tema aunque
+            # Cohere no los vea.
+            kw_hits = [d for d in candidates if d.metadata.get("_kw")][:10]
+            lead = self._dedup_docs(ranked[:8] + kw_hits)
+            lead_keys = {self._doc_key(d) for d in lead}
+            tail = sorted(
+                (d for d in self._dedup_docs(docs) if self._doc_key(d) not in lead_keys),
+                key=_date_sort_key,
+            )
+            # Re-aplicar filtro de partido sobre el corpus completo. Umbral
+            # min_docs=1: los docs ya son del tema correcto, puede ser agresivo.
+            return self._apply_party_filter(lead + tail, question, min_docs=1)
         return sorted(docs, key=_date_sort_key)
 
+    @staticmethod
+    def _doc_key(d: Document) -> tuple:
+        return (d.metadata.get("source", ""), d.metadata.get("chunk_index", d.page_content[:50]))
+
+    # vuelca el contexto enviado al LLM para inspección técnica
     def _dump_debug_context(self, formatted_context: str) -> None:
-        """Vuelca el contexto enviado al LLM para inspección técnica."""
         with _DEBUG_CONTEXT_LOCK:
             with open(_DEBUG_CONTEXT_PATH, "w", encoding="utf-8") as f:
                 f.write(formatted_context)
 
     # --- Punto de Entrada Principal ---
 
+    # fase de recuperación: devuelve el contexto y el prompt listos para el LLM
     def retrieve_context(self, question: str) -> dict:
-        """Fase de recuperación: devuelve el contexto y el prompt listos para el LLM.
-
-        Separa la recuperación (lenta por embeddings) de la generación (streaming).
-        Llamar esto en un thread y luego hacer streaming del LLM en el hilo async.
-        """
         if not self.vector_store: self.create_vector_store()
 
         all_initial_docs, exact_date = self._retrieve_and_rank(question, k=80)
 
-        # Umbral de relevancia: si la pregunta NO menciona una fecha concreta y ni el mejor
-        # fragmento alcanza una relevancia mínima, no hay nada que responder. Evita inventar
-        # fuentes con preguntas ajenas a las actas (p.ej. "viajes a Marte": score top ~0.002,
-        # frente a ~0.89 de una pregunta legítima).
-        # Solo aplicar el umbral si Cohere realmente asignó scores (si falló,
-        # los docs no tienen '_rerank_score' y no debemos bloquear por eso).
+        # Umbral de relevancia: si la pregunta no menciona una fecha y ni el
+        # mejor fragmento llega al mínimo, no hay nada que responder (evita
+        # inventar fuentes con preguntas ajenas a las actas). Solo se aplica si
+        # Cohere asignó scores.
         if COHERE_API_KEY and not exact_date and all_initial_docs:
             rerank_scores = [d.metadata["_rerank_score"] for d in all_initial_docs if "_rerank_score" in d.metadata]
             max_score = max(rerank_scores) if rerank_scores else None
@@ -962,14 +1336,16 @@ class RAGPipeline:
         self.last_retrieved_docs = docs
 
         formatted_context = self._format_context(docs)
-        # Límite alto: con Groq el contexto ya no es cuello de botella y así las actas
-        # recientes (ordenadas al final) no se cortan. Cada debate ya está acotado a 800 chars.
-        if len(formatted_context) > 34000:
-            formatted_context = formatted_context[:34000] + "\n\n[...CONTEXTO TRUNCADO POR TAMAÑO...]"
+        max_ctx = self._context_char_limit()
+        if len(formatted_context) > max_ctx:
+            formatted_context = formatted_context[:max_ctx] + "\n\n[...CONTEXTO TRUNCADO POR TAMAÑO...]"
 
         self._dump_debug_context(formatted_context)
 
-        unique_dates = list(set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")))
+        unique_dates = sorted(
+            set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")),
+            key=_date_str_sort_key,
+        )
         is_multi_session = len(unique_dates) > 1
 
         return {
@@ -980,8 +1356,8 @@ class RAGPipeline:
             "question": question,
         }
 
+    # flujo principal de la CLI: Recuperación, Expansión y Generación con fuentes
     def query(self, question: str) -> str:
-        """Flujo principal de la CLI: Recuperación, Expansión y Generación con fuentes."""
         if not self.vector_store: self.create_vector_store()
 
         # 1-2. Recuperación compartida (MultiQuery, búsqueda, filtro de grupo, rerank)
@@ -993,14 +1369,15 @@ class RAGPipeline:
 
         formatted_context = self._format_context(docs)
 
-        # FILTRO DE SEGURIDAD CONTRA CUELGUES (MÁXIMO 12000 CARACTERES)
-        # Esto asegura que el prompt sea de aprox 3000 tokens como máximo,
-        # lo que previene que el modelo local se quede pillado.
-        if len(formatted_context) > 12000:
-            formatted_context = formatted_context[:12000] + "\n\n[...CONTEXTO TRUNCADO POR TAMAÑO...]"
-        
+        max_ctx = self._context_char_limit()
+        if len(formatted_context) > max_ctx:
+            formatted_context = formatted_context[:max_ctx] + "\n\n[...CONTEXTO TRUNCADO POR TAMAÑO...]"
+
         # Detectar si la pregunta es general (varios años/sesiones) o específica (un pleno concreto)
-        unique_dates = list(set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")))
+        unique_dates = sorted(
+            set(d.metadata.get("date", "") for d in docs if d.metadata.get("date")),
+            key=_date_str_sort_key,
+        )
         is_multi_session = len(unique_dates) > 1
 
         self._dump_debug_context(formatted_context)
@@ -1011,53 +1388,14 @@ class RAGPipeline:
                     "Puede que el tema no esté cubierto en los documentos indexados, o que el modelo de embeddings "
                     "no haya podido conectarse. Prueba a reformular la pregunta.")
 
-        if is_multi_session:
-            dates_found = ', '.join(sorted(unique_dates))
-            sys_prompt = f"""Eres el Cronista Oficial de Bilbao, experto en historia municipal. RESPONDE SIEMPRE EN ESPAÑOL.
-
-        INSTRUCCION: Se te proporcionan fragmentos de MULTIPLES plenos del Ayuntamiento de Bilbao.
-        Las fechas de los plenos en este contexto son: {dates_found}
-        Responde a la pregunta haciendo un RESUMEN CRONOLOGICO de los debates y propuestas encontrados.
-
-        REGLAS CRUCIALES - DEBES SEGUIRLAS TODAS:
-        - USA SOLO la informacion que esta explicitamente en las actas proporcionadas abajo.
-        - NUNCA inventes fechas, cifras, nombres, resultados o detalles que no esten en el texto.
-        - DEBES cubrir TODAS las fechas listadas arriba que tengan informacion relevante.
-        - Si no sabes el resultado de una votacion porque no esta en el acta, escribe exactamente: [Sin resultado en acta]
-        - Para cada pleno relevante que encuentres, usa este formato:
-          FECHA: [fecha del pleno segun el acta]
-          Grupo: [quien presento la propuesta]
-          Propuesta: [que pedia exactamente]
-          Resultado: [resultado de la votacion si consta, si no: [Sin resultado en acta]]
-        - Ordena de mas antiguo a mas reciente.
-        - Si un acta no contiene informacion relacionada con la pregunta, ignorala.
-
-        ACTAS DE BILBAO PARA ANALIZAR:
-        {{context}}
-
-        PREGUNTA: {{question}}
-        RESUMEN CRONOLOGICO:"""
-        else:
-            sys_prompt = """Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno. RESPONDE SIEMPRE EN ESPAÑOL.
-
-        INSTRUCCIÓN: Basándote en el ACTA de abajo, responde a: {question}
-        
-        REGLAS CRUCIALES:
-        - Empieza directamente con: "En la sesión del Pleno de Bilbao..."
-        - No digas "el texto menciona" ni "según el acta". Habla como si estuvieras allí.
-        - Detalla los puntos de la propuesta (qué se pide exactamente).
-        - Indica el resultado final de la votación (votos a favor y en contra).
-
-        ACTA DE BILBAO PARA ANALIZAR:
-        {context}
-
-        PREGUNTA: {question}
-        CRÓNICA:"""
-        
-        prompt_msgs = ChatPromptTemplate.from_template(sys_prompt).format_messages(
-            context=formatted_context, question=question
-        )
-        print(f"[*] Generando crónica detallada (Fuerza Bruta de Contexto)...")
+        # Prompt canónico compartido con Chainlit (build_answer_prompt).
+        prompt_msgs = self.build_answer_prompt({
+            "context": formatted_context,
+            "question": question,
+            "is_multi_session": is_multi_session,
+            "unique_dates": unique_dates,
+        })
+        print(f"[*] Generando crónica detallada...")
 
         # Reintento automático: en máquinas con poca RAM ollama puede tardar en recargar
         # el modelo LLM después de las llamadas de embedding, rechazando la conexión
@@ -1096,8 +1434,8 @@ class RAGPipeline:
 # Singleton compartido para que app.py pueda importarlo sin re-inicializar la BD
 _rag_instance: Optional[RAGPipeline] = None
 
+# devuelve la instancia global del RAG (la crea la primera vez que se llama)
 def get_rag() -> RAGPipeline:
-    """Devuelve la instancia global del RAG (la crea la primera vez que se llama)."""
     global _rag_instance
     with _RAG_SINGLETON_LOCK:
         if _rag_instance is None:
@@ -1124,8 +1462,9 @@ def main():
     else:
         rag.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=rag.embeddings)
 
-    # Precalentar mistral ANTES de que empiece cualquier query para evitar que
-    # el primer LLM call (MultiQuery) falle por RAM y corrompa el pool HTTP de httpx
+    # Precalentar el modelo LLM antes de cualquier query: fuerza la carga de
+    # pesos ahora, con reintentos, para que la primera llamada real (MultiQuery)
+    # no espere la carga ni falle por RAM dejando el pool HTTP de httpx en mal estado.
     print("[*] Cargando modelo LLM...")
     for attempt in range(3):
         try:
@@ -1139,10 +1478,11 @@ def main():
 
     if args.query:
         print("\nRESPUESTA:")
+        res = rag.query(args.query)
         try:
-            print(rag.query(args.query))
+            print(res)
         except UnicodeEncodeError:
-            sys.stdout.buffer.write(rag.query(args.query).encode('utf-8'))
+            sys.stdout.buffer.write(res.encode('utf-8'))
     else:
         print(f"\n--- RAG Bilbao Ready [Model: {LLM_MODEL_GROQ if GROQ_API_KEY else LLM_MODEL_LOCAL}] ---")
         while True:

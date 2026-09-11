@@ -23,6 +23,7 @@ Thumbs.db
 # Datos pesados — no caben en GitHub (transferir por USB/nube)
 chroma_db/
 chroma_db.rar
+chroma_db.bak*/
 actas/
 
 # Chainlit: archivos subidos por usuarios en el chat (caché temporal)
@@ -32,6 +33,9 @@ frontend/.files/
 
 # Logs y salidas de depuración
 *.log
+*.bak
+*.bak[0-9]
+*.bak_*
 debug_context.txt
 frontend/debug_context.txt
 
@@ -41,3 +45,24 @@ compare_nar*.txt
 compare_q*.txt
 graphrag/graphrag/compare_output*.txt
 graphrag/graphrag/compare_final*.txt
+
+# Notas de trabajo / informes locales (regenerables, no forman parte del proyecto)
+code_review_findings.txt
+pruebas_16_preguntas.txt
+revision_codigo_y_ontologia.txt
+
+# Datos intermedios pesados del pipeline (regenerables con extract_proposals.py +
+# build_graph.py --enrich; se transfieren por nube junto con chroma_db/actas)
+graphrag/graphrag/proposals.jsonl
+
+# Chainlit: traducciones i18n por defecto (las regenera Chainlit al arrancar)
+.chainlit/translations/
+frontend/.chainlit/translations/
+
+# Estudio de generación de SPARQL: resultados y logs (el código sí se versiona)
+graphrag/graphrag/estudio_sparql/study_*.jsonl
+graphrag/graphrag/estudio_sparql/phase1_*.json
+graphrag/graphrag/estudio_sparql/_realvocab.json
+
+# Baterías crudas / borradores de trabajo (los informes finales sí se versionan)
+graphrag/graphrag/bateria_comparativa_cruda_*.md

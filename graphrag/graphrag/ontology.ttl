@@ -29,6 +29,12 @@ bo:Persona      a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Persona"@
 bo:Lugar        a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Lugar"@es .
 bo:Organizacion a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Organización"@es .
 
+bo:Concejal a owl:Class ; rdfs:subClassOf bo:Persona ; rdfs:label "Concejal/a"@es ;
+    rdfs:comment "Miembro de la corporación municipal. Al ser subclase de Persona, las consultas por bo:menciona + bo:Persona lo siguen recogiendo."@es .
+bo:PersonalTecnico a owl:Class ; rdfs:subClassOf bo:Persona ; rdfs:label "Personal técnico del Pleno"@es ;
+    rdfs:comment "Secretario General, Interventor... Asisten a todos los plenos pero NO son cargos electos: no votan, no proponen, no debaten políticamente."@es .
+bo:Enmienda a owl:Class ; rdfs:label "Enmienda a una proposición"@es .
+
 ### --------------------------------------------------------------
 ### PROPIEDADES DE OBJETO (con dominio/rango)
 ### --------------------------------------------------------------
@@ -52,6 +58,59 @@ bo:trataSobre a owl:ObjectProperty ;
     rdfs:domain bo:Proposicion ; rdfs:range bo:Tema ;
     rdfs:label "trata sobre"@es .
 
+### --- concejales ---
+bo:perteneceA a owl:ObjectProperty ;
+    rdfs:domain bo:Concejal ; rdfs:range bo:Grupo ;
+    rdfs:label "pertenece al grupo"@es .
+bo:esAlcalde a owl:DatatypeProperty ;
+    rdfs:domain bo:Concejal ; rdfs:range xsd:boolean ;
+    rdfs:label "ha sido alcalde/sa"@es .
+bo:cargoTecnico a owl:DatatypeProperty ;
+    rdfs:domain bo:PersonalTecnico ; rdfs:range xsd:string ;
+    rdfs:label "cargo (Secretario General / Interventor...)"@es .
+bo:intervino a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Concejal ;
+    rdfs:label "intervino en el debate"@es .
+bo:proponePersona a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Concejal ;
+    rdfs:label "proponente (persona que firma)"@es .
+
+### --- voto por grupo (propiedades directas Proposición -> Grupo) ---
+bo:votoAFavorDe a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Grupo ;
+    rdfs:label "votó a favor el grupo"@es .
+bo:votoEnContraDe a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Grupo ;
+    rdfs:label "votó en contra el grupo"@es .
+bo:seAbstuvo a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Grupo ;
+    rdfs:label "se abstuvo el grupo"@es .
+
+### --- voto NOMINAL (por concejal) — capa determinista, parseado del acta ---
+bo:concejalVotoAFavor a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Concejal ;
+    rdfs:label "votó a favor el concejal"@es .
+bo:concejalVotoEnContra a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Concejal ;
+    rdfs:label "votó en contra el concejal"@es .
+bo:concejalVotoAbstencion a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Concejal ;
+    rdfs:label "se abstuvo el concejal"@es .
+bo:votoFuente a owl:DatatypeProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range xsd:string ;
+    rdfs:label "procedencia del voto (acta | llm)"@es .
+bo:resultadoFuente a owl:DatatypeProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range xsd:string ;
+    rdfs:label "procedencia del resultado (acta | llm)"@es .
+
+### --- enmiendas ---
+bo:tieneEnmienda a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Enmienda ;
+    rdfs:label "tiene enmienda"@es .
+bo:enmiendaPor a owl:ObjectProperty ;
+    rdfs:domain bo:Enmienda ; rdfs:range bo:Grupo ;
+    rdfs:label "enmienda presentada por"@es .
+
 ### --------------------------------------------------------------
 ### RAZONAMIENTO: roll-up temático
 ### "vivienda social" ⊑ "vivienda" ⇒ una pregunta por "vivienda"
@@ -73,11 +132,23 @@ bo:trataSobre rdfs:subPropertyOf bo:trataTemaAmplio .
 ### PROPIEDADES DE DATOS
 ### --------------------------------------------------------------
 bo:fecha        a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
-bo:anio         a owl:DatatypeProperty ; rdfs:range xsd:integer .
+bo:anio         a owl:DatatypeProperty ; rdfs:range xsd:integer ;
+    rdfs:comment "Sin rdfs:domain a propósito: se usa en Proposicion Y en Pleno; un domain haría que el razonador infiriera que cada Pleno es una Proposicion."@es .
 bo:tituloTopic  a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
+bo:resumen      a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string ;
+    rdfs:label "resumen de la parte dispositiva"@es .
+bo:pagina       a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:integer .
+bo:fuentePdf    a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
 bo:votosFavor   a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:integer .
 bo:votosContra  a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:integer .
 bo:votoTexto    a owl:DatatypeProperty ; rdfs:domain bo:Proposicion ; rdfs:range xsd:string .
+bo:resumenEnmienda a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string .
+bo:tipoEnmienda    a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string .
+bo:resultadoEnmienda a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string ;
+    rdfs:label "resultado de la enmienda"@es ;
+    rdfs:comment "aceptada_por_proponente | aprobada_en_votacion | rechazada_en_votacion | sin_votar"@es .
+bo:votosFavorEnmienda  a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:integer .
+bo:votosContraEnmienda a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:integer .
 
 ### --------------------------------------------------------------
 ### INDIVIDUOS FIJOS: resultados de votación

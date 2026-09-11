@@ -4,30 +4,182 @@
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 #################################################################
-# Taxonomía SKOS de temas CANÓNICOS (nivel superior del esquema).
-# Los subtemas libres que extrae el LLM se enlazan bajo estos con
-# skos:broader en build_rdf.py, formando la jerarquía que el
-# razonador usa para el roll-up temático.
+# Taxonomía SKOS de temas del Pleno de Bilbao — DOS NIVELES.
+#
+# Nivel 1: 19 temas canónicos (topConceptOf). Es el vocabulario
+#   controlado que el LLM usa como `tema_principal`.
+# Nivel 2: subtemas canónicos COMPARTIDOS (skos:broader → nivel 1).
+#   Los subtemas libres que extrae el LLM se matchean contra
+#   prefLabel/altLabel (normalizando acentos) en build_rdf.py; si
+#   coinciden se enlazan aquí, y el razonador OWL-RL infiere
+#   bo:trataTemaAmplio hacia el tema padre (roll-up temático real:
+#   una proposición etiquetada solo con "vivienda social" se
+#   recupera preguntando por "vivienda" únicamente por inferencia).
+#   Los que no coinciden siguen creando nodos libres por proposición.
+#
+# Los labels en euskera van como skos:altLabel@eu (no prefLabel@eu)
+# a propósito: las consultas SPARQL generadas usan skos:prefLabel y
+# dos prefLabel por concepto duplicarían las filas de los rankings.
 #################################################################
 
 br:tema_concept a skos:ConceptScheme ; skos:prefLabel "Temas del Pleno de Bilbao"@es .
 
-br:t_vivienda          a bo:Tema, skos:Concept ; skos:prefLabel "vivienda"@es ; skos:topConceptOf br:tema_concept .
-br:t_urbanismo         a bo:Tema, skos:Concept ; skos:prefLabel "urbanismo"@es ; skos:topConceptOf br:tema_concept .
-br:t_movilidad         a bo:Tema, skos:Concept ; skos:prefLabel "movilidad y transporte"@es ; skos:topConceptOf br:tema_concept .
-br:t_medioambiente     a bo:Tema, skos:Concept ; skos:prefLabel "medio ambiente"@es ; skos:topConceptOf br:tema_concept .
-br:t_euskera           a bo:Tema, skos:Concept ; skos:prefLabel "euskera"@es ; skos:topConceptOf br:tema_concept .
-br:t_cultura           a bo:Tema, skos:Concept ; skos:prefLabel "cultura"@es ; skos:topConceptOf br:tema_concept .
-br:t_deporte           a bo:Tema, skos:Concept ; skos:prefLabel "deporte"@es ; skos:topConceptOf br:tema_concept .
-br:t_educacion         a bo:Tema, skos:Concept ; skos:prefLabel "educacion"@es ; skos:topConceptOf br:tema_concept .
-br:t_igualdad          a bo:Tema, skos:Concept ; skos:prefLabel "igualdad y feminismo"@es ; skos:topConceptOf br:tema_concept .
-br:t_serviciossociales a bo:Tema, skos:Concept ; skos:prefLabel "servicios sociales"@es ; skos:topConceptOf br:tema_concept .
-br:t_empleoeconomia    a bo:Tema, skos:Concept ; skos:prefLabel "empleo y economia"@es ; skos:topConceptOf br:tema_concept .
-br:t_presupuestos      a bo:Tema, skos:Concept ; skos:prefLabel "presupuestos y fiscalidad"@es ; skos:topConceptOf br:tema_concept .
-br:t_seguridad         a bo:Tema, skos:Concept ; skos:prefLabel "seguridad"@es ; skos:topConceptOf br:tema_concept .
-br:t_participacion     a bo:Tema, skos:Concept ; skos:prefLabel "participacion ciudadana"@es ; skos:topConceptOf br:tema_concept .
-br:t_turismo           a bo:Tema, skos:Concept ; skos:prefLabel "turismo"@es ; skos:topConceptOf br:tema_concept .
-br:t_sanidad           a bo:Tema, skos:Concept ; skos:prefLabel "sanidad"@es ; skos:topConceptOf br:tema_concept .
-br:t_memoriahistorica  a bo:Tema, skos:Concept ; skos:prefLabel "memoria historica"@es ; skos:topConceptOf br:tema_concept .
-br:t_derechoshumanos   a bo:Tema, skos:Concept ; skos:prefLabel "derechos humanos"@es ; skos:topConceptOf br:tema_concept .
-br:t_otros             a bo:Tema, skos:Concept ; skos:prefLabel "otros"@es ; skos:topConceptOf br:tema_concept .
+### ---------------- NIVEL 1: temas canónicos ----------------
+br:t_vivienda a bo:Tema, skos:Concept ; skos:prefLabel "vivienda"@es ;
+    skos:altLabel "viviendas"@es, "etxebizitza"@eu ; skos:topConceptOf br:tema_concept .
+br:t_urbanismo a bo:Tema, skos:Concept ; skos:prefLabel "urbanismo"@es ;
+    skos:altLabel "hirigintza"@eu ; skos:topConceptOf br:tema_concept .
+br:t_movilidad a bo:Tema, skos:Concept ; skos:prefLabel "movilidad y transporte"@es ;
+    skos:altLabel "movilidad"@es, "tráfico"@es, "circulación"@es, "mugikortasuna eta garraioa"@eu ;
+    skos:topConceptOf br:tema_concept .
+br:t_medioambiente a bo:Tema, skos:Concept ; skos:prefLabel "medio ambiente"@es ;
+    skos:altLabel "medioambiente"@es, "sostenibilidad"@es, "ingurumena"@eu ; skos:topConceptOf br:tema_concept .
+br:t_euskera a bo:Tema, skos:Concept ; skos:prefLabel "euskera"@es ;
+    skos:altLabel "euskara"@eu ; skos:topConceptOf br:tema_concept .
+br:t_cultura a bo:Tema, skos:Concept ; skos:prefLabel "cultura"@es ;
+    skos:altLabel "kultura"@eu ; skos:topConceptOf br:tema_concept .
+br:t_deporte a bo:Tema, skos:Concept ; skos:prefLabel "deporte"@es ;
+    skos:altLabel "deportes"@es, "kirola"@eu ; skos:topConceptOf br:tema_concept .
+br:t_educacion a bo:Tema, skos:Concept ; skos:prefLabel "educación"@es ;
+    skos:altLabel "hezkuntza"@eu ; skos:topConceptOf br:tema_concept .
+br:t_igualdad a bo:Tema, skos:Concept ; skos:prefLabel "igualdad y feminismo"@es ;
+    skos:altLabel "igualdad"@es, "feminismo"@es, "mujeres"@es, "igualdad de mujeres y hombres"@es,
+                  "igualdad de género"@es, "berdintasuna eta feminismoa"@eu ;
+    skos:topConceptOf br:tema_concept .
+br:t_serviciossociales a bo:Tema, skos:Concept ; skos:prefLabel "servicios sociales"@es ;
+    skos:altLabel "ayudas sociales"@es, "gizarte zerbitzuak"@eu ; skos:topConceptOf br:tema_concept .
+br:t_empleoeconomia a bo:Tema, skos:Concept ; skos:prefLabel "empleo y economía"@es ;
+    skos:altLabel "economía"@es, "enplegua eta ekonomia"@eu ; skos:topConceptOf br:tema_concept .
+br:t_presupuestos a bo:Tema, skos:Concept ; skos:prefLabel "presupuestos y fiscalidad"@es ;
+    skos:altLabel "fiscalidad"@es, "aurrekontuak eta fiskalitatea"@eu ; skos:topConceptOf br:tema_concept .
+br:t_seguridad a bo:Tema, skos:Concept ; skos:prefLabel "seguridad"@es ;
+    skos:altLabel "seguridad ciudadana"@es, "segurtasuna"@eu ; skos:topConceptOf br:tema_concept .
+br:t_participacion a bo:Tema, skos:Concept ; skos:prefLabel "participación ciudadana"@es ;
+    skos:altLabel "participación"@es, "herritarren parte-hartzea"@eu ; skos:topConceptOf br:tema_concept .
+br:t_turismo a bo:Tema, skos:Concept ; skos:prefLabel "turismo"@es ;
+    skos:altLabel "turismoa"@eu ; skos:topConceptOf br:tema_concept .
+br:t_sanidad a bo:Tema, skos:Concept ; skos:prefLabel "sanidad"@es ;
+    skos:altLabel "salud"@es, "salud pública"@es, "osasuna"@eu ; skos:topConceptOf br:tema_concept .
+br:t_memoriahistorica a bo:Tema, skos:Concept ; skos:prefLabel "memoria histórica"@es ;
+    skos:altLabel "memoria historikoa"@eu ; skos:topConceptOf br:tema_concept .
+br:t_derechoshumanos a bo:Tema, skos:Concept ; skos:prefLabel "derechos humanos"@es ;
+    skos:altLabel "giza eskubideak"@eu ; skos:topConceptOf br:tema_concept .
+br:t_otros a bo:Tema, skos:Concept ; skos:prefLabel "otros"@es ;
+    skos:altLabel "besteak"@eu ; skos:topConceptOf br:tema_concept .
+
+### ---------------- NIVEL 2: subtemas canónicos ----------------
+### vivienda
+br:t_vivienda_social a bo:Tema, skos:Concept ; skos:prefLabel "vivienda social"@es ;
+    skos:altLabel "viviendas sociales"@es, "vivienda protegida"@es, "vivienda pública"@es, "vpo"@es ;
+    skos:broader br:t_vivienda .
+br:t_alquiler a bo:Tema, skos:Concept ; skos:prefLabel "alquiler"@es ;
+    skos:altLabel "alquiler social"@es, "alquileres"@es, "vivienda en alquiler"@es ;
+    skos:broader br:t_vivienda .
+br:t_desahucios a bo:Tema, skos:Concept ; skos:prefLabel "desahucios"@es ;
+    skos:altLabel "desahucio"@es ; skos:broader br:t_vivienda .
+br:t_vivienda_vacia a bo:Tema, skos:Concept ; skos:prefLabel "vivienda vacía"@es ;
+    skos:altLabel "viviendas vacías"@es, "vivienda deshabitada"@es, "viviendas deshabitadas"@es ;
+    skos:broader br:t_vivienda .
+
+### movilidad y transporte
+br:t_transporte_publico a bo:Tema, skos:Concept ; skos:prefLabel "transporte público"@es ;
+    skos:altLabel "transporte"@es ; skos:broader br:t_movilidad .
+br:t_aparcamiento a bo:Tema, skos:Concept ; skos:prefLabel "aparcamiento"@es ;
+    skos:altLabel "aparcamientos"@es, "ota"@es, "parking"@es ; skos:broader br:t_movilidad .
+br:t_bicicleta a bo:Tema, skos:Concept ; skos:prefLabel "bicicleta"@es ;
+    skos:altLabel "bicicletas"@es, "bidegorri"@es, "bidegorris"@es, "carril bici"@es ;
+    skos:broader br:t_movilidad .
+br:t_metro_bilbao a bo:Tema, skos:Concept ; skos:prefLabel "metro"@es ;
+    skos:altLabel "metro bilbao"@es ; skos:broader br:t_movilidad .
+br:t_bilbobus a bo:Tema, skos:Concept ; skos:prefLabel "bilbobus"@es ;
+    skos:altLabel "autobús"@es, "autobuses"@es ; skos:broader br:t_movilidad .
+br:t_tranvia a bo:Tema, skos:Concept ; skos:prefLabel "tranvía"@es ;
+    skos:broader br:t_movilidad .
+br:t_accesibilidad a bo:Tema, skos:Concept ; skos:prefLabel "accesibilidad"@es ;
+    skos:altLabel "ascensores"@es ; skos:broader br:t_movilidad .
+br:t_peatonalizacion a bo:Tema, skos:Concept ; skos:prefLabel "peatonalización"@es ;
+    skos:altLabel "peatonalizaciones"@es, "calles peatonales"@es, "pacificación del tráfico"@es,
+                  "zona 30"@es, "limitación de velocidad"@es, "ciudad 30"@es ;
+    skos:broader br:t_movilidad .
+
+### empleo y economía
+br:t_empleo a bo:Tema, skos:Concept ; skos:prefLabel "empleo"@es ;
+    skos:altLabel "desempleo"@es, "paro"@es, "empleo público"@es ; skos:broader br:t_empleoeconomia .
+br:t_comercio a bo:Tema, skos:Concept ; skos:prefLabel "comercio"@es ;
+    skos:altLabel "comercio local"@es, "mercados"@es ; skos:broader br:t_empleoeconomia .
+br:t_hosteleria a bo:Tema, skos:Concept ; skos:prefLabel "hostelería"@es ;
+    skos:broader br:t_empleoeconomia .
+br:t_empresas a bo:Tema, skos:Concept ; skos:prefLabel "empresas"@es ;
+    skos:altLabel "empresa"@es, "pymes"@es, "industria"@es ; skos:broader br:t_empleoeconomia .
+
+### presupuestos y fiscalidad
+br:t_presupuesto_municipal a bo:Tema, skos:Concept ; skos:prefLabel "presupuesto municipal"@es ;
+    skos:altLabel "presupuesto"@es, "presupuestos"@es, "presupuestos municipales"@es, "inversiones"@es ;
+    skos:broader br:t_presupuestos .
+br:t_subvenciones a bo:Tema, skos:Concept ; skos:prefLabel "subvenciones"@es ;
+    skos:altLabel "subvención"@es, "ayudas"@es, "ayudas económicas"@es ; skos:broader br:t_presupuestos .
+br:t_ordenanzas_fiscales a bo:Tema, skos:Concept ; skos:prefLabel "ordenanzas fiscales"@es ;
+    skos:altLabel "ordenanza fiscal"@es, "impuestos"@es, "tasas"@es, "bonificaciones"@es ;
+    skos:broader br:t_presupuestos .
+br:t_financiacion a bo:Tema, skos:Concept ; skos:prefLabel "financiación"@es ;
+    skos:broader br:t_presupuestos .
+br:t_retribuciones a bo:Tema, skos:Concept ; skos:prefLabel "retribuciones"@es ;
+    skos:altLabel "salarios"@es, "sueldos"@es ; skos:broader br:t_presupuestos .
+
+### urbanismo
+br:t_barrios a bo:Tema, skos:Concept ; skos:prefLabel "barrios"@es ;
+    skos:altLabel "barrio"@es, "distritos"@es ; skos:broader br:t_urbanismo .
+br:t_rehabilitacion a bo:Tema, skos:Concept ; skos:prefLabel "rehabilitación"@es ;
+    skos:altLabel "regeneración urbana"@es ; skos:broader br:t_urbanismo .
+br:t_ordenacion_urbana a bo:Tema, skos:Concept ; skos:prefLabel "ordenación urbana"@es ;
+    skos:altLabel "plan general"@es, "pgou"@es, "planeamiento"@es ; skos:broader br:t_urbanismo .
+br:t_espacio_publico a bo:Tema, skos:Concept ; skos:prefLabel "espacio público"@es ;
+    skos:altLabel "plazas"@es, "parques y jardines"@es ; skos:broader br:t_urbanismo .
+
+### seguridad
+br:t_policia_municipal a bo:Tema, skos:Concept ; skos:prefLabel "policía municipal"@es ;
+    skos:altLabel "policía"@es, "ertzaintza"@es ; skos:broader br:t_seguridad .
+
+### medio ambiente
+br:t_reciclaje a bo:Tema, skos:Concept ; skos:prefLabel "reciclaje"@es ;
+    skos:altLabel "residuos"@es, "basuras"@es, "limpieza"@es, "limpieza viaria"@es ;
+    skos:broader br:t_medioambiente .
+br:t_energia a bo:Tema, skos:Concept ; skos:prefLabel "energía"@es ;
+    skos:altLabel "energético"@es, "energética"@es, "pobreza energética"@es,
+                  "transición energética"@es, "energías renovables"@es, "eficiencia energética"@es ;
+    skos:broader br:t_medioambiente .
+br:t_calidad_aire a bo:Tema, skos:Concept ; skos:prefLabel "calidad del aire"@es ;
+    skos:altLabel "contaminación del aire"@es, "contaminación atmosférica"@es,
+                  "zona de bajas emisiones"@es, "zonas de bajas emisiones"@es, "zbe"@es,
+                  "emisiones"@es, "reducción de emisiones"@es ;
+    skos:broader br:t_medioambiente .
+
+### igualdad y feminismo
+br:t_violencia_genero a bo:Tema, skos:Concept ; skos:prefLabel "violencia de género"@es ;
+    skos:altLabel "violencia machista"@es ; skos:broader br:t_igualdad .
+
+### servicios sociales
+br:t_personas_mayores a bo:Tema, skos:Concept ; skos:prefLabel "personas mayores"@es ;
+    skos:altLabel "mayores"@es, "tercera edad"@es, "envejecimiento"@es ; skos:broader br:t_serviciossociales .
+br:t_discapacidad a bo:Tema, skos:Concept ; skos:prefLabel "discapacidad"@es ;
+    skos:altLabel "diversidad funcional"@es ; skos:broader br:t_serviciossociales .
+br:t_exclusion_social a bo:Tema, skos:Concept ; skos:prefLabel "exclusión social"@es ;
+    skos:altLabel "pobreza"@es ; skos:broader br:t_serviciossociales .
+br:t_juventud a bo:Tema, skos:Concept ; skos:prefLabel "juventud"@es ;
+    skos:altLabel "jóvenes"@es, "joven"@es, "juvenil"@es, "juveniles"@es, "gaztedia"@eu ;
+    skos:broader br:t_serviciossociales .
+
+### cultura
+br:t_museos a bo:Tema, skos:Concept ; skos:prefLabel "museos"@es ;
+    skos:altLabel "museo"@es ; skos:broader br:t_cultura .
+br:t_fiestas a bo:Tema, skos:Concept ; skos:prefLabel "fiestas"@es ;
+    skos:altLabel "aste nagusia"@es, "fiestas populares"@es ; skos:broader br:t_cultura .
+br:t_arte a bo:Tema, skos:Concept ; skos:prefLabel "arte"@es ;
+    skos:broader br:t_cultura .
+br:t_bibliotecas a bo:Tema, skos:Concept ; skos:prefLabel "bibliotecas"@es ;
+    skos:altLabel "biblioteca"@es, "bidebarrieta"@es, "sala de estudio"@es, "salas de estudio"@es ;
+    skos:broader br:t_cultura .
+
+### participación ciudadana
+br:t_transparencia a bo:Tema, skos:Concept ; skos:prefLabel "transparencia"@es ;
+    skos:altLabel "buen gobierno"@es ; skos:broader br:t_participacion .
