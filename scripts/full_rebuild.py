@@ -3,6 +3,7 @@ import sys
 import shutil
 import glob
 import argparse
+import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -80,19 +81,37 @@ def run_full_rebuild(year_limit=None):
             if chunks:
                 print(f"[*] Año {year}: {len(chunks)} fragmentos generados. Integrando en la DB...")
 
-                sub_batch_size = 1000
+                # Lotes pequeños (100, no 1000): Ollama sirve los embeddings a través de
+                # un proceso "runner" interno con puerto dinámico; con peticiones muy
+                # grandes (1000 textos de golpe) ese runner puede reciclarse a mitad de
+                # petición y el cliente se queda apuntando a un puerto ya muerto
+                # (ResponseError "dial tcp ...: connectex ... denegó la conexión").
+                # Con lotes pequeños + reintento el fallo puntual solo repite ~100 docs.
+                sub_batch_size = 100
                 for i in range(0, len(chunks), sub_batch_size):
                     sub_batch = chunks[i:i + sub_batch_size]
-                    print(f"   -> Sub-lote {i//sub_batch_size + 1}: {len(sub_batch)} fragmentos...")
+                    lote_num = i // sub_batch_size + 1
+                    total_lotes = (len(chunks) + sub_batch_size - 1) // sub_batch_size
+                    print(f"   -> Sub-lote {lote_num}/{total_lotes}: {len(sub_batch)} fragmentos...")
 
-                    if rag.vector_store is None:
-                        rag.vector_store = Chroma.from_documents(
-                            documents=sub_batch,
-                            embedding=rag.embeddings,
-                            persist_directory=CHROMA_PATH
-                        )
-                    else:
-                        rag.vector_store.add_documents(sub_batch)
+                    for intento in range(3):
+                        try:
+                            if rag.vector_store is None:
+                                rag.vector_store = Chroma.from_documents(
+                                    documents=sub_batch,
+                                    embedding=rag.embeddings,
+                                    persist_directory=CHROMA_PATH
+                                )
+                            else:
+                                rag.vector_store.add_documents(sub_batch)
+                            break
+                        except Exception as e:
+                            if intento < 2:
+                                print(f"      [!] Fallo de embeddings (intento {intento+1}/3): "
+                                      f"{type(e).__name__}: {str(e)[:150]} — reintentando en 5s...")
+                                time.sleep(5)
+                            else:
+                                raise
 
                 print(f"[+] Año {year} integrado con éxito.")
             else:
@@ -106,6 +125,25 @@ def run_full_rebuild(year_limit=None):
     print(f"Base de datos actualizada en: {CHROMA_PATH}")
     print(f"Total de fragmentos en la DB: {rag.vector_store._collection.count() if rag.vector_store else 0}")
     print("="*50)
+    # AVISO: este rebuild solo genera embeddings + metadata básica
+    # (date/topic/party/vote_result). Los campos que usa el canal de búsqueda
+    # temática (_thematic_search) — tema_principal, temas, resultado,
+    # grupo_proponente, prop_id — vienen de un pipeline SEPARADO
+    # (extract_proposals.py -> build_graph.py --enrich -> build_rdf.py)
+    # y de scripts/enrich_vector_metadata.py, que NO se invocan aquí porque
+    # implican llamadas a LLM (coste/tiempo que este script no debe decidir
+    # por su cuenta). Sin ese segundo paso, las actas nuevas indexadas ahora
+    # quedan SIN esos campos y _thematic_search las ignora en silencio para
+    # preguntas generales sobre esos temas — no es un error, solo un paso
+    # pendiente. Si se han añadido actas nuevas, ejecutar en este orden:
+    print("[!] RECORDATORIO: si se han añadido actas NUEVAS, este rebuild NO")
+    print("    incluye el enriquecimiento temático del RAG vectorial todavía.")
+    print("    Para que el canal de búsqueda por tema (_thematic_search) las")
+    print("    cubra, ejecutar en orden:")
+    print("      1) python graphrag/graphrag/construccion/extract_proposals.py")
+    print("      2) python graphrag/graphrag/construccion/build_graph.py --enrich --model qwen3:8b")
+    print("      3) python graphrag/graphrag/construccion/build_rdf.py")
+    print("      4) python scripts/enrich_vector_metadata.py")
 
 
 if __name__ == "__main__":

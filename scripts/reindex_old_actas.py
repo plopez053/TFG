@@ -1,7 +1,3 @@
-"""
-Borra y re-indexa los PDFs de 2007-2010 con el nuevo extractor de topics
-para formato antiguo (secciones separadas por "- N -").
-"""
 import os
 import sys
 import glob
@@ -30,7 +26,6 @@ def get_dates_for_years(years):
 
 
 def delete_chunks_for_dates(vs, dates):
-    """Elimina de ChromaDB todos los chunks cuya fecha esté en la lista."""
     total_deleted = 0
     # Procesar en lotes pequeños para no saturar SQLite
     batch = 20
