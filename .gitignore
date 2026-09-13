@@ -59,10 +59,12 @@ graphrag/graphrag/proposals.jsonl
 .chainlit/translations/
 frontend/.chainlit/translations/
 
-# Estudio de generación de SPARQL: resultados y logs (el código sí se versiona)
-graphrag/graphrag/estudio_sparql/study_*.jsonl
-graphrag/graphrag/estudio_sparql/phase1_*.json
-graphrag/graphrag/estudio_sparql/_realvocab.json
+# Estudio de generación de SPARQL (carpeta propia en la raíz, no forma parte de
+# ningún sistema): resultados y logs, el código sí se versiona
+estudio_sparql/study_*.jsonl
+estudio_sparql/phase1_*.json
+estudio_sparql/_realvocab.json
+estudio_sparql/_bank_embeds.json
 
 # Baterías crudas / borradores de trabajo (los informes finales sí se versionan)
 graphrag/graphrag/bateria_comparativa_cruda_*.md
