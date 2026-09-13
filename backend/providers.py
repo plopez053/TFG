@@ -1,9 +1,3 @@
-"""Adaptadores de los servicios externos: LLM (Groq + Ollama con fallback
-automático), reranker (Cohere) y healthcheck de Ollama.
-
-Aísla los SDK, las claves y los reintentos del resto del código: el pipeline
-(RAGPipeline, graph_rag_sparql) orquesta, esto habla con las APIs.
-"""
 import os
 from typing import List, Optional
 
@@ -15,7 +9,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 EMBEDDING_MODEL = "nomic-embed-text"
 LLM_MODEL_LOCAL = "qwen2.5:7b"        # LLM local (narración de respaldo, SPARQL de GraphRAG)
 LLM_MODEL_GROQ = "openai/gpt-oss-120b"
-LLM_MODEL_GRAPHRAG = "qwen2.5:7b"
+LLM_MODEL_GRAPHRAG = "qwen3:8b"
 COHERE_RERANK_MODEL = "rerank-multilingual-v3.0"
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY", "")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -33,12 +27,6 @@ def ping_ollama(timeout: float = 3.0) -> bool:
 
 
 class LLMProvider:
-    """LLM con proveedor principal + respaldo automático.
-
-    prefer='groq'   -> Groq primero, Ollama de respaldo (narración).
-    prefer='ollama' -> Ollama primero, Groq de respaldo (generación de SPARQL).
-    Cae al respaldo ante CUALQUIER fallo del principal (rate limit, red...).
-    """
 
     def __init__(self, prefer: str = "groq", *, groq_model: str = LLM_MODEL_GROQ,
                  local_model: str = LLM_MODEL_LOCAL, num_ctx: int = 8192,
@@ -118,12 +106,6 @@ _cohere_client = None
 
 
 def rerank(docs: list, query: str, top_n: int = 30, *, max_candidates: int = 80) -> list:
-    """Reordena los documentos por relevancia con Cohere y devuelve el top_n.
-
-    Guarda el score en metadata['_rerank_score']. Los docs marcados con
-    metadata['_kw'] (canal literal) que Cohere deja fuera se reincorporan al
-    final con un score bajo. Si no hay clave o la API falla, devuelve `docs`.
-    """
     global _cohere_client
     if not COHERE_API_KEY or not docs:
         return docs

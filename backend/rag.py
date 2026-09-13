@@ -76,45 +76,93 @@ RELEVANCE_FLOOR = 0.01
 # context=, question=).
 # ---------------------------------------------------------------------------
 _PROMPT_MULTI_SESSION = (
-    "Eres el Cronista Oficial de Bilbao, experto en historia municipal. RESPONDE SIEMPRE EN ESPAÑOL.\n\n"
-    "INSTRUCCION: Se te proporcionan fragmentos de MULTIPLES plenos del Ayuntamiento de Bilbao.\n"
-    "Las fechas de los plenos en este contexto son: {dates_found}\n"
-    "Responde a la pregunta haciendo un RESUMEN CRONOLOGICO de los debates y propuestas encontrados.\n\n"
-    "REGLAS CRUCIALES:\n"
-    "- IDIOMA: responde ÚNICAMENTE en español castellano. Está PROHIBIDO usar inglés, ni una sola frase.\n"
-    "- USA SOLO la informacion que esta explicitamente en las actas proporcionadas abajo.\n"
-    "- NUNCA inventes fechas, cifras, nombres, resultados o detalles que no esten en el texto.\n"
-    "- Si no sabes el resultado de una votacion, escribe: [Sin resultado en acta]\n"
-    "- SIEMPRE escribe las fechas en formato DD-MM-YYYY exacto tal como aparecen en el contexto "
-    "(ej: 26-10-2010), nunca solo el año.\n"
-    "- Para cada pleno relevante desarrolla un parrafo con este formato:\n"
-    "  **[fecha DD-MM-YYYY] — [grupo proponente]**\n"
-    "  - Propuesta: explica con DETALLE que pedia exactamente (los puntos concretos, cifras y medidas).\n"
-    "  - Argumentos: si el acta recoge la justificacion o los argumentos del debate, resumelos CON\n"
-    "    TUS PROPIAS PALABRAS. PERO si el acta NO dice nada sobre el porque, OMITE esta linea por\n"
-    "    completo: NO te inventes una justificacion generica no respaldada por el texto.\n"
-    "  - Resultado: indica el resultado e INCLUYE LAS CIFRAS DE LA VOTACION si aparecen en el texto\n"
-    "    (ej: \"Aprobada. Votos a favor: 29, en contra: 0\"). Si no hay cifras, escribe solo el resultado.\n"
-    "  - COHERENCIA VOTOS: si los votos en contra son 0 o no aparecen, el resultado NO puede ser\n"
-    "    \"rechazada\". No mezcles el resultado de una enmienda con los votos de la votación principal.\n"
-    "- Ordena de mas antiguo a mas reciente.\n"
-    "- Termina con un parrafo de CONCLUSION que sintetice la evolucion del tema a lo largo de los anos.\n\n"
+    "Eres el Cronista Oficial de Bilbao. RESPONDE SIEMPRE EN ESPAÑOL, nunca en inglés.\n\n"
+    "Se te dan fragmentos de varios plenos del Ayuntamiento de Bilbao, cada uno marcado con "
+    "[PLENO: fecha] título. Fechas en este contexto: {dates_found}\n\n"
+    "Para CADA pleno relevante para la pregunta, escribe un bloque con este formato EXACTO:\n"
+    "**[fecha DD-MM-YYYY] — [grupo proponente]**\n"
+    "- Título: [el título de la propuesta, tal como aparece]\n"
+    "- Propuesta: [qué se pide exactamente: puntos, cifras, medidas]\n"
+    "- Resumen: [de qué se discutió, con tus propias palabras; omite esta línea si el acta no dice nada]\n"
+    "- Votos: [resultado con cifras si aparecen, ej. \"Aprobada. A favor: 29, en contra: 0\"; "
+    "si no hay resultado, escribe [Sin resultado en acta]]\n\n"
+    "EJEMPLO — de este fragmento de contexto:\n"
+    "[PLENO: 26-10-2010] 5. PROPUESTA de aprobación de una subvención nominativa\n"
+    "GRUPO MUNICIPAL X ... SR. GARCIA ... solicita destinar 50.000 euros a...\n"
+    "RESULTADO: Aprobada. Votos a favor: 29, en contra: 0.\n"
+    "el bloque correcto es:\n"
+    "**[26-10-2010] — GRUPO MUNICIPAL X**\n"
+    "- Título: Aprobación de una subvención nominativa\n"
+    "- Propuesta: Destinar 50.000 euros a...\n"
+    "- Resumen: El Sr. García defendió la propuesta explicando...\n"
+    "- Votos: Aprobada. A favor: 29, en contra: 0.\n\n"
+    "REGLAS:\n"
+    "- Usa SOLO información explícita en las actas. NUNCA inventes fechas, cifras, nombres o resultados.\n"
+    "- Coherencia: si los votos en contra son 0 o no aparecen, el resultado no puede ser \"rechazada\". "
+    "No mezcles el resultado de una enmienda con el de la votación principal.\n"
+    "- Cuando el contexto trae VARIAS proposiciones seguidas y parecidas (misma sesión, "
+    "estructura similar), presta especial atención a NO mezclar el título, la propuesta, "
+    "el resumen o las cifras de votos de UNA proposición con los de OTRA — cada bloque "
+    "debe venir ÍNTEGRAMENTE del mismo fragmento del contexto, nunca combinado.\n"
+    "- Ordena los bloques de más antiguo a más reciente.\n"
+    "- Un bloque por cada [fecha]-[proposición] distinta. NUNCA repitas dos veces "
+    "el mismo bloque (misma fecha y mismo contenido) aunque el texto de las actas "
+    "esté repetido en el contexto.\n"
+    "- El [grupo proponente] de CADA bloque es el que aparece junto a [PLENO: fecha] "
+    "EN ESE FRAGMENTO CONCRETO — nunca copies el grupo de otro bloque anterior. Si "
+    "ese fragmento no menciona ningún grupo (p.ej. es una resolución de la Alcaldía "
+    "o una dación de cuenta administrativa), escribe \"Ayuntamiento de Bilbao\" en "
+    "vez de un grupo, o directamente omite ese guion.\n"
+    "- Si un pleno del contexto NO tiene relación real con la pregunta, OMÍTELO "
+    "POR COMPLETO — nunca escribas un bloque diciendo que no hay información o que "
+    "no se encuentra en el contexto; simplemente no lo incluyas.\n"
+    "- Termina con un párrafo de CONCLUSIÓN que sintetice la evolución del tema.\n\n"
     "ACTAS:\n{context}\n\n"
     "PREGUNTA: {question}\n"
-    "RESUMEN CRONOLOGICO DETALLADO EN ESPAÑOL:"
+    "RESPUESTA:"
 )
 
 _PROMPT_SINGLE_SESSION = (
-    "Eres el Cronista Oficial de Bilbao. Tu misión es relatar lo ocurrido en el Pleno. RESPONDE SIEMPRE EN ESPAÑOL.\n\n"
-    "INSTRUCCIÓN: Basándote en el ACTA de abajo, responde a: {question}\n\n"
+    "Eres el Cronista Oficial de Bilbao. RESPONDE SIEMPRE EN ESPAÑOL.\n\n"
+    "Basándote en el ACTA de abajo, responde a: {question}\n\n"
+    "Usa este formato:\n"
+    "En la sesión del Pleno de Bilbao del [fecha EXACTA en formato DD-MM-YYYY, "
+    "tal cual aparece en el ACTA — NUNCA la escribas en palabras "
+    "(\"26 de enero de 2023\"), siempre como cifras con guiones]...\n"
+    "- Título: [título de la propuesta, tal como aparece]\n"
+    "- Propuesta: [qué se pide exactamente]\n"
+    "- Resumen: [de qué se discutió, con tus propias palabras]\n"
+    "- Votos: [resultado con cifras si aparecen; si no hay, escribe [Sin resultado en acta]]\n\n"
+    "Si el acta trata VARIAS propuestas distintas, repite el bloque completo "
+    "(Título/Propuesta/Resumen/Votos) una vez por propuesta — NUNCA repitas dos "
+    "veces el mismo bloque para la misma propuesta.\n\n"
     "REGLAS:\n"
-    "- IDIOMA: responde ÚNICAMENTE en español castellano. Prohibido usar inglés.\n"
-    "- Empieza directamente con: \"En la sesión del Pleno de Bilbao...\"\n"
-    "- Detalla los puntos de la propuesta (qué se pide exactamente).\n"
-    "- Indica el resultado final de la votación si consta.\n\n"
+    "- Usa SOLO información explícita del acta. NUNCA inventes datos.\n"
+    "- Cuando el acta trae VARIAS propuestas seguidas y parecidas (mismo formato, "
+    "mismo tipo de acuerdo), presta especial atención a NO mezclar el título, la "
+    "propuesta, el resumen o las cifras de votos de UNA con los de OTRA — cada "
+    "bloque debe venir ÍNTEGRAMENTE del mismo punto del orden del día, nunca "
+    "combinado con otro.\n\n"
+    "EJEMPLO DEL ERROR MÁS FRECUENTE A EVITAR — con este fragmento de contexto:\n"
+    "[PLENO: 26-01-2023] 15. PROPUESTA de aprobación de subvenciones a personas "
+    "mayores por 860.817€...\nRESULTADO: Votos emitidos: 29 | a favor: 29\n"
+    "[PLENO: 26-01-2023] 14. PROPUESTA de aprobación de subvenciones al Comedor "
+    "de San Antonio por 619.128€...\nRESULTADO: Votos emitidos: 29 | a favor: 19, "
+    "en contra: 7, abstenciones: 3\n\n"
+    "INCORRECTO (un solo bloque que mezcla las dos propuestas y usa los votos de "
+    "la segunda para describir la primera):\n"
+    "- Título: Aprobación de subvenciones nominativas\n"
+    "- Propuesta: A favor de personas mayores y del Comedor de San Antonio\n"
+    "- Votos: Votos emitidos: 29 | a favor: 19, en contra: 7, abstenciones: 3\n\n"
+    "CORRECTO (dos bloques, cada uno con SUS PROPIOS votos, sin mezclarlos):\n"
+    "- Título: Aprobación de subvenciones a personas mayores\n"
+    "- Votos: Votos emitidos: 29 | a favor: 29\n"
+    "(bloque aparte)\n"
+    "- Título: Aprobación de subvenciones al Comedor de San Antonio\n"
+    "- Votos: Votos emitidos: 29 | a favor: 19, en contra: 7, abstenciones: 3\n\n"
     "ACTA:\n{context}\n\n"
     "PREGUNTA: {question}\n"
-    "CRÓNICA EN ESPAÑOL:"
+    "RESPUESTA:"
 )
 
 # funcion para quitar acentos y diacríticios
@@ -372,6 +420,166 @@ def build_sources_data(retrieved_docs, answer_text=None):
     return sources_data
 
 
+# red de seguridad determinista: colapsa párrafos EXACTAMENTE repetidos en la
+# respuesta del LLM (normalizando espacios/mayúsculas). Un modelo local pequeño
+# puede entrar en bucle y copiar el mismo bloque de pleno varias veces seguidas
+# — la regla en el prompt (ver _PROMPT_MULTI_SESSION/_PROMPT_SINGLE_SESSION) lo
+# reduce pero no lo elimina (ver memoria/decisiones_tecnicas.md 2.6). Se aplica
+# ANTES de insertar los enlaces de fuente (build_sources_data en app.py depende
+# de las posiciones del texto ya limpio).
+def dedup_answer_blocks(text: str) -> str:
+    paragraphs = re.split(r'\n\s*\n', text)
+    seen: set = set()
+    out = []
+    for p in paragraphs:
+        norm = re.sub(r'\s+', ' ', p).strip().lower()
+        if norm and norm in seen:
+            continue
+        if norm:
+            seen.add(norm)
+        out.append(p)
+    return '\n\n'.join(out)
+
+
+_SIN_INFO_RE = re.compile(
+    r'no se (encuentra|proporciona|dispone|menciona)|no hay informaci[oó]n'
+    r'|sin informaci[oó]n relevante|no tiene relaci[oó]n',
+    re.IGNORECASE,
+)
+_TITULO_CAMPO_RE = re.compile(r'-\s*\*{0,2}\s*T[ií]tulo\s*\*{0,2}\s*:\s*(.+)', re.IGNORECASE)
+_PROPUESTA_CAMPO_RE = re.compile(r'-\s*\*{0,2}\s*Propuesta\s*\*{0,2}\s*:\s*(.+)', re.IGNORECASE)
+_HEADER_LINE_RE = re.compile(r'^\s*\*{0,2}\s*\[.*?\]\s*[—-]\s*(.+?)\*{0,2}\s*$')
+
+
+# red de seguridad determinista: elimina bloques ENTEROS donde el propio LLM
+# admite que ese pleno no tenía relación con la pregunta — la regla en el
+# prompt (ver _PROMPT_MULTI_SESSION) pide OMITIR esos plenos en vez de
+# escribir un bloque vacío, pero un modelo local pequeño no siempre la respeta
+# (ver memoria/decisiones_tecnicas.md 2.7). Dos formas observadas: (a) Título Y
+# Propuesta dicen "no se encuentra"/"no se proporciona..." — se exige AMBOS
+# para no borrar un bloque legítimo que solo tiene el Resumen o los Votos
+# escuetos (eso sí es información real); (b) el bloque se colapsa a solo la
+# cabecera "**[fecha] — NO HAY INFORMACIÓN RELEVANTE**" sin ninguna línea más.
+def strip_empty_blocks(text: str) -> str:
+    paragraphs = re.split(r'\n\s*\n', text)
+    out = []
+    for p in paragraphs:
+        lines = [l for l in p.splitlines() if l.strip()]
+        if len(lines) == 1:
+            m_header = _HEADER_LINE_RE.match(lines[0])
+            if m_header and _SIN_INFO_RE.search(m_header.group(1)):
+                continue
+        m_titulo = _TITULO_CAMPO_RE.search(p)
+        m_propuesta = _PROPUESTA_CAMPO_RE.search(p)
+        if (m_titulo and m_propuesta
+                and _SIN_INFO_RE.search(m_titulo.group(1))
+                and _SIN_INFO_RE.search(m_propuesta.group(1))):
+            continue
+        out.append(p)
+    return '\n\n'.join(out)
+
+
+_MESES_ES = {
+    "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+    "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10, "noviembre": 11,
+    "diciembre": 12,
+}
+
+
+# posiciones donde aparece una fecha DD-MM-YYYY en el texto, en ESE formato
+# O en prosa española ("26 de enero de 2023") — pedido en el prompt (ver
+# _PROMPT_SINGLE_SESSION), pero un modelo local pequeño no siempre lo respeta
+# (ver memoria/decisiones_tecnicas.md 2.6). frontend/app.py usa esto para
+# enganchar el enlace de fuente justo debajo del bloque de cada pleno; sin
+# esta variante, si el LLM escribe la fecha en prosa la fuente correspondiente
+# no encuentra dónde encajar y cae al final en vez de bajo su bloque.
+def find_date_mentions(date_ddmmyyyy: str, text: str) -> List[int]:
+    try:
+        day, month, year = date_ddmmyyyy.split('-')
+        day_i, month_i = int(day), int(month)
+    except (ValueError, AttributeError):
+        return [m.start() for m in re.finditer(re.escape(date_ddmmyyyy), text)]
+    positions = [m.start() for m in re.finditer(re.escape(date_ddmmyyyy), text)]
+    mes_nombre = next((k for k, v in _MESES_ES.items() if v == month_i), None)
+    if mes_nombre:
+        patron_prosa = rf'\b{day_i}\s+de\s+{mes_nombre}\s+de\s+{year}\b'
+        positions += [m.start() for m in re.finditer(patron_prosa, text, re.IGNORECASE)]
+    return sorted(positions)
+
+
+_TITULO_LINE_RE = re.compile(
+    r'^\s*-?\s*\*{0,2}\s*T[ií]tulo\s*\*{0,2}\s*:\s*\*{0,2}\s*(.+?)\*{0,2}\s*$',
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
+# segmenta una respuesta de SESIÓN ÚNICA con varias propuestas en tramos
+# (inicio, fin, texto del título), uno por cada línea "Título: ...". Todas las
+# propuestas de una sesión única comparten la misma fecha, así que anclar la
+# fuente por fecha (ver find_date_mentions) solo distingue UN tramo — el resto
+# cae sin marcar a qué propuesta corresponde. Anclar por título sí distingue
+# cada propuesta (ver memoria/decisiones_tecnicas.md 2.6).
+def find_item_anchors(text: str, end_pos: int) -> List[Tuple[int, int, str]]:
+    matches = list(_TITULO_LINE_RE.finditer(text, 0, end_pos))
+    anchors = []
+    for i, m in enumerate(matches):
+        fin = matches[i + 1].start() if i + 1 < len(matches) else end_pos
+        anchors.append((m.start(), fin, m.group(1).strip()))
+    return anchors
+
+
+_ITEM_NUM_RE = re.compile(r'^\s*\*{0,2}\s*(\d+)\s*[.):]')
+
+
+# número de punto del orden del día al inicio de un título/ASUNTO ("18. PROPOSICIÓN...")
+# — señal más fiable que las palabras compartidas cuando varias propuestas del
+# MISMO grupo caen la misma sesión (p.ej. dos del Partido Popular): las palabras
+# significativas de ambos títulos pueden ser solo "partido"+"popular", pero el
+# número del punto del orden del día sí distingue una propuesta de otra.
+def item_number(text: str) -> Optional[str]:
+    m = _ITEM_NUM_RE.match(text.strip())
+    return m.group(1) if m else None
+
+
+# empareja el título que escribió el LLM para una propuesta con la fuente
+# (de `candidatos`) que de verdad le corresponde. Primero por número de punto
+# del orden del día (si es único entre los candidatos); si no, por solape de
+# palabras significativas, exigiendo que cubran una fracción real del título
+# (no basta 1 palabra suelta si el título tiene muchas) para no citar una
+# fuente equivocada bajo un título concreto (ver memoria/decisiones_tecnicas.md 2.6).
+def match_source_by_title(titulo: str, candidatos: List[dict]) -> Optional[dict]:
+    if not candidatos:
+        return None
+    num = item_number(titulo)
+    if num:
+        exactos = [s for s in candidatos if item_number(s.get("topic", "")) == num]
+        if len(exactos) == 1:
+            return exactos[0]
+    tit_words = _palabras_clave(titulo)
+    if not tit_words:
+        return None
+    mejor = max(candidatos, key=lambda s: len(tit_words & _palabras_clave(s["topic"])))
+    overlap = len(tit_words & _palabras_clave(mejor["topic"]))
+    if overlap >= 1 and overlap / len(tit_words) >= 0.34:
+        return mejor
+    return None
+
+
+_VOTOS_LINEA_RE = re.compile(r'(-\s*\*{0,2}\s*Votos\s*\*{0,2}\s*:\s*)(.+)', re.IGNORECASE)
+
+
+# sustituye el CONTENIDO de la línea "- Votos: ..." de un bloque por el
+# `vote_result` real (metadata determinista, no lo que escribió el LLM).
+# Guarda contra el hallazgo de la Ronda 36 (memoria/decisiones_tecnicas.md
+# 2.9): con contextos de muchas propuestas parecidas, qwen2.5:7b mezcla las
+# cifras de voto de una propuesta con las de otra — ni la regla de prompt ni
+# un ejemplo concreto lo eliminan de forma fiable (verificado: sigue pasando
+# tras añadir ambos). Solo se puede corregir con datos, no con más prompt.
+def replace_votos_line(block_text: str, vote_result: str) -> str:
+    new_text, n = _VOTOS_LINEA_RE.subn(lambda m: m.group(1) + vote_result, block_text, count=1)
+    return new_text if n else block_text
+
+
 class RAGPipeline:
     # inicializa el motor RAG con el modelo de embeddings configurado
     def __init__(self):
@@ -563,7 +771,14 @@ class RAGPipeline:
             # Extraer vote_result a nivel de segmento limpio (sin solapamiento de chunks)
             seg_flat = re.sub(r'\s+', ' ', segment)
             resultado_text = None
-            rm = result_re.search(seg_flat)
+            # ÚLTIMA coincidencia, no la primera: si la proposición tiene voto de una
+            # enmienda y luego voto de la propuesta, .search() cogía el texto del
+            # primer resultado (la enmienda) emparejado con las cifras del último
+            # voto (vote_re ya usa votes[-1]) -> texto y cifras de votos distintos
+            # (verificado: "decae" mal clasificado como "aprobada con enmienda" en
+            # cientos de casos porque se perdía el "por lo que decae..." final).
+            rms = list(result_re.finditer(seg_flat))
+            rm = rms[-1] if rms else None
             if rm:
                 resultado_text = re.split(
                     r'\s*-{3,}\s*|\s+-\s+|\s*https?://|\s+Egiaztatzeko|\s+Verificaci|\s+Siendo\s+las\b',
@@ -1078,7 +1293,16 @@ class RAGPipeline:
         else:
             where = None
 
-        docs: List[Document] = []
+        # Por keyword, NO en una lista plana única: el llamante corta el
+        # resultado combinado (ver _retrieve_and_rank) y una keyword genérica
+        # ("empresa") puede tener 30x más coincidencias que una distintiva y
+        # rara ("Tubacex") — si "empresa" queda primera, se come todo el cupo
+        # y la keyword rara (la que de verdad importa) nunca llega a Cohere.
+        # Bug real encontrado en producción: el orden entre keywords del mismo
+        # largo en `sorted(set(keywords), ...)` depende del PYTHONHASHSEED
+        # aleatorio del proceso, así que la misma pregunta podía funcionar o
+        # fallar según el arranque. Se guarda por keyword y se intercala abajo.
+        by_kw: Dict[str, List[Document]] = {kw: [] for kw in keywords}
         for kw in keywords:
             # Variante SIN tilde como respaldo: cubre al usuario que escribe sin
             # acentos y a actas antiguas cuyo texto perdió la tilde por OCR. No
@@ -1112,9 +1336,20 @@ class RAGPipeline:
                     for content, meta in zip(res["documents"], res["metadatas"]):
                         m = dict(meta)
                         m["_kw"] = kw  # marca de canal literal (ver _rerank_with_cohere)
-                        docs.append(Document(page_content=content, metadata=m))
+                        by_kw[kw].append(Document(page_content=content, metadata=m))
                 except Exception as e:
                     print(f"[!] Búsqueda literal fallida para '{variante}': {type(e).__name__}: {e}", flush=True)
+
+        # Ronda robin: una posición de cada keyword por vuelta, así todas
+        # tienen representación en los primeros puestos sin importar cuántas
+        # coincidencias totales tenga cada una.
+        docs: List[Document] = []
+        i = 0
+        while any(i < len(by_kw[kw]) for kw in keywords):
+            for kw in keywords:
+                if i < len(by_kw[kw]):
+                    docs.append(by_kw[kw][i])
+            i += 1
         return docs
 
     # busca proposiciones clasificadas con el tema de la pregunta aunque el texto no repita la palabra (ver memoria 1.1)
@@ -1412,7 +1647,8 @@ class RAGPipeline:
                     time.sleep(10)
                 else:
                     raise
-        
+        response = strip_empty_blocks(dedup_answer_blocks(response))
+
         # 5. Añadir fuentes enriquecidas (deduplicadas por acta+tema)
         sources = "\n\n" + "="*60 + "\nFUENTES UTILIZADAS:\n"
         seen_src_keys: set = set()
