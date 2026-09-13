@@ -21,3 +21,4 @@ rdflib>=7.0.0
 owlrl>=7.0.0
 json_repair
 langchain-google-genai   # Fase 2: enriquecimiento con Gemini (build_graph.py --model gemini)
+pyshacl>=0.40.0          # validacion SHACL del grafo (graphrag/graphrag/shapes.ttl)

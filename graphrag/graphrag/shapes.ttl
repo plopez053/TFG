@@ -1,0 +1,129 @@
+@prefix bo:   <http://bilbao.tfg/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Shapes SHACL para validar bilbao_reasoned.ttl.
+#
+# No sustituyen a las guardas deterministas que ya existen en el código
+# (grupos.py, build_rdf.py::resultado_cruzado, _sanitize_sparql...) -- esas
+# corrigen datos ANTES de que entren en el grafo o ANTES de ejecutar una
+# consulta. Estas shapes comprueban el grafo YA CONSTRUIDO, como una red de
+# seguridad independiente: si alguna vez una versión futura del pipeline deja
+# de aplicar una de esas guardas, pyshacl lo señala aquí sin depender del
+# código Python que lo generó.
+#################################################################
+
+bo:ProposicionShape a sh:NodeShape ;
+    sh:targetClass bo:Proposicion ;
+
+    sh:property [
+        sh:path bo:fecha ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:message "Toda proposición debe tener exactamente una fecha." ;
+    ] ;
+    sh:property [
+        sh:path bo:anio ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+        sh:message "El año, si existe, debe ser un único entero." ;
+    ] ;
+    sh:property [
+        sh:path bo:tituloTopic ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "Toda proposición debe tener un único título." ;
+    ] ;
+    sh:property [
+        # UNO solo por proposición: invariante ya documentado en el schema de
+        # graph_rag_sparql.py y en example_bank.py -- una proposición conjunta
+        # de varios grupos se guarda con un único grupo, nunca con varios.
+        sh:path bo:presentadaPor ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bo:Grupo ;
+        sh:message "Toda proposición debe tener exactamente un grupo proponente, y debe ser un nodo bo:Grupo (nunca una entidad/persona mal resuelta)." ;
+    ] ;
+    sh:property [
+        # Cierre exacto: nunca vacío (resultado_cruzado() siempre asigna al
+        # menos bo:SinResultado) y nunca dos resultados a la vez.
+        sh:path bo:tieneResultado ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( bo:Aprobada bo:Rechazada bo:Decae bo:Retirada bo:AprobadaConEnmienda bo:SinResultado ) ;
+        sh:message "El resultado debe ser exactamente uno de los 6 individuos fijos de bo:Resultado." ;
+    ] ;
+    sh:property [
+        sh:path bo:pagina ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+    ] ;
+    sh:property [
+        # Detecta el patrón de invención sistemática que corrige alias_rewrite
+        # en producción (ver graph_rag_sparql.py): una entidad puesta como
+        # br:Iberdrola en vez de resolverse con rdfs:label+REGEX. Si esto
+        # dispara sobre el grafo real, es que algo se coló sin pasar por esa
+        # capa -- señal de que hay que revisar cómo se construyó ese triple.
+        sh:path bo:menciona ; sh:class bo:Entidad ;
+        sh:message "Toda entidad mencionada debe ser un nodo bo:Entidad tipado (persona/lugar/organización), no una URI suelta." ;
+    ] ;
+    sh:property [
+        sh:path bo:intervino ; sh:class bo:Concejal ;
+        sh:message "Quien interviene en el debate debe ser un bo:Concejal del censo." ;
+    ] ;
+    sh:property [
+        sh:path bo:proponePersona ; sh:maxCount 1 ; sh:class bo:Concejal ;
+        sh:message "El proponente persona, si existe, debe ser un único bo:Concejal del censo." ;
+    ] ;
+    sh:property [ sh:path bo:votoAFavorDe ; sh:class bo:Grupo ] ;
+    sh:property [ sh:path bo:votoEnContraDe ; sh:class bo:Grupo ] ;
+    sh:property [ sh:path bo:seAbstuvo ; sh:class bo:Grupo ] ;
+    sh:property [ sh:path bo:concejalVotoAFavor ; sh:class bo:Concejal ] ;
+    sh:property [ sh:path bo:concejalVotoEnContra ; sh:class bo:Concejal ] ;
+    sh:property [ sh:path bo:concejalVotoAbstencion ; sh:class bo:Concejal ] .
+
+bo:GrupoShape a sh:NodeShape ;
+    sh:targetClass bo:Grupo ;
+    sh:property [
+        sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "Todo grupo debe tener exactamente una etiqueta legible." ;
+    ] .
+
+bo:ConcejalShape a sh:NodeShape ;
+    sh:targetClass bo:Concejal ;
+    sh:property [
+        sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "Todo concejal debe tener exactamente una etiqueta (nombre)." ;
+    ] ;
+    sh:property [
+        # sh:Warning, no sh:Violation: 8/94 concejales (mandatos 2007-2011 y
+        # 2014-2015) no tienen grupo resuelto en concejales.jsonl -- hueco real
+        # de concejales_partido.json (tabla reconstruida a mano), no un bug de
+        # build_rdf.py. Documentado como limitación conocida en la memoria.
+        sh:path bo:perteneceA ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bo:Grupo ;
+        sh:severity sh:Warning ;
+        sh:message "Concejal sin grupo resuelto en el censo (hueco conocido de concejales_partido.json, no bloqueante)." ;
+    ] ;
+    sh:property [
+        sh:path bo:esAlcalde ; sh:maxCount 1 ; sh:datatype xsd:boolean ;
+    ] .
+
+bo:PersonalTecnicoShape a sh:NodeShape ;
+    sh:targetClass bo:PersonalTecnico ;
+    sh:property [
+        sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        # El personal técnico (Secretario/Interventor) asiste a los plenos
+        # pero NO es cargo electo -- no debe pertenecer a ningún grupo
+        # político. Si esto dispara, alguien coló al Secretario General como
+        # si fuera concejal de un partido.
+        sh:path bo:perteneceA ; sh:maxCount 0 ;
+        sh:message "El personal técnico no debe pertenecer a ningún grupo político (no son cargos electos)." ;
+    ] .
+
+bo:EnmiendaShape a sh:NodeShape ;
+    sh:targetClass bo:Enmienda ;
+    sh:property [
+        # sh:Warning, no sh:Violation: verificado que 21/22 casos reales tienen
+        # "por": null en proposals_enriched.jsonl -- el LLM no lo extrajo del
+        # acta, no es un fallo de build_rdf.py. Documentado como limitación
+        # conocida en la memoria.
+        sh:path bo:enmiendaPor ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bo:Grupo ;
+        sh:severity sh:Warning ;
+        sh:message "Enmienda sin grupo autor extraído (limitación conocida de la extracción LLM, no bloqueante)." ;
+    ] ;
+    sh:property [
+        sh:path bo:resultadoEnmienda ; sh:maxCount 1 ;
+        sh:in ( "aceptada_por_proponente" "aprobada_en_votacion" "rechazada_en_votacion" "sin_votar" "retirada" ) ;
+        sh:message "El resultado de la enmienda debe ser uno de los 5 valores normalizados en build_rdf.py::normaliza_resultado_enmienda." ;
+    ] .
