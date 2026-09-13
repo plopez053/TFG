@@ -42,6 +42,13 @@ bo:presentadaPor a owl:ObjectProperty ;
     rdfs:domain bo:Proposicion ; rdfs:range bo:Grupo ;
     rdfs:label "presentada por"@es .
 
+# Distinta de bo:presentadaPor: cubre las proposiciones que NO presenta un
+# grupo político sino un particular, una asociación vecinal, una AMPA o una
+# comunidad de propietarios (mecanismo de "proposición ciudadana" del ROM).
+bo:presentadaPorParticular a owl:ObjectProperty ;
+    rdfs:domain bo:Proposicion ; rdfs:range bo:Entidad ;
+    rdfs:label "presentada por (particular/asociación)"@es .
+
 bo:enPleno a owl:ObjectProperty ;
     rdfs:domain bo:Proposicion ; rdfs:range bo:Pleno ;
     rdfs:label "en pleno"@es .

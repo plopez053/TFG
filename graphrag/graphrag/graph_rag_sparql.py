@@ -32,6 +32,7 @@ Grafo RDF (razonado con OWL-RL) del Pleno del Ayuntamiento de Bilbao (2007-2026)
 CLASES Y PROPIEDADES:
   ?p a bo:Proposicion ; bo:tituloTopic ?titulo ; bo:fecha ?fecha ; bo:anio ?anio (xsd:integer) .
   ?p bo:presentadaPor ?g          # grupo que presenta (UNO solo por proposicion)
+  ?p bo:presentadaPorParticular ?ent   # SOLO si NO la presenta un grupo: particular/asociacion vecinal/AMPA (?ent a bo:Persona o bo:Organizacion)
   ?p bo:enPleno ?pleno
   ?p bo:tieneResultado ?res       # individuos: bo:Aprobada bo:Rechazada bo:Decae bo:Retirada bo:AprobadaConEnmienda bo:SinResultado
   ?p bo:trataSobre ?t             # tema principal (exacto)
@@ -90,6 +91,10 @@ _EXAMPLE_BANK = [
     dict(q=u"\u00bfCu\u00e1ntas proposiciones present\u00f3 el PSE-EE en 2018?",
          sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
   ?p a bo:Proposicion ; bo:presentadaPor br:grupo_pse_ee ; bo:anio 2018 . }"""),
+    dict(q=u"\u00bfQu\u00e9 proposiciones ha presentado alguna asociaci\u00f3n vecinal o particular?",
+         sparql="""SELECT ?p ?nombre WHERE {
+  ?p a bo:Proposicion ; bo:presentadaPorParticular ?ent .
+  ?ent rdfs:label ?nombre . } LIMIT 50"""),
     dict(q=u"\u00bfCu\u00e1ntas proposiciones sobre sanidad se han aprobado?",
          sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
   ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_sanidad ; bo:tieneResultado ?r .
@@ -301,14 +306,20 @@ def _get_llm(provider: str):
             if provider not in _llm_cache:
                 if provider == "ollama":
                     from langchain_ollama import ChatOllama
+                    # num_predict alto: la narración de una consulta de LISTADO
+                    # (p.ej. las 50 proposiciones de un particular/asociación,
+                    # con dos tablas y categorización) necesita bastante más que
+                    # el límite por defecto -- verificado un corte real a mitad
+                    # de frase con el límite implícito anterior.
                     _llm_cache[provider] = ChatOllama(model=LLM_MODEL_GRAPHRAG, temperature=0,
+                                                     num_predict=8192,
                                                      client_kwargs={"timeout": 300})
                     print(f"[+] GraphRAG LLM: Ollama ({LLM_MODEL_GRAPHRAG})", flush=True)
                 elif provider == "groq":
                     from langchain_groq import ChatGroq
                     groq_key = os.environ.get("GROQ_API_KEY", "")
                     _llm_cache[provider] = ChatGroq(
-                        model=LLM_MODEL_GROQ, temperature=0, api_key=groq_key
+                        model=LLM_MODEL_GROQ, temperature=0, api_key=groq_key, max_tokens=8192
                     )
                     print(f"[+] GraphRAG LLM: Groq ({LLM_MODEL_GROQ})", flush=True)
     return _llm_cache[provider]
@@ -888,6 +899,19 @@ def graph_answer(pregunta: str, verbose=True):
 
     # 3. Respuesta narrativa basada solo en los datos del grafo
     answer = _llm_invoke(ANSWER_PROMPT.format(pregunta=pregunta, filas=filas, sparql=sparql), prefer="groq")
+
+    # 4. Citas de fuente (página real del PDF) cuando la consulta trae
+    # proposiciones individuales -- mismo formato que el RAG vectorial, para
+    # que el usuario pueda verificar el dato en el acta igual en los dos
+    # sistemas. graph_sources() ya existía pero nunca se llamaba desde aquí.
+    fuentes = graph_sources(rows)
+    if fuentes:
+        bloque = "\n\n" + "=" * 60 + "\nFUENTES UTILIZADAS:\n"
+        for i, f in enumerate(fuentes, 1):
+            pdf = os.path.basename(f.get("pdf", "Acta"))
+            bloque += f" [{i}] {pdf} | pág. {f.get('pagina', '?')} | {f.get('fecha', '')} | {f.get('titulo', '')[:60]}\n"
+        answer += bloque
+
     return {"sparql": sparql, "rows": rows, "answer": answer}
 
 

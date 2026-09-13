@@ -234,7 +234,7 @@ def _build_tema_rollup() -> Optional[Dict[str, Any]]:
     try:
         from rdflib import Graph, RDF
         from rdflib.namespace import SKOS
-        from graphrag.graphrag.build_rdf import ONTOLOGY, THEMES, BO
+        from graphrag.graphrag.construccion.build_rdf import ONTOLOGY, THEMES, BO
         g = Graph()
         g.parse(ONTOLOGY, format="turtle")
         g.parse(THEMES, format="turtle")

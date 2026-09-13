@@ -9,8 +9,13 @@ TIPOS = {
 }
 
 # Sufijos jurídicos y coletillas que NO deben crear un nodo distinto.
+# "s\.?\s?a\.?(?:\s?u\.?)?"/"...l\.?(?:\s?u\.?)?": la "U" final de "S.A.U."/
+# "S.L.U." (unipersonal) no la cubría la versión anterior, así que
+# "Bilbao Kirolak S.A.U." quedaba como entidad distinta de "Bilbao Kirolak
+# S.A." / "Bilbao Kirolak" en vez de fundirse en el mismo nodo. Verificado:
+# fragmentaba una sola organización en 3 nodos separados.
 _SUFIJOS = re.compile(
-    r"[,\s]+(?:s\.?\s?a\.?|s\.?\s?l\.?|s\.?\s?coop\.?|s\.?\s?c\.?|oal|o\.?a\.?l\.?|"
+    r"[,\s]+(?:s\.?\s?a\.?(?:\s?u\.?)?|s\.?\s?l\.?(?:\s?u\.?)?|s\.?\s?coop\.?|s\.?\s?c\.?|oal|o\.?a\.?l\.?|"
     r"a\.?i\.?e\.?|ute|sociedad an[oó]nima|sociedad limitada|fundaz?i?oa?|fundaci[oó]n)\.?$",
     re.I)
 

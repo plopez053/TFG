@@ -11,7 +11,7 @@ import owlrl
 HERE = os.path.dirname(os.path.abspath(__file__))            # .../graphrag/graphrag/construccion
 GRAPHRAG = os.path.dirname(HERE)                               # .../graphrag/graphrag (datos + utils compartidos)
 sys.path.insert(0, GRAPHRAG)
-from grupos import normaliza_grupo, extrae_grupo, canon_grupo, prop_id, es_grupo_disfrazado  # noqa: E402
+from grupos import normaliza_grupo, extrae_grupo, canon_grupo, prop_id, es_grupo_disfrazado, extrae_particular  # noqa: E402
 from jsonl_utils import load_jsonl, iter_jsonl  # noqa: E402
 from entidades import canon_entidad  # noqa: E402
 
@@ -24,6 +24,33 @@ OUT = os.path.join(GRAPHRAG, "bilbao_reasoned.ttl")
 
 BO = Namespace("http://bilbao.tfg/ontology#")
 BR = Namespace("http://bilbao.tfg/resource/")
+
+# Valores válidos de bo:resultadoEnmienda (ver ontology.ttl). "retirada" se
+# añade aquí como quinto valor legítimo -- una enmienda, igual que una
+# proposición, puede retirarse antes de votarse -- aunque el prompt de
+# build_graph.py::EXTRACT_PROMPT solo pide los otros 4; se descubrió al
+# validar el grafo con shapes.ttl (2 casos reales en 2026-09-13).
+_RESULTADO_ENMIENDA_VALIDOS = {
+    "aceptada_por_proponente", "aprobada_en_votacion",
+    "rechazada_en_votacion", "sin_votar", "retirada",
+}
+# El LLM a veces inventa un valor fuera de vocabulario (mismo hallazgo de la
+# validación SHACL). Se resuelve caso a caso contra el acta original en vez de
+# adivinar por el texto del valor -- "rechazada_en_proponente" (único caso,
+# 23-02-2017, enmienda del EQUIPO DE GOBIERNO a la proposición de EH BILDU
+# sobre cooperativas de vivienda, pág. 172 del acta) sonaba a "rechazada" pero
+# el acta dice literalmente "se acepta la enmienda de modificación del EQUIPO
+# DE GOBIERNO" tras votación nominal (21 a favor, 7 en contra): es
+# aprobada_en_votacion, no rechazada. Verificado leyendo el PDF, no inferido.
+_RESULTADO_ENMIENDA_NORM = {
+    "rechazada_en_proponente": "aprobada_en_votacion",
+}
+
+
+def normaliza_resultado_enmienda(valor):
+    v = (valor or "").strip().lower().replace(" ", "_")
+    v = _RESULTADO_ENMIENDA_NORM.get(v, v)
+    return v if v in _RESULTADO_ENMIENDA_VALIDOS else None
 
 RESULTADO_IND = {
     "aprobada": BO.Aprobada, "rechazada": BO.Rechazada, "decae": BO.Decae,
@@ -149,17 +176,25 @@ def _fecha_key(f):
 
 
 # crea los nodos :Concejal (+ bo:perteneceA, + bo:esAlcalde) y devuelve
+# (idx apellido->candidatos, alcaldes, nombre completo normalizado->URI).
+# Este tercer índice existe para que las "entidades mencionadas" (extraídas
+# por el LLM del contenido de la proposición) no creen un nodo `ent_` nuevo
+# y desconectado cuando en realidad se refieren a un concejal o técnico que
+# YA tiene su propio nodo con grupo/votos/intervenciones -- verificado: sin
+# esto, 129 concejales/técnicos aparecían duplicados como una "entidad"
+# fantasma sin ninguna relación con el resto de sus datos.
 def cargar_concejales(g):
-    idx, alcaldes = {}, []
+    idx, alcaldes, nombres_completos = {}, [], {}
     if not os.path.exists(CONCEJALES):
         print("[!] no hay concejales.jsonl -> sin capa de concejales "
               "(corre extract_concejales.py primero)")
-        return idx, alcaldes
+        return idx, alcaldes, nombres_completos
     n = 0
     for c in iter_jsonl(CONCEJALES):
         uri = BR[f"concejal_{slug(c['nombre'])}"]
         g.add((uri, RDF.type, BO.Concejal))
         g.add((uri, RDFS.label, Literal(c["nombre"])))
+        nombres_completos[norm_label(c["nombre"])] = uri
         grupo = canon_grupo(c.get("grupo", "Desconocido"))
         if grupo != "Desconocido":
             gr = BR[f"grupo_{slug(grupo)}"]
@@ -180,11 +215,12 @@ def cargar_concejales(g):
             uri = BR[f"tecnico_{slug(c['nombre'])}"]
             g.add((uri, RDF.type, BO.PersonalTecnico))
             g.add((uri, RDFS.label, Literal(c["nombre"])))
+            nombres_completos[norm_label(c["nombre"])] = uri
             if c.get("cargo"):
                 g.add((uri, BO.cargoTecnico, Literal(c["cargo"])))
             t += 1
     print(f"[*] {n} concejales cargados ({len(alcaldes)} han sido alcalde) + {t} personal técnico")
-    return idx, alcaldes
+    return idx, alcaldes, nombres_completos
 
 
 # uri del concejal -> uri de su grupo (o None)
@@ -204,6 +240,23 @@ _ALCALDES = [
 ]
 
 
+# MEJORA FUTURA (no implementada, apuntada 2026-09-13): de los 21 apellidos
+# que hoy comparten 2+ concejales, 9 combinaciones apellido+partido coinciden
+# en el tiempo y ni fecha ni grupo las desambigua (ver abajo, "ambigüedad
+# real"). De esas 9, en 6 los dos concejales son de género distinto (p.ej.
+# GIL: Alfonso vs. Begoña) -- el acta SÍ los distingue por "SR."/"SRA." al
+# hablar, pero `speaker_regex` en backend/rag.py lo usa para encontrar el
+# nombre y luego lo descarta sin guardarlo. Si se conservara, junto con un
+# campo de género en concejales.jsonl (no existe hoy, habría que añadirlo),
+# se podrían resolver esos 6 casos. Solo ayudaría a bo:intervino/oradores
+# (la lista de votos nominales no lleva SR./SRA. por persona, es un listado
+# plano de apellidos, así que ahí no cambiaría nada). Coste medido: re-correr
+# extract_proposals.py sobre las 236 actas es rápido (~0.1-1s/PDF, sin LLM,
+# ~5-10 min en total) porque build_graph.py NO reprocesa "oradores" con el
+# LLM (solo lo copia tal cual) -- bastaría fusionar el "oradores" nuevo en
+# proposals_enriched.jsonl por id, sin re-enriquecer nada más. Aun así
+# requiere tocar 3 sitios (backend/rag.py, concejales.jsonl, este archivo),
+# por eso se deja pendiente en vez de hacerlo ahora.
 # apellido (del speaker_regex) + fecha -> URI del concejal en ese mandato
 def resolver_concejal(idx, alcaldes, apellido, fecha, grupo_hint=None):
     if not apellido:
@@ -221,7 +274,19 @@ def resolver_concejal(idx, alcaldes, apellido, fecha, grupo_hint=None):
     if len(activos) > 1 and grupo_hint:
         g2 = canon_grupo(grupo_hint)
         activos = [c for c in activos if c[3] == g2] or activos
-    return activos[0][0] if activos else None
+    if not activos:
+        return None
+    # Ambigüedad real: dos concejales DISTINTOS activos a la vez con el mismo
+    # apellido, y ni la fecha ni el grupo la resuelven (verificado contra el
+    # PDF: el acta a veces solo escribe el apellido suelto -- "SR. GARCÍA:" --
+    # sin nada más que lo distinga, así que no hay ninguna base en el texto
+    # disponible para elegir entre ellos). Antes se cogía el primero de la
+    # lista sin más garantía que el orden de concejales.jsonl -- una moneda
+    # al aire. Mejor omitir el dato que dárselo con seguridad a la persona
+    # equivocada.
+    if len({c[0] for c in activos}) > 1:
+        return None
+    return activos[0][0]
 
 
 def parse_votos(vote_text):
@@ -241,14 +306,14 @@ def build():
     canon_uris = set(canon.values())  # para el chequeo de colisión de slug (ver más abajo)
 
     recs = load_jsonl(ENRICHED)
-    PROPOSALS = os.path.join(HERE, "proposals.jsonl")
+    PROPOSALS = os.path.join(GRAPHRAG, "proposals.jsonl")
     textmap = {}
     if os.path.exists(PROPOSALS):
         for p in iter_jsonl(PROPOSALS):
             textmap[prop_id(p)] = p.get("text", "")
     print(f"[*] {len(recs)} proposiciones enriquecidas")
 
-    conc_idx, alcaldes = cargar_concejales(g)
+    conc_idx, alcaldes, conc_nombres = cargar_concejales(g)
 
     for r in recs:
         pr = BR[f"prop_{r['id']}"]
@@ -272,6 +337,24 @@ def build():
         gr = BR[f"grupo_{slug(grupo)}"]
         g.add((gr, RDF.type, BO.Grupo)); g.add((gr, RDFS.label, Literal(grupo)))
         g.add((pr, BO.presentadaPor, gr))
+
+        # Sin grupo político: intenta rescatar quién la presentó de verdad
+        # (particular o asociación vecinal/AMPA) en vez de dejarlo perdido
+        # dentro de "Desconocido" -- mismo canon_entidad() que ya usan las
+        # entidades mencionadas, para reutilizar el nodo si esa persona u
+        # organización ya aparece en el grafo por otro motivo.
+        if grupo == "Desconocido":
+            particular = extrae_particular(r.get("topic", ""))
+            if particular:
+                nom_raw, tipo = particular
+                can = canon_entidad(nom_raw, tipo)
+                if can:
+                    etiqueta, tipo_n, clave = can
+                    ent = BR[f"ent_{clave}"]
+                    g.add((ent, RDF.type, ENTIDAD_CLS.get(tipo_n, BO.Entidad)))
+                    if not g.value(ent, RDFS.label):
+                        g.add((ent, RDFS.label, Literal(etiqueta)))
+                    g.add((pr, BO.presentadaPorParticular, ent))
 
         # Pleno
         pl = BR[f"pleno_{slug(r['date'])}"]
@@ -333,13 +416,28 @@ def build():
             nom_raw = (e.get("nombre") or "").strip()
             if not nom_raw or es_grupo_disfrazado(nom_raw):
                 continue
+            # ¿Es en realidad un concejal o técnico que ya tiene su propio
+            # nodo (con grupo, votos, intervenciones)? Reusar ese URI en vez
+            # de crear un `ent_` fantasma desconectado del resto de sus datos.
+            conc_uri = conc_nombres.get(norm_label(nom_raw))
+            if conc_uri is not None:
+                g.add((pr, BO.menciona, conc_uri))
+                continue
             can = canon_entidad(nom_raw, e.get("tipo"))
             if not can:
                 continue
             etiqueta, tipo_n, clave = can
             ent = BR[f"ent_{clave}"]
             g.add((ent, RDF.type, ENTIDAD_CLS.get(tipo_n, BO.Entidad)))
-            g.add((ent, RDFS.label, Literal(etiqueta)))
+            # Primera grafía vista "gana": sin este chequeo, la misma entidad
+            # mencionada con distinta caja en distintas actas ("BILBAO
+            # EKINTZA" vs "Bilbao Ekintza") acumulaba VARIAS rdfs:label en el
+            # mismo nodo -- verificado con varios casos reales (Bilbao
+            # Ekintza, Bilbao Kirolak, SURBISA, Bilbao la Vieja), cada uno
+            # apareciendo como fila duplicada en cualquier consulta que
+            # agrupe por etiqueta.
+            if not g.value(ent, RDFS.label):
+                g.add((ent, RDFS.label, Literal(etiqueta)))
             g.add((pr, BO.menciona, ent))
 
         # ---- CAMPOS RICOS (de la pasada de enriquecimiento LLM) ----
@@ -403,7 +501,11 @@ def build():
             if enm.get("tipo"):
                 g.add((en_uri, BO.tipoEnmienda, Literal(str(enm["tipo"])[:40])))
             if enm.get("resultado"):
-                g.add((en_uri, BO.resultadoEnmienda, Literal(str(enm["resultado"])[:40])))
+                valor = normaliza_resultado_enmienda(enm["resultado"])
+                if valor:
+                    g.add((en_uri, BO.resultadoEnmienda, Literal(valor)))
+                else:
+                    print(f"[!] {r['id']}: resultadoEnmienda no reconocido, descartado: {enm['resultado']!r}")
             ev = enm.get("votos") or {}
             for k, pred in (("favor", BO.votosFavorEnmienda), ("contra", BO.votosContraEnmienda)):
                 try:
