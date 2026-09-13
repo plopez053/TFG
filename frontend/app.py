@@ -32,6 +32,8 @@ from fastapi.responses import FileResponse
 from backend.rag import (
     get_rag, DATA_PATH, strip_accents,
     resolve_pdf_path, _palabras_clave, _STOP_PROCEDIMENTAL, build_sources_data,
+    dedup_answer_blocks, strip_empty_blocks, find_date_mentions, find_item_anchors,
+    match_source_by_title, replace_votos_line,
 )
 from graphrag.graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
 
@@ -108,13 +110,46 @@ def _find_pdf_by_date(fecha: str) -> str:
     return matches[0] if matches else ""
 
 
-# extrae fechas únicas de las filas SPARQL y genera links a los PDFs
+# genera los links de fuentes de una respuesta GraphRAG.
+# Prioridad 1: si las filas traen la URI de una proposición individual
+# (preguntas de LISTADO: "qué proposiciones...", "lista las..."), se cita la
+# página EXACTA del PDF vía graph_sources() — bo:fecha/bo:pagina/bo:fuentePdf
+# tienen 100% de cobertura en las 3422 proposiciones, misma precisión que las
+# citas del RAG vectorial. Prioridad 2 (respaldo): filas con solo una fecha
+# suelta, sin URI de proposición — se enlaza al PDF sin página concreta.
+# Si ninguna de las dos aplica (agregado puro: COUNT/GROUP BY sin referencia a
+# ninguna proposición concreta), no hay nada que citar POR DISEÑO, no por
+# fallo — se explica en vez de dejarlo en silencio (ver
+# memoria/decisiones_tecnicas.md 2.10).
 def _fuentes_graphrag(rows: list) -> str:
+    from graphrag.graphrag.graph_rag_sparql import graph_sources
+
+    citas = graph_sources(rows)
+    if citas:
+        links = []
+        for c in citas:
+            pdf_rel = c["pdf"].replace("\\", "/")
+            year_dir = os.path.basename(os.path.dirname(pdf_rel))
+            fname = os.path.basename(pdf_rel)
+            pagina = c.get("pagina", "")
+            anchor = f"#page={pagina}" if pagina else ""
+            url = f"/acta/{year_dir}/{urllib.parse.quote(fname)}{anchor}"
+
+            label = f"Ver PDF — Acta {c['fecha']}"
+            if pagina:
+                label += f" (Pág. {pagina})"
+            titulo = c.get("titulo", "")
+            if titulo:
+                short = titulo[:70] + "..." if len(titulo) > 70 else titulo
+                label += f" | {short}"
+            links.append(f"- [{label}]({url})")
+        return "\n\n---\n**Proposiciones del grafo citadas:**\n" + "\n".join(links)
+
     DATE_KEYS = ("fecha", "fechaProp", "fechaPleno", "date")
     TITLE_KEYS = ("titulo", "tituloProp", "tituloTopic", "label")
 
     vistas: set = set()
-    links: list[str] = []
+    links = []
 
     for row in rows[:50]:
         fecha = next((row[k] for k in DATE_KEYS if k in row and re.match(r"\d{2}-\d{2}-\d{4}", row[k])), None)
@@ -138,9 +173,13 @@ def _fuentes_graphrag(rows: list) -> str:
 
         links.append(f"- [{label}]({url})")
 
-    if not links:
-        return ""
-    return "\n\n---\n**Actas del grafo consultadas:**\n" + "\n".join(links)
+    if links:
+        return "\n\n---\n**Actas del grafo consultadas:**\n" + "\n".join(links)
+
+    return ("\n\n---\n*Esta cifra se calcula directamente sobre el grafo "
+            "estructurado del Pleno (proposiciones, grupos y temas ya "
+            "extraídos de las actas); al ser un resultado agregado, no "
+            "corresponde a un documento concreto que enlazar.*")
 
 
 # genera la SPARQL, la ejecuta y devuelve la respuesta narrada + fuentes (modo GraphRAG)
@@ -274,6 +313,8 @@ async def on_message(message: cl.Message):
         answer_text = respuesta.content if hasattr(respuesta, "content") else str(respuesta)
         # Eliminar eco del prompt (PREGUNTA:/RESPUESTA: que el LLM a veces repite al final)
         answer_text = re.sub(r'\n+PREGUNTA\s*:.*', '', answer_text, flags=re.DOTALL | re.IGNORECASE)
+        # ANTES de insertar fuentes: la inserción depende de posiciones en el texto.
+        answer_text = strip_empty_blocks(dedup_answer_blocks(answer_text))
 
     # Insertar enlace de fuente debajo del bloque de cada pleno en la respuesta.
     if retrieved_docs:
@@ -284,31 +325,68 @@ async def on_message(message: cl.Message):
             concl = re.search(r'\n\s*(?:CONCLUSI[ÓO]N|En conclusi|En resumen)', answer_text, re.I)
             concl_pos = concl.start() if concl else len(answer_text)
 
-            fechas = {s["date"] for s in sources_data}
-            bloques = []
-            for date in fechas:
-                for m in re.finditer(re.escape(date), answer_text[:concl_pos]):
-                    bloques.append([m.start(), date])
-            bloques.sort()
-
-            src_por_fecha = defaultdict(list)
-            for s in sources_data:
-                src_por_fecha[s["date"]].append(s)
-
+            item_anchors = find_item_anchors(answer_text, concl_pos)
             asignaciones = []
             usadas = []
-            for idx, (start, date) in enumerate(bloques):
-                candidatos = [s for s in src_por_fecha[date] if id(s) not in usadas]
-                if not candidatos:
-                    continue
-                fin = bloques[idx + 1][0] if idx + 1 < len(bloques) else concl_pos
-                cabecera = answer_text[start:start + 120]
-                cab_words = _palabras_clave(cabecera)
-                mejor = max(candidatos, key=lambda s: len(cab_words & _palabras_clave(s["topic"])))
-                if len(cab_words & _palabras_clave(mejor["topic"])) == 0:
-                    mejor = candidatos[0]
-                asignaciones.append((fin, mejor))
-                usadas.append(id(mejor))
+
+            if not is_multi_session and len(item_anchors) >= 2:
+                # Sesión única con VARIAS propuestas: todas comparten la misma
+                # fecha, así que anclar por fecha (como abajo) solo distinguiría
+                # UN tramo y mandaría el resto al final sin marcar. Anclar por
+                # el texto de "Título:" de cada bloque sí distingue cada
+                # propuesta — se exige >=1 palabra compartida con el ASUNTO
+                # real del documento para no asignar una fuente al azar.
+                item_matches = []  # (start, fin, mejor) — start hace falta para corregir Votos
+                for start, fin, titulo in item_anchors:
+                    candidatos = [s for s in sources_data if id(s) not in usadas]
+                    if not candidatos:
+                        break
+                    mejor = match_source_by_title(titulo, candidatos)
+                    if mejor is None:
+                        continue  # sin señal fiable: mejor dejarla para el lote final que forzar un enlace erróneo
+                    item_matches.append((start, fin, mejor))
+                    usadas.append(id(mejor))
+
+                # Corregir la línea "Votos:" de cada bloque con el vote_result
+                # REAL de la fuente ya emparejada (metadata determinista, no lo
+                # que escribió el LLM) — con muchas propuestas parecidas en el
+                # mismo contexto, el modelo local mezcla cifras de voto entre
+                # ellas; ni la regla del prompt ni un ejemplo concreto lo
+                # eliminan de forma fiable (ver memoria/decisiones_tecnicas.md
+                # 2.9). En orden DESCENDENTE de posición para no invalidar los
+                # índices de bloques anteriores al editar el texto in situ.
+                for start, fin, mejor in sorted(item_matches, key=lambda t: t[0], reverse=True):
+                    vote_gt = mejor.get("vote_result")
+                    if not vote_gt:
+                        continue
+                    corregido = replace_votos_line(answer_text[start:fin], vote_gt)
+                    answer_text = answer_text[:start] + corregido + answer_text[fin:]
+
+                asignaciones = [(fin, mejor) for _, fin, mejor in item_matches]
+            else:
+                fechas = {s["date"] for s in sources_data}
+                bloques = []
+                for date in fechas:
+                    for pos in find_date_mentions(date, answer_text[:concl_pos]):
+                        bloques.append([pos, date])
+                bloques.sort()
+
+                src_por_fecha = defaultdict(list)
+                for s in sources_data:
+                    src_por_fecha[s["date"]].append(s)
+
+                for idx, (start, date) in enumerate(bloques):
+                    candidatos = [s for s in src_por_fecha[date] if id(s) not in usadas]
+                    if not candidatos:
+                        continue
+                    fin = bloques[idx + 1][0] if idx + 1 < len(bloques) else concl_pos
+                    cabecera = answer_text[start:start + 120]
+                    cab_words = _palabras_clave(cabecera)
+                    mejor = max(candidatos, key=lambda s: len(cab_words & _palabras_clave(s["topic"])))
+                    if len(cab_words & _palabras_clave(mejor["topic"])) == 0:
+                        mejor = candidatos[0]
+                    asignaciones.append((fin, mejor))
+                    usadas.append(id(mejor))
 
             for fin, s in sorted(asignaciones, key=lambda x: x[0], reverse=True):
                 f = fin
