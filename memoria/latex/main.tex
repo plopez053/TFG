@@ -1,0 +1,718 @@
+% !TeX program = xelatex
+
+% ============================================================ %
+% PREAMBLE (antes preamble.tex, fusionado aquí)                %
+% ============================================================ %
+
+% ------------------------------------------------------------ %
+% TIPO Y PAQUETES                                              %
+% ------------------------------------------------------------ %
+
+\documentclass[11pt, a4paper]{report}
+\usepackage[spanish, es-tabla, activeacute]{babel}
+% \usepackage[utf8]{inputenc}
+\usepackage[pagestyles]{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{indentfirst}
+\usepackage{xcolor}
+\usepackage{verbatim}
+\usepackage{keyval}
+\usepackage{etoolbox}
+\usepackage{fontspec}
+\usepackage{titling}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{chngcntr}
+\usepackage[bottom]{footmisc}
+\usetikzlibrary{positioning}
+
+\definecolor{eus-color}{gray}{0.4}
+\definecolor{eng-color}{gray}{0.5}
+\definecolor{ehu-blue}{RGB}{27,74,120}
+
+\newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
+\addtocontents{lof}{\protect\noaddvspace}
+\addtocontents{lot}{\protect\noaddvspace}
+
+% ------------------------------------------------------------ %
+% NUMERACIÓN CONTINUA DE FIGURAS Y TABLAS                      %
+% ------------------------------------------------------------ %
+
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+
+% ------------------------------------------------------------ %
+% PARTICIÓN DE PALABRAS AL FINAL DE LÍNEA                      %
+% ------------------------------------------------------------ %
+
+\pretolerance=2000
+\tolerance=3000
+
+% ------------------------------------------------------------ %
+% FUENTES DEL DOCUMENTO                                        %
+% ------------------------------------------------------------ %
+
+% Tipografía Computer Modern Roman (vía CM-Unicode), la clásica de LaTeX,
+% en vez de la sans-serif corporativa EHUSans, para un aspecto más formal
+% y en línea con el de otras memorias de TFG (p.ej. la de Oiher).
+\setmainfont[
+	Path          = C:/Users/peiol/AppData/Local/Programs/MiKTeX/fonts/opentype/public/cm-unicode/,
+	Ligatures     = TeX,
+	UprightFont   = cmunrm.otf,
+	BoldFont      = cmunbx.otf,
+	ItalicFont    = cmunti.otf,
+	BoldItalicFont= cmunbi.otf
+]{CMU Serif}
+
+\newfontfamily{\sansthick}[
+ Path          = fonts/,
+ BoldFont      = EHUSans-Bold.otf,
+ UprightFont   = EHUSans-Regular.otf
+ ]{EHUSans}
+
+ \newfontfamily{\sansblack}[
+ Path          = fonts/,
+ UprightFont   = EHUSans-Black.otf
+ ]{EHUSans}
+
+ \newfontfamily{\serif}[
+ Path          = fonts/,
+ Ligatures     = TeX,
+ UprightFont   = EHUSerif-Light.otf,
+ BoldItalicFont= EHUSerif-BoldItalic.otf,
+ BoldFont      = EHUSerif-Bold.otf,
+ ItalicFont    = EHUSerif-LightItalic.otf
+ ]{EHUSerif}
+
+ \newfontfamily{\serifthick}[
+ Path          = fonts/,
+ BoldFont      = EHUSerif-Bold.otf,
+ UprightFont   = EHUSerif-Regular.otf
+ ]{EHUSerif}
+
+ \newfontfamily{\serifblack}[
+ Path          = fonts/,
+ UprightFont   = EHUSerif-Black.otf
+ ]{EHUSerif}
+
+\newfontfamily{\calibrifont}{Calibri}
+
+% ------------------------------------------------------------ %
+% ETIQUETAS EN LAS TABLAS Y FIGURAS							   %
+% ------------------------------------------------------------ %
+
+\DeclareCaptionFont{ehu}{\fontsize{9}{10}\mdseries}
+\usepackage[font={ehu}, labelfont={bf}]{caption}
+
+% ------------------------------------------------------------ %
+% AÑADIR CUARTO NIVEL DE TÍTULO                                %
+% ------------------------------------------------------------ %
+
+\setcounter{secnumdepth}{4}
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+% ------------------------------------------------------------ %
+% ELIMINAR CABECERA DE CAPÍTULOS                               %
+% ------------------------------------------------------------ %
+
+\titleformat{\chapter}%
+  {\normalfont\bfseries\Huge}{\thechapter.}{10pt}{}
+\newpagestyle{tfg}{
+  \setheadrule{0.4pt}
+  \sethead{Trabajo Fin de Grado}{}{}
+  \setfootrule{0.4pt}
+  \setfoot{UPV/EHU}{}{\thepage}
+}
+
+% ------------------------------------------------------------ %
+% MÁRGENES Y DISTANCIA ENTRE PÁRRAFOS						   %
+% ------------------------------------------------------------ %
+
+\geometry{top=2.5cm,left=3cm,right=3cm,bottom=2.5cm}
+\setlength{\parskip}{8pt}
+
+% ------------------------------------------------------------ %
+% TÍTULO DEL ÍNDICE                                            %
+% ------------------------------------------------------------ %
+
+\addto\captionsspanish{
+	\renewcommand{\contentsname}{Índice}
+	\renewcommand{\listtablename}{Lista de tablas}
+	\renewcommand{\listfigurename}{Lista de figuras}
+}
+
+% ------------------------------------------------------------ %
+% DIRECTORIO DE IMÁGENES                                       %
+% ------------------------------------------------------------ %
+
+\graphicspath{{images/}}
+
+% ------------------------------------------------------------ %
+% PORTADA                                                      %
+% ------------------------------------------------------------ %
+
+\newcommand{\portada}{
+	{\raggedleft\includegraphics[width=8cm]{corp/ehu}}
+	\\[1.5\baselineskip]
+	\noindent\makebox[0pt][l]{\hspace*{-3cm}\colorbox{ehu-blue}{\parbox{\paperwidth}{\centering\color{white}
+		\vspace{0.4em}
+		\large{\MakeUppercase{Grado en Ingeniería Informática de Gestión y Sistemas de Información}}
+		\\[0.6em]
+		\LARGE{\textbf{\MakeUppercase{Trabajo de fin de grado}}}
+		\vspace{0.4em}
+	}}}
+	\\[0.5\baselineskip]
+	\begin{center}
+		\parbox{13cm}{\centering\LARGE{\calibrifont\bfseries\MakeUppercase{Conversión de actas del Ayuntamiento de Bilbao a Knowledge Graphs (RDF, OWL, SPARQL, SHACL) y vectorial mediante LLMs, enlazado con Wikidata y ofreciendo funcionalidad RAG. Interfaz web: visual, consultas, conversacional}}}
+	\end{center}
+	\renewcommand{\baselinestretch}{1.25}
+	\begin{tikzpicture}[remember picture, overlay]
+		\node (C) at ([yshift=-6.95cm, xshift=9.7cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=64pt, align=left]{};
+		\node (D) [right=0.2cm of C.west, anchor=west, align=left]
+		{\small{\textbf{Alumno: }Lopez, Sanchez, Peio}\\
+			\small{\textbf{Director: }Egaña Aranguren, Mikel}
+			% Comentar la siguiente línea si sólo hay una dirección del TFG.
+			%\\\small{\textbf{Director/Directora (2): }<apellido 1, apellido 2, nombre>}
+			};
+		\draw[line width=0.5pt] (C.south west) -- (C.south east);
+	\end{tikzpicture}
+	\renewcommand{\baselinestretch}{1}
+	\begin{tikzpicture}[remember picture, overlay]
+		\node (E) at ([yshift=-9.4cm, xshift=8.5cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=27pt, align=left]{};
+		\node (F) [right=1.4cm of E.west, anchor=west]
+		{\small{\textbf{Curso: }2026-2027}};
+		\draw[line width=0.5pt] (E.south west) -- (E.south east);
+	\end{tikzpicture}
+	\begin{tikzpicture}[remember picture, overlay]
+		\node (G) at ([yshift=-11.6cm, xshift=13.4cm]current page.west) [inner sep=10pt, minimum width=7.93cm, minimum height=27pt, align=left]{};
+		\node (H) [left=0.2cm of G.east, anchor=east]
+		{\small{\textbf{Fecha: }<XXXX, día, mes, año>}};
+		\draw[line width=0.5pt] (G.south west) -- (G.south east);
+	\end{tikzpicture}
+}
+
+% ============================================================ %
+% FIN DEL PREAMBLE                                              %
+% ============================================================ %
+
+\begin{document}
+
+	\portada
+	\thispagestyle{empty}
+	\setcounter{page}{0}
+	\pagestyle{tfg}
+
+	% ============================================================ %
+	% RESUMEN (antes src/abstract.tex)                              %
+	% ============================================================ %
+
+	\chapter*{Resumen \normalfont{{\serifthick Laburpena} Abstract}}
+	\addcontentsline{toc}{chapter}{Resumen \normalfont{{\serifthick Laburpena} Abstract}}
+
+	\begin{itshape}
+	Este trabajo aborda la conversión de las actas del Pleno del Ayuntamiento de
+	Bilbao (2007--2026), publicadas en formato PDF, en dos sistemas de recuperación de
+	información consultables en lenguaje natural: un RAG vectorial y un sistema GraphRAG.
+
+	Las actas se obtienen mediante la descarga automatizada del portal de actas del
+	Ayuntamiento, y de cada una se extraen las proposiciones individuales del Pleno
+	junto con sus metadatos: fecha y sesión plenaria, grupo político o particular
+	proponente, tema, entidades mencionadas, resultado de la votación (agregado por
+	grupo y, cuando el acta lo recoge de forma explícita, nominal por concejal), y
+	página y documento de origen. A partir de estos datos se construye un grafo de
+	conocimiento RDF/OWL que modela proposiciones, grupos políticos, concejales y
+	temas; un modelo de lenguaje clasifica temáticamente cada proposición y extrae
+	las entidades que menciona, incorporando dicha información al grafo.
+
+	Sobre este corpus de casi 3.900 proposiciones se implementan dos sistemas de
+	recuperación complementarios: un RAG vectorial, con búsqueda híbrida y
+	reordenación de resultados, y un sistema GraphRAG, que traduce la pregunta a una
+	consulta SPARQL, la ejecuta sobre el grafo mediante razonamiento automático para
+	responder preguntas de agregación, y genera la respuesta a partir de los datos
+	obtenidos.
+
+	Ambos sistemas citan la página exacta del documento de origen de cada dato
+	mostrado, y se exponen mediante una interfaz web conversacional construida con
+	Chainlit. El trabajo incluye una evaluación comparativa sistemática de ambas
+	arquitecturas sobre un conjunto de preguntas de referencia con respuesta verificada
+	a mano contra las actas originales.
+
+	\textbf{Palabras Clave:} GraphRAG, RAG, LLM, grafo de conocimiento, SPARQL.
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\textcolor{eus-color}{{\serif [PENDIENTE]}}
+
+	\textcolor{eus-color}{{\serif \textbf{Gako-hitzak:}} GraphRAG, RAG, LLM, ezagutza-grafoa, SPARQL.}
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\textcolor{eng-color}{{\serif [PENDIENTE]}}
+
+	\textcolor{eng-color}{{\serif \textbf{Keywords:}} GraphRAG, RAG, LLM, knowledge graph, SPARQL.}
+	\end{itshape}
+
+	\pagebreak
+
+	\setcounter{tocdepth}{1}
+	\tableofcontents
+
+	% ÍNDICES:
+	\cleardoublepage
+	\phantomsection
+	\addcontentsline{toc}{chapter}{\listfigurename}
+	\listoffigures % Lista de figuras
+
+	\cleardoublepage
+	\phantomsection
+	\addcontentsline{toc}{chapter}{\listtablename}
+	\listoftables % Lista de tablas
+
+	\cleardoublepage
+
+	% ============================================================ %
+	% LISTA DE ACRÓNIMOS (antes src/acronimos.tex)                  %
+	% ============================================================ %
+
+	\chapter*{Lista de acrónimos}
+	\addcontentsline{toc}{chapter}{Lista de acrónimos}
+
+	\begin{description}
+		\item [LLM] Large Language Model
+		\item [RAG] Retrieval Augmented Generation
+		\item [GraphRAG] Graph Retrieval Augmented Generation
+		\item [RDF] Resource Description Framework
+		\item [OWL] Web Ontology Language
+		\item [SPARQL] SPARQL Protocol and RDF Query Language
+		\item [SKOS] Simple Knowledge Organization System
+		\item [SHACL] Shapes Constraint Language
+		\item [LOD] Linked Open Data
+		\item [API] Application Programming Interface
+		\item [PDF] Portable Document Format
+		\item [OCR] Optical Character Recognition
+		\item [TFG] Trabajo Fin de Grado
+	\end{description}
+
+	% MEMORIA:
+
+	% ============================================================ %
+	% INTRODUCCIÓN (antes src/intro.tex)                            %
+	% ============================================================ %
+
+	\chapter{Introducción}
+
+	\section{Descripción del problema}
+
+	El portal de actas del Ayuntamiento de Bilbao publica, para cada sesión del Pleno
+	desde 2007 hasta la actualidad, varios documentos PDF distintos: el orden del día,
+	extractos, el resumen de la sesión y el acta completa. De estos, el acta es el único
+	que recoge de forma íntegra las proposiciones, el debate y el resultado de cada
+	votación, por lo que es el documento que utiliza este trabajo; cada acta puede
+	superar el centenar de páginas, y el corpus completo reúne cerca de veinte años de
+	actas y más de 3.900 proposiciones distintas.
+
+	Dentro de cada acta, además, el contenido relevante --las proposiciones y sus
+	votaciones-- se mezcla con una cantidad considerable de contenido puramente
+	procedimental: listas de asistentes, fórmulas de quórum, aprobación del acta
+	anterior, cuestiones de orden o informes que solo se dan por conocidos sin
+	votación. Identificar qué parte de cada acta es efectivamente una proposición
+	--y separarla del resto-- es en sí mismo parte del problema a resolver.
+
+	A esto se suma un problema práctico adicional: encontrar información concreta
+	--qué votó un grupo político sobre un tema, cuántas proposiciones sobre vivienda
+	se presentaron en un año determinado, cómo ha evolucionado un asunto a lo largo de
+	los mandatos-- exige leer manualmente decenas de documentos extensos, o como mínimo
+	saber de antemano en qué fecha y página buscar. No existe ninguna vía para hacer
+	preguntas en lenguaje natural sobre este archivo y obtener una respuesta
+	verificable, con cifras y citas a la fuente original.
+
+	\subsection{Acceso a la información municipal}
+
+	El objetivo de este TFG es cerrar esa brecha: construir un sistema que permita consultar
+	en castellano, mediante preguntas formuladas de forma natural, el contenido íntegro de
+	las actas del Pleno, y que responda con datos verificables --enlazados a la página exacta
+	del PDF de origen-- en lugar de con texto generado sin respaldo documental.
+
+	\section{Estructura de la memoria}
+
+	Esta memoria se organiza como sigue. El Capítulo~\ref{ch:contexto} introduce los
+	conceptos técnicos en los que se apoya el sistema (modelos de lenguaje, RAG,
+	grafos de conocimiento y GraphRAG). El Capítulo~\ref{ch:objetivos} concreta los
+	objetivos del trabajo y su alcance real. El Capítulo~\ref{ch:beneficios} discute
+	los beneficios del sistema y su relación con los Objetivos de Desarrollo Sostenible.
+	Los capítulos siguientes describen el estado del arte, el análisis de alternativas
+	tecnológicas, los riesgos del proyecto y, con más detalle, la solución desarrollada:
+	los dos sistemas de recuperación de información construidos --uno basado en
+	búsqueda vectorial y otro en un grafo de conocimiento RDF/OWL consultado por
+	SPARQL-- y la interfaz web conversacional que los expone al usuario. La memoria
+	cierra con la planificación seguida, el presupuesto, las conclusiones y los anexos.
+
+	% ============================================================ %
+	% CONTEXTO (antes src/contexto.tex)                             %
+	% ============================================================ %
+
+	\chapter{Contexto}
+	\label{ch:contexto}
+
+	A continuación se presentan los conceptos técnicos en los que se apoya este
+	trabajo: los modelos de lenguaje y la generación aumentada por recuperación
+	(RAG), los grafos de conocimiento, y GraphRAG como la combinación de ambos. Estos
+	conceptos son la base sobre la que se construyen los dos sistemas de recuperación
+	de información comparados en este TFG.
+
+	\section{Inteligencia Artificial Generativa}
+
+	La Inteligencia Artificial (IA) Generativa agrupa a los modelos capaces de producir
+	contenido nuevo --texto, código, imágenes-- a partir de un patrón aprendido de
+	grandes cantidades de datos, en lugar de limitarse a clasificar o predecir sobre
+	datos ya existentes. Los modelos de lenguaje son el caso particular relevante para
+	este trabajo: reciben texto como entrada y generan texto como salida, condicionados
+	por una instrucción (\textit{prompt}).
+
+	\section{Modelos de Lenguaje de Gran Tamaño}
+
+	Los Modelos de Lenguaje de Gran Tamaño (LLM, \textit{Large Language Models}) son
+	redes neuronales entrenadas sobre corpus masivos de texto que, dada una secuencia de
+	entrada, predicen la continuación más probable. Esta capacidad, combinada con un
+	ajuste posterior para seguir instrucciones, permite emplearlos para tareas tan
+	diversas como resumir, traducir, generar código o --el uso que se les da en este
+	TFG-- extraer información estructurada de texto libre y redactar respuestas a
+	partir de datos ya recuperados.
+
+	Un LLM no tiene, por sí mismo, acceso a información posterior a su entrenamiento
+	ni a documentos privados como las actas de un ayuntamiento concreto. Tampoco
+	garantiza que lo que genera sea correcto: puede producir afirmaciones plausibles
+	pero falsas, fenómeno conocido como \textit{alucinación}. Ambas limitaciones son
+	las que motivan la siguiente técnica.
+
+	\section{Retrieval Augmented Generation (RAG)}
+
+	Retrieval Augmented Generation (RAG) es una arquitectura que combina un sistema de
+	recuperación de información con un LLM: antes de generar la respuesta, se buscan
+	en una base documental los fragmentos más relevantes para la pregunta y se
+	proporcionan al modelo como contexto. El LLM genera entonces la respuesta
+	apoyándose únicamente en esos fragmentos, no en su conocimiento interno.
+
+	Esto tiene dos ventajas directas para este proyecto: permite responder sobre un
+	corpus privado y actualizable (las actas del Pleno) sin reentrenar ningún modelo,
+	y permite citar la fuente exacta de cada afirmación, ya que se conoce qué
+	fragmentos --y por tanto qué documento y página-- sustentan la respuesta.
+
+	La recuperación de los fragmentos relevantes suele apoyarse en \textit{embeddings}:
+	representaciones vectoriales del texto en las que fragmentos semánticamente
+	similares quedan cerca en el espacio vectorial, lo que permite buscar por
+	significado y no solo por coincidencia literal de palabras.
+
+	\section{Grafos de Conocimiento}
+
+	Un grafo de conocimiento representa la información como una red de entidades
+	(nodos) y relaciones entre ellas (aristas), en lugar de como texto libre. El
+	estándar utilizado en este trabajo es RDF (\textit{Resource Description
+	Framework}), que modela cada hecho como una tripleta \textit{sujeto-predicado-objeto}
+	(por ejemplo, \texttt{proposición~X --presentadaPor--> Grupo~PP}). Sobre RDF se
+	puede definir una ontología con OWL (\textit{Web Ontology Language}) --las clases y
+	relaciones válidas del dominio-- y consultar el grafo con el lenguaje SPARQL.
+
+	Una ventaja de este modelo frente al texto libre es el razonamiento automático: un
+	motor de inferencia (\textit{reasoner}) puede derivar hechos nuevos que no están
+	escritos explícitamente pero se siguen de la ontología --por ejemplo, que una
+	proposición sobre "desahucios" trata también, por herencia temática, de
+	"vivienda"-- sin que haga falta repetir esa relación en cada dato.
+
+	\section{GraphRAG}
+
+	GraphRAG es la variante de RAG en la que la fuente de recuperación no es un
+	almacén de fragmentos de texto sino un grafo de conocimiento consultado mediante
+	un lenguaje de consulta estructurado (SPARQL en este trabajo). En lugar de
+	recuperar pasajes de texto parecidos a la pregunta, un LLM traduce la pregunta en
+	lenguaje natural a una consulta formal, el motor de grafos la ejecuta y devuelve
+	filas de datos exactos, que un segundo LLM convierte en una respuesta narrada.
+
+	Esto resulta especialmente adecuado para preguntas de agregación y razonamiento
+	multi-salto --"¿qué grupo ha presentado más proposiciones sobre vivienda?",
+	"¿cuántas se han aprobado por año?"-- que un sistema de recuperación de texto
+	libre no puede responder con precisión, porque exigen contar y cruzar datos de
+	todo el corpus, no solo encontrar un pasaje parecido a la pregunta. Es, junto con
+	el RAG vectorial tradicional, uno de los dos sistemas comparados en este TFG.
+
+	% ============================================================ %
+	% OBJETIVOS Y ALCANCE (antes src/objetivos.tex)                 %
+	% ============================================================ %
+
+	\chapter{Objetivos y alcance}
+	\label{ch:objetivos}
+
+	A continuación se presentan los objetivos definidos para este TFG, así como el
+	alcance del sistema finalmente implementado.
+
+	\section{Objetivos del TFG}
+
+	Se presenta el objetivo general del trabajo y los objetivos específicos que se
+	derivan de él.
+
+	\section{Alcance del sistema desarrollado}
+
+	Se describe qué incluye y qué queda fuera del sistema final, y por qué -- p.ej.
+	el enlazado con Wikidata, que se valoró y se descartó para esta entrega.
+
+	% ============================================================ %
+	% BENEFICIOS Y ODS (antes src/beneficios.tex)                   %
+	% ============================================================ %
+
+	\chapter{Beneficios que aporta el trabajo y relación con los Objetivos de Desarrollo Sostenible}
+	\label{ch:beneficios}
+
+	A continuación se explica a quién beneficia el sistema desarrollado y cómo se
+	relaciona con los Objetivos de Desarrollo Sostenible de la Agenda 2030.
+
+	\section{Beneficios del sistema desarrollado}
+
+	Se identifican los distintos perfiles de usuario a los que beneficia el sistema
+	y de qué forma.
+
+	\section{Relación con los Objetivos de Desarrollo Sostenible}
+
+	Se relacionan los ODS pertinentes con el trabajo desarrollado.
+
+	% ============================================================ %
+	% ESTADO DEL ARTE (nuevo capítulo, esqueleto)                   %
+	% ============================================================ %
+
+	\chapter{Descripción de requerimientos y análisis del estado del arte}
+	\label{ch:estadodelarte}
+
+	A continuación se describe el corpus documental de partida, los requisitos que
+	debía cumplir el sistema y el estado del arte de las tecnologías empleadas.
+
+	\section{Corpus documental}
+
+	Se describen los documentos que publica el portal de actas del Ayuntamiento,
+	cuál de ellos usa este trabajo y por qué, y las limitaciones que tiene como
+	fuente (PDF escaneado/OCR, falta de estructura, etc.).
+
+	\section{Requisitos del sistema}
+
+	Se enumeran los requisitos funcionales y no funcionales del sistema final.
+
+	\section{Estado del arte de las tecnologías utilizadas}
+
+	Se revisan trabajos y sistemas similares existentes -- otros RAG/GraphRAG sobre
+	actas o documentos administrativos -- y se compara con el TFG de Oiher
+	Rodríguez Luengo como referencia más cercana.
+
+	% ============================================================ %
+	% ANÁLISIS DE ALTERNATIVAS (antes src/alternativas.tex)         %
+	% ============================================================ %
+
+	\chapter{Análisis de alternativas}
+
+	A continuación se comparan las principales decisiones tecnológicas evaluadas
+	antes de fijar la arquitectura final del sistema.
+
+	\section{Modelos de lenguaje: local (Ollama) frente a API en la nube (Groq / Gemini)}
+
+	\subsection{Puntos positivos}
+	\subsection{Puntos negativos}
+	\subsection{Conclusión}
+
+	\section{Almacenamiento del grafo: rdflib/OWL-RL frente a una base de grafos dedicada (p.ej. GraphDB, Neo4j)}
+
+	\subsection{Puntos positivos}
+	\subsection{Puntos negativos}
+	\subsection{Conclusión}
+
+	\section{Almacén vectorial y recuperación: ChromaDB e híbrida (semántica + literal + temática) frente a solo semántica}
+
+	\subsection{Puntos positivos}
+	\subsection{Puntos negativos}
+	\subsection{Conclusión}
+
+	% ============================================================ %
+	% ANÁLISIS DE RIESGOS (nuevo capítulo, esqueleto)                %
+	% ============================================================ %
+
+	\chapter{Análisis de riesgos}
+	\label{ch:riesgos}
+
+	A continuación se identifican los principales riesgos del proyecto y las
+	medidas adoptadas para prevenirlos o mitigarlos.
+
+	\section{Medidas de prevención y contingencia}
+
+	Se detallan los riesgos identificados (p.ej. dependencia de APIs externas,
+	calidad del OCR de las actas antiguas, coste o límite de peticiones a los LLM)
+	y cómo se mitigó cada uno.
+
+	% ============================================================ %
+	% DESCRIPCIÓN DE LA SOLUCIÓN (antes src/solucion.tex)           %
+	% ============================================================ %
+
+	\chapter{Descripción de la solución propuesta}
+	\label{ch:solucion}
+
+	A continuación se describe en detalle el sistema desarrollado: su arquitectura,
+	el pipeline de datos, el grafo de conocimiento, los dos motores de recuperación
+	y la interfaz que los expone al usuario.
+
+	\section{Arquitectura general del sistema}
+
+	Se presenta la visión general de los componentes del sistema y cómo se
+	conectan entre sí.
+
+	\section{Pipeline de procesamiento de datos}
+
+	Se describe el proceso completo desde el scraping de las actas hasta el
+	enriquecimiento de las proposiciones con un LLM mediante un esquema JSON
+	cerrado (ver Capítulo~\ref{ch:contexto}).
+
+	\section{Construcción del grafo de conocimiento}
+
+	Se describe la ontología OWL, el paso de JSON a triples RDF, el razonamiento
+	automático (\textit{roll-up} temático) y la validación SHACL del grafo.
+
+	\section{Sistema de recuperación de información}
+
+	Se describen los dos motores de recuperación implementados sobre el mismo
+	corpus.
+
+	\subsection{RAG vectorial}
+	\subsection{GraphRAG}
+
+	\section{Generación de respuestas}
+
+	Se explica cómo se narra la respuesta a partir de los datos recuperados, y
+	cómo se citan las fuentes (página y documento exactos) en ambos sistemas.
+
+	\section{Interfaz web del sistema}
+
+	Se describen los componentes de la interfaz Chainlit y el flujo de uso.
+
+	\section{Flujo completo del sistema}
+
+	\section{Implementación técnica}
+
+	% METODOLOGÍA SEGUIDA EN EL DESARROLLO DEL TRABAJO:
+
+	% ============================================================ %
+	% PLANIFICACIÓN / GANTT (antes src/gantt.tex)                   %
+	% ============================================================ %
+
+	\chapter{Planificación del proyecto}
+	\label{ch:planificacion}
+
+	A continuación se describe la planificación temporal seguida durante el
+	desarrollo del trabajo.
+
+	\section{Diagrama EDT}
+
+	\section{Descripción de tareas}
+
+	\subsection{Gestión del proyecto}
+	\subsection{Investigación y estudio previo}
+	\subsection{Desarrollo del sistema}
+	\subsection{Evaluación del sistema}
+	\subsection{Documentación}
+
+	\section{Diagrama de Gantt}
+
+	\section{Metodología de desarrollo}
+
+	% ============================================================ %
+	% ANÁLISIS DE RESULTADOS (nuevo capítulo, esqueleto)             %
+	% ============================================================ %
+
+	\chapter{Análisis de resultados}
+	\label{ch:resultados}
+
+	A continuación se presenta la evaluación comparativa de los dos sistemas
+	desarrollados: RAG vectorial y GraphRAG.
+
+	\section{Objetivo de la evaluación}
+
+	Se explica qué se quiere medir al comparar ambos sistemas.
+
+	\section{Metodología}
+
+	Se describe la batería de preguntas de referencia y su verificación manual
+	contra las actas originales en PDF.
+
+	\section{Métricas utilizadas}
+
+	\section{Experimentos realizados}
+
+	\section{Resultados obtenidos}
+
+	\section{Limitaciones}
+
+	% ASPECTOS ECONÓMICOS:
+
+	% ============================================================ %
+	% DESCRIPCIÓN DEL PRESUPUESTO (antes src/presupuesto.tex)       %
+	% ============================================================ %
+
+	\chapter{Descripción del presupuesto}
+
+	A continuación se detalla el presupuesto estimado del proyecto.
+
+	\section{Costes en software y hardware}
+
+	\section{Costes por mano de obra}
+
+	% CONCLUSIONES:
+
+	% ============================================================ %
+	% CONCLUSIONES (antes src/conclusiones.tex)                     %
+	% ============================================================ %
+
+	\chapter{Conclusiones}
+	\label{ch:conclusiones}
+
+	A continuación se recogen las conclusiones del trabajo, el grado de
+	cumplimiento de los objetivos planteados y las mejoras futuras identificadas.
+
+	\section{Conclusiones sobre el sistema}
+
+	\section{Cumplimiento de objetivos}
+
+	\section{Conclusiones sobre las pruebas realizadas}
+
+	\section{Mejoras futuras}
+
+	Se recogen el enlazado con Wikidata sobre entidades no personales, la
+	desambiguación por género de concejales homónimos, y otras mejoras apuntadas
+	durante el desarrollo.
+
+	% BIBLIOGRAFÍA:
+
+	% ============================================================ %
+	% BIBLIOGRAFÍA (antes src/bibliografia.tex)                     %
+	% ============================================================ %
+
+	\cleardoublepage
+	\phantomsection
+	\addcontentsline{toc}{chapter}{Bibliografía}
+	\begin{thebibliography}{9}
+		\bibitem{ref-1}
+		Autores.
+		\textit{Título}.
+		Editorial, Año.
+
+		\bibitem{ref-2}
+		Autores.
+		\textit{Título}.
+		Editorial, Año.
+		\url{https://www.example.com}
+	\end{thebibliography}
+
+	% ANEXOS:
+
+	%	\include{src/normativa}
+	%	\include{src/planos}
+	%	\include{src/manuales}
+
+\end{document}
