@@ -1,11 +1,3 @@
-"""Fase 3b: construye el grafo RDF (ABox) desde las proposiciones enriquecidas,
-lo une con la ontología (TBox) + taxonomía SKOS, y ejecuta el razonador OWL-RL
-(owlrl) para materializar inferencias (roll-up temático, tipos de entidad, etc.).
-
-Salida: graphrag/bilbao_reasoned.ttl  (grafo con triples inferidos incluidos)
-
-Uso:  python graphrag/build_rdf.py
-"""
 import os
 import re
 import sys
@@ -16,18 +8,19 @@ from rdflib import Graph, Namespace, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import XSD, SKOS
 import owlrl
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))            # .../graphrag/graphrag/construccion
+GRAPHRAG = os.path.dirname(HERE)                               # .../graphrag/graphrag (datos + utils compartidos)
+sys.path.insert(0, GRAPHRAG)
 from grupos import normaliza_grupo, extrae_grupo, canon_grupo, prop_id, es_grupo_disfrazado  # noqa: E402
 from jsonl_utils import load_jsonl, iter_jsonl  # noqa: E402
 from entidades import canon_entidad  # noqa: E402
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ENRICHED = os.path.join(HERE, "proposals_enriched.jsonl")
-CONCEJALES = os.path.join(HERE, "concejales.jsonl")
-PERSONAL_TEC = os.path.join(HERE, "personal_tecnico.jsonl")
-ONTOLOGY = os.path.join(HERE, "ontology.ttl")
-THEMES = os.path.join(HERE, "themes_skos.ttl")
-OUT = os.path.join(HERE, "bilbao_reasoned.ttl")
+ENRICHED = os.path.join(GRAPHRAG, "proposals_enriched.jsonl")
+CONCEJALES = os.path.join(GRAPHRAG, "concejales.jsonl")
+PERSONAL_TEC = os.path.join(GRAPHRAG, "personal_tecnico.jsonl")
+ONTOLOGY = os.path.join(GRAPHRAG, "ontology.ttl")
+THEMES = os.path.join(GRAPHRAG, "themes_skos.ttl")
+OUT = os.path.join(GRAPHRAG, "bilbao_reasoned.ttl")
 
 BO = Namespace("http://bilbao.tfg/ontology#")
 BR = Namespace("http://bilbao.tfg/resource/")
@@ -92,22 +85,26 @@ _RE_RECHAZADA_PROP = re.compile(
 _RE_APROBADA_PROP = re.compile(
     r"se\s+(?:acepta|aprueba)\s+la\s+proposici[oó]n(?!.*enmienda)", re.IGNORECASE
 )
-_RE_DECAE_PROP = re.compile(r"decae\s+la\s+proposici[oó]n", re.IGNORECASE)
+_RE_DECAE_PROP = re.compile(r"\bdecae\b", re.IGNORECASE)
 
 
-# usa vote_result cuando indica el desenlace sin ambigüedad, en vez de la clasificación del LLM
+# usa vote_result cuando indica el desenlace sin ambigüedad, en vez de la clasificación del LLM.
+# "decae" va PRIMERO y SIN gate: es la frase legal más inequívoca de las tres
+# (bug real corregido 2026-09-11 — el LLM clasificaba sistemáticamente "se aprueba
+# la enmienda..., por lo que decae la proposición" como "aprobada con enmienda" o
+# "rechazada" en cientos de casos; el gate anterior solo confiaba en "decae" cuando
+# el LLM no había dado ninguna respuesta, así que nunca corregía una respuesta
+# equivocada con confianza, ver memoria/decisiones_tecnicas.md §4.5).
 def resultado_cruzado(vote_result: str, resultado_llm: str) -> str:
     if not vote_result:
         return resultado_llm
+    if _RE_DECAE_PROP.search(vote_result):
+        return "decae"
     if _RE_RECHAZADA_PROP.search(vote_result):
         return "rechazada"
     if _RE_APROBADA_PROP.search(vote_result):
         if resultado_llm in (None, "", "sin resultado", "rechazada", "decae", "retirada"):
             return "aprobada"
-        return resultado_llm
-    if _RE_DECAE_PROP.search(vote_result):
-        if resultado_llm in (None, "", "sin resultado"):
-            return "decae"
         return resultado_llm
     return resultado_llm
 

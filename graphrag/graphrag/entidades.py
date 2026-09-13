@@ -1,15 +1,3 @@
-"""Limpieza y canonicalización de entidades del enriquecimiento LLM, para
-build_rdf.py. Objetivo: menos nodos basura y menos duplicados ("Iberdrola" /
-"Iberdrola SA" / "IBERDROLA" -> un solo nodo).
-
-- `es_basura(nombre)` -> True si hay que descartarla.
-- `clave_entidad(nombre)` -> clave normalizada para agrupar (slug estable).
-- `TIPOS` normaliza el campo 'tipo'.
-
-No hace clustering por distancia de edición (eso sería una segunda pasada
-offline sobre TODO el enriquecido); esto es lo que se puede hacer por-entidad
-al vuelo, de forma determinista.
-"""
 import re
 import unicodedata
 

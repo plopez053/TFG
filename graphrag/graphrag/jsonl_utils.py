@@ -1,8 +1,3 @@
-"""Carga de ficheros JSONL (una lista de dicts, un JSON por línea).
-
-Compartido por build_graph.py, build_rdf.py y extract_proposals.py — antes
-cada uno abría y parseaba el fichero línea a línea por su cuenta.
-"""
 import json
 from typing import Iterator, List
 

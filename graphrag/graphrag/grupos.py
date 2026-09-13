@@ -1,16 +1,3 @@
-"""Normalización y extracción del GRUPO MUNICIPAL proponente/orador.
-
-Módulo compartido por build_graph.py (fase 2: enriquecimiento LLM) y
-build_rdf.py (fase 3: construcción del grafo RDF) — antes este código vivía
-duplicado en ambos ficheros; unificarlo evita que diverjan silenciosamente.
-
-Es resolución de entidades de dominio cerrado: el Pleno de Bilbao ha tenido
-un número finito y conocido de grupos municipales en 2002-2026, con variantes
-por OCR, bilingüismo (castellano/euskera) y cambios de sigla a lo largo de los
-años (Bildu → EH Bildu, Bilbao en Común → Elkarrekin Bilbao...). No existe un
-algoritmo "general" que infiera estas equivalencias sin conocimiento del
-dominio: por eso el mapeo es una tabla explícita, no heurística estadística.
-"""
 import re
 
 GRUPOS_CANONICOS = {
