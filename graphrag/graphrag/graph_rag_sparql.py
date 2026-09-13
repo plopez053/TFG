@@ -1,14 +1,3 @@
-"""Fase 4: GraphRAG puro — SPARQL sobre el grafo RDF razonado → respuesta narrativa.
-
-Flujo: pregunta → SPARQL → filas estructuradas (con títulos, fechas, resultados) → LLM → respuesta.
-
-El LLM genera una respuesta NARRATIVA usando SOLO los datos del grafo:
-agrega cifras, describe tendencias temporales y menciona ejemplos concretos.
-NO usa ChromaDB (eso es el RAG vectorial, el sistema comparado).
-
-Uso:
-  python graphrag/graphrag/graph_rag_sparql.py "¿cuántas proposiciones de vivienda por grupo?"
-"""
 import os
 import re
 import sys
@@ -23,328 +12,212 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GRAPH_TTL = os.path.join(HERE, "bilbao_reasoned.ttl")
 
 # ---------------------------------------------------------------------------
-# Schema SPARQL — URIs exactas para evitar errores de generación
+# Schema SPARQL compacto + banco de ejemplos few-shot + capa de alias.
+# Sustituye al mega-prompt de 310 lineas tras el estudio de ablacion (ver
+# graphrag/graphrag/ESTUDIO_SPARQL_LOCAL.md): un schema compacto + 3 ejemplos
+# dinamicos (elegidos por parecido a la pregunta) + reescritura determinista
+# de las invenciones sistematicas del LLM da mejor acierto y menos respuestas
+# falsas que el schema largo, con 1/3 del tamano de prompt.
 # ---------------------------------------------------------------------------
-SCHEMA = """GRAFO RDF (razonado con OWL-RL) del Pleno del Ayuntamiento de Bilbao.
+_PREFIXES = """PREFIX bo: <http://bilbao.tfg/ontology#>
+PREFIX br: <http://bilbao.tfg/resource/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"""
 
-PREFIJOS — úsalos siempre:
-  PREFIX bo:   <http://bilbao.tfg/ontology#>
-  PREFIX br:   <http://bilbao.tfg/resource/>
-  PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SCHEMA = _PREFIXES + """
 
-CLASES:
-  ?prop  a bo:Proposicion ; bo:tituloTopic ?titulo ; bo:fecha ?fecha ; bo:anio ?anio ;
-           bo:votosFavor ?vf ; bo:votosContra ?vc .
-  ?grupo a bo:Grupo  ; rdfs:label ?nombreGrupo .
-  ?pleno a bo:Pleno  ; rdfs:label ?fechaPleno ; bo:anio ?anio .
-  ?tema  a bo:Tema   ; skos:prefLabel ?labelTema .
-  ?ent   a bo:Entidad ; rdfs:label ?nombreEnt .
+Grafo RDF (razonado con OWL-RL) del Pleno del Ayuntamiento de Bilbao (2007-2026).
 
-PROPIEDADES (nombres exactos):
-  ?prop bo:presentadaPor   ?grupo   # quién presenta — SIEMPRE UN SOLO grupo por
-      # proposición (una "proposición conjunta EH BILDU y ELKARREKIN" se guarda con
-      # un único grupo). NO se puede contar "proposiciones conjuntas" ni props con
-      # varios grupos: si la pregunta lo pide, responde que el grafo no lo distingue.
-  ?prop bo:enPleno         ?pleno   # en qué pleno
-  ?prop bo:tieneResultado  ?res     # resultado: usar con los individuos de abajo
-  ?prop bo:trataSobre      ?tema    # tema directo (canónico o subtema libre)
-  ?prop bo:trataTemaAmplio ?tema    # tema + subtemas inferidos por OWL-RL (roll-up)
-  ?prop bo:menciona        ?ent     # entidades mencionadas (empresas, personas, lugares)
-  ?prop bo:intervino       ?concejal    # concejal/a que intervino en el debate
-  ?prop bo:proponePersona  ?concejal    # concejal/a que FIRMA la proposición
-  ?concejal a bo:Concejal ; rdfs:label ?nombreConcejal ; bo:perteneceA ?grupo .
-  ?concejal bo:esAlcalde true .   # el/la alcalde/sa es un concejal marcado así
-  ?tec a bo:PersonalTecnico ; rdfs:label ?n ; bo:cargoTecnico ?cargo .  # Secretario/Interventor (no votan)
-  ?prop bo:votoAFavorDe    ?grupo   # GRUPO que votó a favor (derivado del voto nominal)
-  ?prop bo:votoEnContraDe  ?grupo   # GRUPO que votó en contra
-  ?prop bo:seAbstuvo       ?grupo   # GRUPO que se abstuvo
-  ?prop bo:concejalVotoAFavor      ?concejal   # CONCEJAL concreto que votó a favor (voto NOMINAL)
-  ?prop bo:concejalVotoEnContra    ?concejal   # CONCEJAL que votó en contra
-  ?prop bo:concejalVotoAbstencion  ?concejal   # CONCEJAL que se abstuvo
-  ?prop bo:votoFuente      ?f       # "acta" = voto parseado literal del acta (fiable, ~1400 props);
-                                    # "llm" = inferido (fallback, ~120). Filtra por "acta" si quieres solo lo seguro.
-  ?prop bo:tieneEnmienda   ?enm . ?enm bo:enmiendaPor ?grupo ; bo:resumenEnmienda ?txt .
-  ?prop bo:resumen ?r ; bo:pagina ?pag ; bo:fuentePdf ?pdf    # resumen dispositivo, pág. del PDF
+CLASES Y PROPIEDADES:
+  ?p a bo:Proposicion ; bo:tituloTopic ?titulo ; bo:fecha ?fecha ; bo:anio ?anio (xsd:integer) .
+  ?p bo:presentadaPor ?g          # grupo que presenta (UNO solo por proposicion)
+  ?p bo:enPleno ?pleno
+  ?p bo:tieneResultado ?res       # individuos: bo:Aprobada bo:Rechazada bo:Decae bo:Retirada bo:AprobadaConEnmienda bo:SinResultado
+  ?p bo:trataSobre ?t             # tema principal (exacto)
+  ?p bo:trataTemaAmplio ?t        # tema + subtemas (roll-up del razonador) -- usar por defecto para temas
+  ?p bo:menciona ?ent             # entidades (empresas, personas externas, lugares)
+  ?p bo:intervino ?concejal       # concejal/a que intervino en el debate
+  ?p bo:proponePersona ?concejal  # concejal/a que firma la proposicion
+  ?p bo:votoAFavorDe / bo:votoEnContraDe / bo:seAbstuvo ?g          # voto por GRUPO
+  ?p bo:concejalVotoAFavor / bo:concejalVotoEnContra / bo:concejalVotoAbstencion ?concejal   # voto NOMINAL
+  ?p bo:tieneEnmienda ?enm . ?enm a bo:Enmienda ; bo:enmiendaPor ?g .
+  ?g a bo:Grupo ; rdfs:label ?nombreGrupo .
+  ?t a bo:Tema ; skos:prefLabel ?labelTema .
+  ?concejal a bo:Concejal ; rdfs:label ?nombreConcejal ; bo:perteneceA ?g ; bo:esAlcalde ?bool .
+  ?ent a bo:Entidad ; rdfs:label ?nombreEnt .
 
-Para "¿qué dijo / en qué intervino el concejal X?": ?prop bo:intervino ?c .
-  ?c rdfs:label ?n . FILTER(CONTAINS(LCASE(STR(?n)), "apellido")). Para "concejal más
-  activo": GROUP BY ?c ?n ORDER BY DESC(COUNT(?prop)). Para "cómo votó el grupo X en
-  una proposición": mira bo:votoAFavorDe / bo:votoEnContraDe / bo:seAbstuvo (solo están
-  en las proposiciones cuyo acta desglosa el voto; si no aparece, no se sabe).
+GRUPOS (URIs br:): grupo_pp(PP) grupo_eh_bildu(EH BILDU) grupo_pse_ee(PSE-EE)
+  grupo_elkarrekin_bilbao(ELKARREKIN BILBAO) grupo_goazen_bilbao(GOAZEN BILBAO)
+  grupo_udalberri(UDALBERRI) grupo_eaj_pnv(EAJ-PNV) grupo_ciudadanos(CIUDADANOS)
+  grupo_vox(VOX) grupo_ezker_batua_iu(EZKER BATUA-IU) grupo_equipo_de_gobierno(EQUIPO DE GOBIERNO)
+  grupo_grupo_mixto(GRUPO MIXTO) grupo_desconocido(excluir de rankings)
 
-Para "¿qué se ha dicho / debatido sobre <NOMBRE>?" cuando <NOMBRE> es una empresa,
-persona o lugar (Iberdrola, Zorrotzaurre, una persona...), NO es un tema: usa
-  ?prop bo:menciona ?ent . ?ent rdfs:label ?nombreEnt .
-  FILTER(REGEX(STR(?nombreEnt), "\\\\bzara\\\\b", "i"))
-IMPORTANTE: para el nombre usa REGEX con \\\\b...\\\\b (límite de palabra), NO
-CONTAINS: "zara" con CONTAINS también casa "Zaragoza", "Zarautz", "Zarandoa".
-Con varios nombres: FILTER(REGEX(...,"\\\\bmercadona\\\\b","i") || REGEX(...,"\\\\bzara\\\\b","i")).
-Devuelve ?titulo ?fecha ?nombreEnt. OJO: el grafo solo tiene las entidades que el
-enriquecimiento consideró relevantes; muchas menciones de pasada NO están (eso lo
-cubre mejor el RAG vectorial). Si sale 0, la respuesta honesta es que el grafo no
-recoge esa entidad, no que no se haya hablado del tema.
+TEMAS CANONICOS (URIs br:t_): vivienda urbanismo movilidad medioambiente euskera
+  cultura deporte educacion igualdad serviciossociales empleoeconomia presupuestos
+  seguridad participacion turismo sanidad memoriahistorica derechoshumanos otros
 
-INDIVIDUOS de resultado (usar con bo:tieneResultado, NUNCA con bo:votoTexto):
-  bo:Aprobada  bo:Rechazada  bo:Decae  bo:Retirada  bo:AprobadaConEnmienda  bo:SinResultado
-  IMPORTANTE: "aprobada" en lenguaje normal = bo:Aprobada Y bo:AprobadaConEnmienda
-  (una proposición aprobada con enmienda SÍ salió adelante, con cambios). Cuando la
-  pregunta diga "cuántas se aprobaron" / "aprobadas" sin más matiz, cuenta LAS DOS:
-    - conteo simple:  ?prop ... ; bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda))
-    - en un ratio (total + aprobadas juntos):
-        OPTIONAL {{ ?prop bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) . BIND(?prop AS ?aprobada) }}
-  Usa solo bo:Aprobada si la pregunta pide explícitamente "sin enmiendas" / "tal cual".
+SUBTEMAS (URIs br:t_, cuelgan de un tema canonico; con trataTemaAmplio incluyen el padre):
+  alquiler desahucios vivienda_social vivienda_vacia | aparcamiento bicicleta bilbobus
+  metro_bilbao transporte_publico tranvia accesibilidad | comercio empleo empresas hosteleria
+  financiacion ordenanzas_fiscales presupuesto_municipal retribuciones subvenciones
+  barrios espacio_publico ordenacion_urbana rehabilitacion | discapacidad exclusion_social
+  personas_mayores | policia_municipal | reciclaje | violencia_genero | arte fiestas museos | transparencia
 
-URIs EXACTAS de los grupos (usar cuando filtres por grupo concreto):
-  br:grupo_pp                  → PP
-  br:grupo_eh_bildu            → EH BILDU
-  br:grupo_pse_ee              → PSE-EE
-  br:grupo_elkarrekin_bilbao   → ELKARREKIN BILBAO
-  br:grupo_goazen_bilbao       → GOAZEN BILBAO
-  br:grupo_udalberri           → UDALBERRI
-  br:grupo_eaj_pnv             → EAJ-PNV
-  br:grupo_ciudadanos          → CIUDADANOS
-  br:grupo_vox                 → VOX
-  br:grupo_ezker_batua_iu      → EZKER BATUA-IU
-  br:grupo_equipo_de_gobierno  → EQUIPO DE GOBIERNO
-  br:grupo_grupo_mixto         → GRUPO MIXTO
+Si un concepto no esta en estas listas, resuelvelo con:
+  ?p bo:trataTemaAmplio ?t . ?t skos:prefLabel ?lab . FILTER(REGEX(STR(?lab), "palabra", "i"))
+NUNCA inventes una URI de tema que no este arriba.
 
-URIs EXACTAS de los 19 TEMAS CANÓNICOS (usar cuando filtres por tema concreto):
-  br:t_vivienda          → vivienda
-  br:t_urbanismo         → urbanismo
-  br:t_movilidad         → movilidad y transporte
-  br:t_medioambiente     → medio ambiente
-  br:t_euskera           → euskera
-  br:t_cultura           → cultura
-  br:t_deporte           → deporte
-  br:t_educacion         → educación
-  br:t_igualdad          → igualdad y feminismo
-  br:t_serviciossociales → servicios sociales
-  br:t_empleoeconomia    → empleo y economía
-  br:t_presupuestos      → presupuestos y fiscalidad
-  br:t_seguridad         → seguridad
-  br:t_participacion     → participación ciudadana
-  br:t_turismo           → turismo
-  br:t_sanidad           → sanidad
-  br:t_memoriahistorica  → memoria histórica
-  br:t_derechoshumanos   → derechos humanos
-  br:t_otros             → otros (proposiciones sin tema claro en ninguna otra categoría)
-
-URIs EXACTAS de SUBTEMAS específicos (nivel 2, ⊑ de un tema canónico de arriba):
-úsalas cuando la pregunta mencione algo más concreto que el tema general —
-CON bo:trataTemaAmplio devuelven también todo lo que cuelgue del subtema, y
-de paso el roll-up incluye automáticamente el tema padre. Evita el fallback de
-CONTAINS + skos:prefLabel salvo que el concepto no esté en esta lista: ese
-fallback solo mira prefLabel (no altLabel/sinónimos) y solo el texto literal
-que tú elijas, así que suele perderse variantes, plurales y sinónimos.
-  -- vivienda: br:t_alquiler, br:t_desahucios, br:t_vivienda_social, br:t_vivienda_vacia
-  -- movilidad y transporte: br:t_aparcamiento, br:t_bicicleta, br:t_bilbobus,
-     br:t_metro_bilbao, br:t_transporte_publico, br:t_tranvia, br:t_accesibilidad
-  -- empleo y economía: br:t_comercio, br:t_empleo, br:t_empresas, br:t_hosteleria
-  -- presupuestos y fiscalidad: br:t_financiacion, br:t_ordenanzas_fiscales,
-     br:t_presupuesto_municipal, br:t_retribuciones, br:t_subvenciones
-  -- urbanismo: br:t_barrios, br:t_espacio_publico, br:t_ordenacion_urbana, br:t_rehabilitacion
-  -- servicios sociales: br:t_discapacidad, br:t_exclusion_social, br:t_personas_mayores
-  -- seguridad: br:t_policia_municipal
-  -- medio ambiente: br:t_reciclaje
-  -- igualdad y feminismo: br:t_violencia_genero
-  -- cultura: br:t_arte, br:t_fiestas, br:t_museos
-  -- participación ciudadana: br:t_transparencia
-
-CUÁNDO usar trataSobre vs trataTemaAmplio — USA trataTemaAmplio POR DEFECTO:
-- bo:trataTemaAmplio: el tema Y todos sus subtemas inferidos por el razonador OWL-RL
-  (p.ej. "desahucios", "alquiler", "vivienda social" cuentan como "vivienda"; "subvenciones",
-  "IBI", "ordenanzas fiscales" cuentan como "presupuestos y fiscalidad"). ÚSALO SIEMPRE QUE LA
-  PREGUNTA MENCIONE UN TEMA DE FORMA GENERAL ("¿cuántas propuestas de vivienda?", "¿qué grupo
-  presentó más sobre presupuestos?", "temas más frecuentes de EH Bildu") — es la respuesta que
-  espera un usuario real, que casi nunca pedirá subtemas explícitamente aunque los quiera
-  incluidos. Usa SIEMPRE la URI exacta del tema canónico: ?prop bo:trataTemaAmplio br:t_vivienda
-  Si la pregunta dice literalmente "incluyendo subtemas" / "con subtemas" / "en total": ES
-  bo:trataTemaAmplio con la URI del tema, sin más. NUNCA recorras skos:broader tú mismo
-  (no tiene cierre transitivo materializado) ni inventes URIs tipo br:t_presupuestos_fiscalidad
-  (el tema es br:t_presupuestos; la lista completa de URIs está arriba).
-- bo:trataSobre: SOLO el tema principal o un tema secundario EXACTO del texto de la proposición,
-  SIN incluir subtemas inferidos. Úsalo ÚNICAMENTE si la pregunta pide explícitamente excluir
-  subtemas ("solo lo etiquetado directamente como X, no sus variantes") — muy raro en la práctica.
-  Si no sabes la URI exacta puedes usar FILTER: ?prop bo:trataSobre ?tema . ?tema skos:prefLabel ?lab .
-  FILTER(CONTAINS(LCASE(STR(?lab)), "vivienda"))
-
-REGLAS obligatorias:
-- NUNCA uses el patrón de nodo anónimo [skos:prefLabel "vivienda"]: usa URI exacta o variable+FILTER.
-    CORRECTO:  ?prop bo:trataSobre br:t_vivienda
-    CORRECTO:  ?prop bo:trataSobre ?tema . ?tema skos:prefLabel ?lab . FILTER(CONTAINS(LCASE(STR(?lab)), "vivienda"))
-    INCORRECTO: ?prop bo:trataSobre [skos:prefLabel "vivienda"]
-- Para filtrar por resultado: ?prop bo:tieneResultado bo:Rechazada
-  Si SOLO quieres CONTAR las de un resultado (p.ej. "cuántas rechazadas de euskera"),
-  pon el triple bo:tieneResultado DIRECTO en el WHERE, NUNCA dentro de un OPTIONAL:
-  un OPTIONAL cuyas variables no se usan luego en un COUNT no filtra nada y el
-  conteo saldrá con TODAS (bug real: "euskera rechazadas" devolvió 55 en vez de 3).
-  CORRECTO:   SELECT (COUNT(?prop) AS ?n) WHERE {{ ?prop ...tema... ; bo:tieneResultado bo:Rechazada }}
-  INCORRECTO: SELECT (COUNT(?prop) AS ?n) WHERE {{ ?prop ...tema... . OPTIONAL {{ ?prop bo:tieneResultado bo:Rechazada }} }}
-  (el OPTIONAL+BIND solo es para RATIOS: total + subconjunto en la MISMA consulta, ver abajo)
-- Para filtrar por grupo: ?prop bo:presentadaPor br:grupo_pp
-- Para el label del grupo: ?grupo rdfs:label ?nombreGrupo
-- bo:anio se almacena como xsd:integer. Para filtrar por año usa FILTER(?anio = 2023) con entero sin comillas.
-  CORRECTO:   FILTER(?anio = 2023)
-  INCORRECTO: FILTER(?anio = "2023") ← cadena de texto, no coincide
-  INCORRECTO: FILTER(?anio = "2023"^^xsd:int) ← tipo incorrecto (es xsd:integer, no xsd:int)
-- Si filtras por un grupo concreto Y quieres su label, SIEMPRE enlaza ?grupo como variable primero:
-  CORRECTO:   ?prop bo:presentadaPor ?grupo . ?grupo rdfs:label ?nombreGrupo .
-              FILTER(?grupo = br:grupo_eh_bildu)
-  INCORRECTO: ?prop bo:presentadaPor br:grupo_eh_bildu . ?grupo rdfs:label ?nombreGrupo .
-              (aquí ?grupo queda desligado → error o 0 resultados)
-- Para rankings (desglose por grupo/año/tema) usa COUNT + GROUP BY + ORDER BY DESC + LIMIT 50.
-- Para un TOTAL simple (sin desglose por nada) NUNCA agrupes por la variable que estás
-  contando: GROUP BY ?prop convierte cada proposición en su propio grupo de tamaño 1
-  y el COUNT dejará de servir para nada, devolviendo cientos de filas con "1" en vez
-  de un único total.
-  CORRECTO:   SELECT (COUNT(?prop) AS ?total) WHERE {{ ?prop a bo:Proposicion ; ... }}
-              (sin GROUP BY — una sola fila con el total)
-- Para PORCENTAJES ("qué porcentaje de X se aprobó", tasas, ratios en %): NUNCA calcules
-  la división/porcentaje dentro del SPARQL (no inventes bloques "WITH", subconsultas
-  anidadas complejas ni operadores que no conozcas bien) — limítate a devolver el total y
-  el subconjunto con OPTIONAL+BIND (ver ejemplo de ratios más abajo). El porcentaje se
-  calcula después, en la respuesta narrativa, a partir de esos dos números.
-  INCORRECTO: SELECT (COUNT(?prop) AS ?total) WHERE {{ ... }} GROUP BY ?prop
-- EXCLUYE br:grupo_desconocido de los rankings a menos que se pida explícitamente.
-- NUNCA uses bo:votoTexto para filtrar resultados, es un literal de texto libre.
-- EVITA UNION: complica la consulta y suele generarse mal. Usa OPTIONAL + FILTER
-  para combinar condiciones alternativas, o dos consultas separadas si es necesario.
-- Si la pregunta pide detalles de proposiciones concretas, incluye ?titulo, ?fecha, ?anio en el SELECT.
-- Si la pregunta pide evolución temporal, agrupa por ?anio y ordena por ?anio ASC.
-- NUNCA añadas un filtro bo:trataTemaAmplio/bo:trataSobre a menos que la pregunta mencione
-  explícitamente un tema concreto. Si la pregunta es sobre TODAS las proposiciones, omite ese
-  triple completamente.
-- PARA CALCULAR RATIOS (total + subconjunto filtrado): USA SIEMPRE OPTIONAL+BIND, NUNCA FILTER.
-  Un FILTER en el WHERE elimina las filas que no lo cumplen → el COUNT total queda incorrecto.
-  CORRECTO:  OPTIONAL {{ ?prop bo:tieneResultado bo:Rechazada . BIND(?prop AS ?rechazada) }}
-             → SELECT ... (COUNT(?prop) AS ?total) (COUNT(?rechazada) AS ?rechazadas)
-  INCORRECTO: FILTER(?resultado = bo:Rechazada)  ← destruye el total y el COUNT queda a 0
-- NUNCA uses LIMIT 1 si la pregunta pide COMPARAR grupos: LIMIT 1 elimina toda la comparación.
-  Usa LIMIT 20 (o más) para mostrar todos los grupos relevantes en comparaciones.
-- Si agrupas POR TEMA (ranking de temas, "el tema más/menos tratado"), incluye SIEMPRE
-  ?tema Y su ?labelTema en el SELECT — no solo el COUNT, o la respuesta no podrá decir DE
-  QUÉ tema se trata.
-  CORRECTO: SELECT ?tema ?labelTema (COUNT(?prop) AS ?n) WHERE {{ ?prop bo:trataSobre ?tema .
-            ?tema skos:prefLabel ?labelTema . }} GROUP BY ?tema ?labelTema ORDER BY ASC(?n) LIMIT 5
-
-EJEMPLO — proposiciones por grupo en un tema concreto (pregunta general → trataTemaAmplio):
-  SELECT ?grupo ?nombreGrupo (COUNT(?prop) AS ?n)
-  WHERE {{
-    ?prop a bo:Proposicion ;
-          bo:trataTemaAmplio br:t_vivienda ;
-          bo:presentadaPor ?grupo .
-    ?grupo rdfs:label ?nombreGrupo .
-    FILTER(?grupo != br:grupo_desconocido)
-  }}
-  GROUP BY ?grupo ?nombreGrupo ORDER BY DESC(?n) LIMIT 20
-
-EJEMPLO — evolución temporal de todas las proposiciones aprobadas por año (sin filtro de tema):
-  SELECT ?anio (COUNT(?prop) AS ?n)
-  WHERE {{
-    ?prop a bo:Proposicion ;
-          bo:tieneResultado bo:Aprobada ;
-          bo:anio ?anio .
-  }}
-  GROUP BY ?anio ORDER BY ASC(?anio)
-
-EJEMPLO — evolución temporal de proposiciones sobre un tema específico por año:
-  SELECT ?anio (COUNT(?prop) AS ?n)
-  WHERE {{
-    ?prop a bo:Proposicion ;
-          bo:trataTemaAmplio br:t_euskera ;
-          bo:anio ?anio .
-  }}
-  GROUP BY ?anio ORDER BY ASC(?anio)
-
-EJEMPLO — tasa de rechazo por grupo (ratio: rechazadas / total):
-  SELECT ?grupo ?nombreGrupo (COUNT(?prop) AS ?total)
-         (COUNT(?rechazada) AS ?rechazadas)
-  WHERE {{
-    ?prop a bo:Proposicion ;
-          bo:presentadaPor ?grupo .
-    ?grupo rdfs:label ?nombreGrupo .
-    FILTER(?grupo != br:grupo_desconocido)
-    OPTIONAL {{ ?prop bo:tieneResultado bo:Rechazada . BIND(?prop AS ?rechazada) }}
-  }}
-  GROUP BY ?grupo ?nombreGrupo ORDER BY DESC(?rechazadas) LIMIT 20
-
-EJEMPLO — doble conteo (total de un tema + cuántas aprobadas):
-  SELECT (COUNT(?prop) AS ?total) (COUNT(?aprobada) AS ?aprobadas)
-  WHERE {{
-    ?prop a bo:Proposicion ;
-          bo:trataTemaAmplio br:t_medioambiente .
-    OPTIONAL {{ ?prop bo:tieneResultado bo:Aprobada . BIND(?prop AS ?aprobada) }}
-  }}
-
-EJEMPLO — total presentadas y aprobadas por un grupo en un año concreto:
-  SELECT ?nombreGrupo (COUNT(?prop) AS ?total) (COUNT(?aprobada) AS ?aprobadas)
-  WHERE {{
-    ?prop a bo:Proposicion ;
-          bo:presentadaPor ?grupo ;
-          bo:anio ?anio .
-    ?grupo rdfs:label ?nombreGrupo .
-    FILTER(?grupo = br:grupo_eh_bildu)
-    FILTER(?anio = 2023)
-    OPTIONAL {{ ?prop bo:tieneResultado bo:Aprobada . BIND(?prop AS ?aprobada) }}
-  }}
-  GROUP BY ?nombreGrupo
-
-EJEMPLO — CONCEJAL/A (una PERSONA, no un grupo) que ha firmado más proposiciones.
-OJO: si la pregunta dice "concejal", "concejala", "quién" o un nombre de persona,
-NO uses bo:presentadaPor (eso es el GRUPO); usa bo:proponePersona o bo:intervino,
-que apuntan a nodos ?c con `?c a bo:Concejal ; rdfs:label ?nombre`:
-  SELECT ?nombre (COUNT(DISTINCT ?prop) AS ?n)
-  WHERE {{
-    ?prop bo:proponePersona ?c .
-    ?c rdfs:label ?nombre .
-  }}
-  GROUP BY ?c ?nombre ORDER BY DESC(?n) LIMIT 20
-
-EJEMPLO — en cuántos debates ha INTERVENIDO un/a concejal/a concreto/a (Otxandiano,
-Aburto, Goirizelaia...). El nombre SIEMPRE con FILTER(CONTAINS(LCASE(...))), nunca "=":
-  SELECT (COUNT(DISTINCT ?prop) AS ?nDebates)
-  WHERE {{
-    ?prop bo:intervino ?c .
-    ?c rdfs:label ?nombre .
-    FILTER(CONTAINS(LCASE(STR(?nombre)), "otxandiano"))
-  }}
-
-EJEMPLO — quién ha sido alcalde/sa (son concejales con bo:esAlcalde true; hay 3:
-Azkuna, Areso, Aburto — el actual es Aburto):
-  SELECT ?nombre WHERE {{ ?c bo:esAlcalde true ; rdfs:label ?nombre . }}
-
-EJEMPLO — cuántas ENMIENDAS ha presentado un grupo (nodos bo:Enmienda, NO proposiciones):
-  SELECT (COUNT(DISTINCT ?enm) AS ?nEnmiendas)
-  WHERE {{ ?enm a bo:Enmienda ; bo:enmiendaPor br:grupo_pp . }}
-
-VOTO por grupo (bo:votoAFavorDe / bo:votoEnContraDe / bo:seAbstuvo) — existe en
-~1.400 proposiciones (las que traen la lista nominal en el acta). Ej. "¿cómo votó
-EH Bildu las proposiciones de vivienda?":
-  SELECT (COUNT(DISTINCT ?pf) AS ?aFavor) (COUNT(DISTINCT ?pc) AS ?enContra) (COUNT(DISTINCT ?pa) AS ?abst)
-  WHERE {{
-    ?prop bo:trataTemaAmplio br:t_vivienda .
-    OPTIONAL {{ ?prop bo:votoAFavorDe   br:grupo_eh_bildu . BIND(?prop AS ?pf) }}
-    OPTIONAL {{ ?prop bo:votoEnContraDe br:grupo_eh_bildu . BIND(?prop AS ?pc) }}
-    OPTIONAL {{ ?prop bo:seAbstuvo      br:grupo_eh_bildu . BIND(?prop AS ?pa) }}
-  }}
-
-VOTO NOMINAL (por concejal) — ej. "¿qué concejal ha votado más veces en contra?":
-  SELECT ?n (COUNT(*) AS ?veces) WHERE {{ ?prop bo:concejalVotoEnContra ?c . ?c rdfs:label ?n }}
-  GROUP BY ?c ?n ORDER BY DESC(?veces) LIMIT 20
-Ej. "¿cómo votó [concejal] la proposición sobre X?": ?prop bo:trataTemaAmplio br:t_X .
-  {{ ?prop bo:concejalVotoAFavor ?c }} UNION {{ ?prop bo:concejalVotoEnContra ?c }} UNION {{ ?prop bo:concejalVotoAbstencion ?c }}
-  ?c rdfs:label ?n . FILTER(CONTAINS(LCASE(STR(?n)), "apellido"))
+REGLAS:
+- Nombres de persona/entidad: ?x rdfs:label ?n . FILTER(REGEX(STR(?n), "apellido", "i")). NUNCA nodo anonimo [rdfs:label "x"].
+- Ano: FILTER(?anio = 2023) (entero, sin comillas ni ^^xsd:*).
+- "aprobadas" sin mas matiz = bo:Aprobada Y bo:AprobadaConEnmienda: FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)).
+- Conteo simple de un resultado: pon bo:tieneResultado DIRECTO en el WHERE, nunca en OPTIONAL.
+- Ratio (total + subconjunto en la misma consulta): usa OPTIONAL { ... BIND(?p AS ?sub) } y COUNT de cada uno, NUNCA FILTER.
+- Total simple: SELECT (COUNT(DISTINCT ?p) AS ?n) sin GROUP BY.
+- Ranking: COUNT + GROUP BY + ORDER BY DESC + LIMIT; incluye el label (grupo/tema) en el SELECT, no solo el COUNT.
+- Filtras por grupo concreto + quieres su label: ?p bo:presentadaPor ?g . ?g rdfs:label ?ng . FILTER(?g = br:grupo_pp).
+- No anadas filtro de tema si la pregunta no menciona un tema.
+- Evita UNION. No calcules porcentajes dentro del SPARQL.
 """
 
-SPARQL_PROMPT = """Eres experto en SPARQL. Genera UNA consulta SPARQL válida que responda la pregunta.
-Sigue TODAS las reglas del schema. Devuelve SOLO la consulta SPARQL (con sus PREFIX), sin explicaciones ni ```.
+# banco de 18 preguntas -> SPARQL de referencia para el few-shot dinamico
+# (ninguna es del gold set del estudio, para no medir sobre los propios ejemplos)
+_EXAMPLE_BANK = [
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones sobre cultura se han presentado?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_cultura . }"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones present\u00f3 el PSE-EE en 2018?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:presentadaPor br:grupo_pse_ee ; bo:anio 2018 . }"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones sobre sanidad se han aprobado?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_sanidad ; bo:tieneResultado ?r .
+  FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) }"""),
+    dict(q=u"\u00bfQu\u00e9 grupo ha presentado m\u00e1s proposiciones sobre seguridad?",
+         sparql="""SELECT ?ng (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_seguridad ; bo:presentadaPor ?g .
+  ?g rdfs:label ?ng . FILTER(?g != br:grupo_desconocido) }
+GROUP BY ?ng ORDER BY DESC(?n) LIMIT 10"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones ha presentado cada grupo en total?",
+         sparql="""SELECT ?ng (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:presentadaPor ?g . ?g rdfs:label ?ng .
+  FILTER(?g != br:grupo_desconocido) }
+GROUP BY ?ng ORDER BY DESC(?n) LIMIT 20"""),
+    dict(q=u"\u00bfEn qu\u00e9 a\u00f1o hubo m\u00e1s proposiciones sobre cultura?",
+         sparql="""SELECT ?anio (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_cultura ; bo:anio ?anio . }
+GROUP BY ?anio ORDER BY DESC(?n) LIMIT 1"""),
+    dict(q=u"\u00bfC\u00f3mo ha evolucionado el n\u00famero de proposiciones sobre movilidad por a\u00f1o?",
+         sparql="""SELECT ?anio (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_movilidad ; bo:anio ?anio . }
+GROUP BY ?anio ORDER BY ASC(?anio)"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones present\u00f3 el PP en 2016 y cu\u00e1ntas se aprobaron?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?total) (COUNT(DISTINCT ?ap) AS ?aprob) WHERE {
+  ?p a bo:Proposicion ; bo:presentadaPor br:grupo_pp ; bo:anio 2016 .
+  OPTIONAL { ?p bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) . BIND(?p AS ?ap) } }"""),
+    dict(q=u"\u00bfQu\u00e9 porcentaje de las proposiciones sobre seguridad se rechazaron?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?total) (COUNT(DISTINCT ?re) AS ?rech) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_seguridad .
+  OPTIONAL { ?p bo:tieneResultado bo:Rechazada . BIND(?p AS ?re) } }"""),
+    dict(q=u"\u00bfQu\u00e9 concejal o concejala ha intervenido en m\u00e1s debates del Pleno?",
+         sparql="""SELECT ?n (COUNT(DISTINCT ?p) AS ?c) WHERE {
+  ?p bo:intervino ?con . ?con rdfs:label ?n . }
+GROUP BY ?n ORDER BY DESC(?c) LIMIT 1"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones ha firmado el concejal Gorka Otxandiano?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?c) WHERE {
+  ?p bo:proponePersona ?con . ?con rdfs:label ?n .
+  FILTER(REGEX(STR(?n), "gorka", "i") && REGEX(STR(?n), "otxandiano", "i")) }"""),
+    dict(q=u"\u00bfQu\u00e9 concejal o concejala ha votado a favor de m\u00e1s proposiciones?",
+         sparql="""SELECT ?n (COUNT(DISTINCT ?p) AS ?c) WHERE {
+  ?p bo:concejalVotoAFavor ?con . ?con rdfs:label ?n . }
+GROUP BY ?n ORDER BY DESC(?c) LIMIT 1"""),
+    dict(q=u"\u00bfCu\u00e1ntas veces se abstuvo el grupo EH Bildu en proposiciones sobre urbanismo?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?c) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_urbanismo ; bo:seAbstuvo br:grupo_eh_bildu . }"""),
+    dict(q=u"\u00bfSe ha mencionado a Petronor en alg\u00fan pleno?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?c) WHERE {
+  ?p bo:menciona ?e . ?e rdfs:label ?n . FILTER(REGEX(STR(?n), "\\bpetronor\\b", "i")) }"""),
+    dict(q=u"\u00bfCu\u00e1ntas enmiendas ha presentado el grupo EH Bildu?",
+         sparql="""SELECT (COUNT(DISTINCT ?e) AS ?n) WHERE {
+  ?e a bo:Enmienda ; bo:enmiendaPor br:grupo_eh_bildu . }"""),
+    dict(q=u"\u00bfCu\u00e1l es el tema menos tratado en las proposiciones del Pleno?",
+         sparql="""SELECT ?lab (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataSobre ?t . ?t skos:prefLabel ?lab . }
+GROUP BY ?lab ORDER BY ASC(?n) LIMIT 1"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones sobre el alquiler se han presentado?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_alquiler . }"""),
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones hay sobre igualdad y feminismo presentadas por el PP?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_igualdad ; bo:presentadaPor br:grupo_pp . }"""),
+]
 
-{schema}
 
-PREGUNTA: {pregunta}
+def _tok_pregunta(s):
+    return set(re.findall(u"[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f10-9]+", s.lower()))
 
-SPARQL:"""
+
+# 3 ejemplos del banco mas parecidos por solape de palabras (Jaccard) -- ver ESTUDIO_SPARQL_LOCAL.md Fase 2/4
+def _nearest_examples_jaccard(pregunta, k=3):
+    qt = _tok_pregunta(pregunta)
+    scored = []
+    for ex in _EXAMPLE_BANK:
+        et = _tok_pregunta(ex["q"])
+        j = len(qt & et) / max(1, len(qt | et))
+        scored.append((j, ex))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [ex for _, ex in scored[:k]]
+
+
+_bank_embed_vecs = None
+_bank_embed_lock = threading.Lock()
+
+
+# 3 ejemplos del banco mas parecidos por similitud coseno de embeddings bge-m3 (local, sin API externa)
+def _nearest_examples_embed(pregunta, k=3):
+    global _bank_embed_vecs
+    from langchain_ollama import OllamaEmbeddings
+    embedder = OllamaEmbeddings(model="bge-m3")
+    if _bank_embed_vecs is None:
+        with _bank_embed_lock:
+            if _bank_embed_vecs is None:
+                _bank_embed_vecs = embedder.embed_documents([ex["q"] for ex in _EXAMPLE_BANK])
+    qv = embedder.embed_query(pregunta)
+
+    def _cos(a, b):
+        dot = sum(x * y for x, y in zip(a, b))
+        na = sum(x * x for x in a) ** 0.5
+        nb = sum(y * y for y in b) ** 0.5
+        return dot / (na * nb + 1e-9)
+
+    scored = [(_cos(qv, _bank_embed_vecs[i]), _EXAMPLE_BANK[i]) for i in range(len(_EXAMPLE_BANK))]
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [ex for _, ex in scored[:k]]
+
+
+# el estudio (ver Fase 4) encontro que el embedding solo mejora con qwen3:8b o
+# mejor -- con qwen2.5:7b el solape de palabras iguala o mejora, mas rapido y
+# sin competir por VRAM con el modelo de generacion
+def _nearest_examples(pregunta, k=3):
+    if "qwen3" in LLM_MODEL_GRAPHRAG.lower():
+        try:
+            return _nearest_examples_embed(pregunta, k)
+        except Exception as e:
+            print(f"[!] embedding bge-m3 no disponible, uso solape de palabras: {e}", flush=True)
+    return _nearest_examples_jaccard(pregunta, k)
+
+
+_SPARQL_INSTR = ("Eres experto en SPARQL. Genera UNA consulta SPARQL valida que responda "
+                  "la pregunta. Devuelve SOLO la consulta (con sus PREFIX), sin explicaciones ni ```.\n")
+
+
+# construye el prompt de generacion: schema compacto + 3 ejemplos dinamicos + pregunta
+def _build_sparql_prompt(pregunta: str) -> str:
+    examples = _nearest_examples(pregunta, 3)
+    ex_block = "\n".join(f"\nP: {ex['q']}\n{_PREFIXES}\n{ex['sparql']}" for ex in examples)
+    return (f"{_SPARQL_INSTR}\n{SCHEMA}\n\nEJEMPLOS (pregunta -> SPARQL):{ex_block}"
+            f"\n\nPREGUNTA: {pregunta}\n\nSPARQL:")
 
 ANSWER_PROMPT = """Eres un analista político experto en el Ayuntamiento de Bilbao.
 Basándote ÚNICAMENTE en los datos del grafo que te proporciono, genera una respuesta en español que sea:
@@ -585,6 +458,118 @@ def _fix_tema_uri(uri_slug: str) -> str:
     return f"br:t_{uri_slug}"
 
 
+# ---------------------------------------------------------------------------
+# Capa de alias no destructiva ("adaptar la ontología al modelo", ver
+# ESTUDIO_SPARQL_LOCAL.md Fase 1-2): reescribe las invenciones SISTEMÁTICAS
+# del LLM (entidad/persona/grupo puestos como URI en vez de resolverse con
+# label+REGEX) al patrón real del grafo, ANTES de sanitizar/ejecutar.
+# ---------------------------------------------------------------------------
+_ALIAS_GRUPOS = {
+    "pp": "grupo_pp", "partidopopular": "grupo_pp",
+    "ehbildu": "grupo_eh_bildu", "bildu": "grupo_eh_bildu", "ehb": "grupo_eh_bildu",
+    "pseee": "grupo_pse_ee", "pse": "grupo_pse_ee", "socialistas": "grupo_pse_ee",
+    "elkarrekinbilbao": "grupo_elkarrekin_bilbao", "elkarrekin": "grupo_elkarrekin_bilbao",
+    "goazenbilbao": "grupo_goazen_bilbao", "goazen": "grupo_goazen_bilbao",
+    "udalberri": "grupo_udalberri", "eajpnv": "grupo_eaj_pnv", "pnv": "grupo_eaj_pnv",
+    "eaj": "grupo_eaj_pnv", "ciudadanos": "grupo_ciudadanos", "cs": "grupo_ciudadanos",
+    "vox": "grupo_vox", "ezkerbatuaiu": "grupo_ezker_batua_iu", "ezkerbatua": "grupo_ezker_batua_iu",
+    "equipodegobierno": "grupo_equipo_de_gobierno", "gobierno": "grupo_equipo_de_gobierno",
+    "grupomixto": "grupo_grupo_mixto", "mixto": "grupo_grupo_mixto",
+}
+_ALIAS_VOTO_PERSONA = ("proponePersona", "intervino", "concejalVotoAFavor",
+                       "concejalVotoEnContra", "concejalVotoAbstencion")
+_ALIAS_STOP = {"concejal", "concejala", "concejales", "sr", "sra", "don", "dona", "doña",
+              "grupo", "municipal", "el", "la", "los", "las", "de", "del", "senor",
+              "senora", "señor", "señora", "persona", "entidad"}
+
+
+def _alias_canon_grupo(raw: str):
+    k = re.sub(r"[^a-z0-9]", "", raw.lower())
+    if k in _ALIAS_GRUPOS:
+        return "br:" + _ALIAS_GRUPOS[k]
+    if k.startswith("grupo"):
+        return "br:" + re.sub(r"^grupo_?", "grupo_", raw.lower())
+    return None
+
+
+def _alias_tokens(uri: str):
+    u = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", uri)
+    u = re.sub(r"[_\-]+", " ", u)
+    toks = [w for w in re.findall(r"[A-Za-zÁÉÍÓÚáéíóúÑñ0-9]+", u.lower()) if len(w) > 1]
+    keep = [w for w in toks if w not in _ALIAS_STOP]
+    return keep or toks
+
+
+def _alias_regex_and(var: str, uri: str) -> str:
+    toks = _alias_tokens(uri) or [uri.lower()]
+    return " && ".join(f'REGEX(STR({var}), "{t}", "i")' for t in toks)
+
+
+def _alias_tail(body: str, subj: str, term: str) -> str:
+    if term == ";":
+        return body + f" . {subj} "
+    return body + " " + term
+
+
+def _alias_per_grp(m):
+    pre, pred, uri = m.group(1), m.group(2), m.group(3)
+    term = m.group(4) if (m.lastindex or 0) >= 4 else "."
+    nom = {"votoAFavorDe": "concejalVotoAFavor", "votoEnContraDe": "concejalVotoEnContra",
+           "seAbstuvo": "concejalVotoAbstencion"}[pred]
+    body = (f'{pre} bo:{nom} ?per_f . ?per_f rdfs:label ?per_fl . '
+            f'FILTER({_alias_regex_and("?per_fl", uri)})')
+    return _alias_tail(body, pre, term)
+
+
+def _alias_rewrite(sparql: str) -> str:
+    if not sparql:
+        return sparql
+    s = sparql
+
+    # <br:x> -> br:x (el modelo a veces mete la URI prefijada entre <>)
+    s = re.sub(r"<(br:[A-Za-z_]\w*)>", r"\1", s)
+    s = re.sub(r"<(bo:[A-Za-z_]\w*)>", r"\1", s)
+
+    # tema con prefijo bo: -> br: (bo:t_euskera -> br:t_euskera)
+    s = re.sub(r"\bbo:(t_[a-z_]+)\b", r"br:\1", s)
+
+    # grupo con URI no canonica: br:EHBildu / br:EH_Bildu -> br:grupo_eh_bildu
+    s = re.sub(r"\bbr:([A-Za-z][A-Za-z_]*)\b", lambda m: (
+        _alias_canon_grupo(m.group(1)) or m.group(0)) if re.sub(r"[^a-z0-9]", "", m.group(1).lower()) in _ALIAS_GRUPOS else m.group(0), s)
+
+    # entidad como URI: ?p bo:menciona br:Iberdrola -> ?p bo:menciona ?ent_f . ?ent_f rdfs:label ?ent_fl . FILTER(...)
+    def _ent(m):
+        pre, uri = m.group(1), m.group(2)
+        uri = re.sub(r"^(entidad_|ent_|lugar_|org_|organizacion_)", "", uri, flags=re.I)
+        body = (f'{pre} bo:menciona ?ent_f . ?ent_f rdfs:label ?ent_fl . '
+                f'FILTER({_alias_regex_and("?ent_fl", uri)})')
+        return _alias_tail(body, pre, m.group(3))
+    s = re.sub(r"(\?\w+)\s+bo:menciona\s+br:([A-Za-z_]\w*)\s*([;.])", _ent, s)
+
+    # persona como URI con predicados de persona / voto nominal
+    def _per(m):
+        pre, pred, uri = m.group(1), m.group(2), m.group(3)
+        body = (f'{pre} bo:{pred} ?per_f . ?per_f rdfs:label ?per_fl . '
+                f'FILTER({_alias_regex_and("?per_fl", uri)})')
+        return _alias_tail(body, pre, m.group(4))
+    s = re.sub(r"(\?\w+)\s+bo:(" + "|".join(_ALIAS_VOTO_PERSONA) + r")\s+br:([A-Za-z_]\w*)\s*([;.])", _per, s)
+
+    # voto de GRUPO con un br:<algo> que NO es un grupo canonico -> es persona
+    s = re.sub(r"(\?\w+)\s+bo:(votoAFavorDe|votoEnContraDe|seAbstuvo)\s+br:(?!grupo_)([A-Za-z_]\w*)\s*([;.])",
+               _alias_per_grp, s)
+
+    # rdfs:label "Nombre Apellido" EXACTO -> REGEX (rara vez coincide letra a letra con el grafo)
+    def _lbl(m):
+        var, lit, term = m.group(1), m.group(2), m.group(3)
+        if len(lit.split()) > 4 or len(lit) < 3:
+            return m.group(0)
+        body = f'{var} rdfs:label ?lbl_f . FILTER({_alias_regex_and("?lbl_f", lit)})'
+        return _alias_tail(body, var, term)
+    s = re.sub(r'(\?\w+)\s+rdfs:label\s+"([^"]{3,50})"\s*([;.)}])', _lbl, s)
+
+    return s
+
+
 # reescribe anti-patrones del LLM que dan resultado equivocado sin error (lista en memoria/decisiones_tecnicas.md 3.1)
 def _sanitize_sparql(sparql: str, verbose: bool = False, pregunta: str = "") -> str:
     original = sparql
@@ -626,6 +611,47 @@ def _sanitize_sparql(sparql: str, verbose: bool = False, pregunta: str = "") -> 
             gb = re.search(r"GROUP\s+BY\s+([^\n]*)", sparql, re.I)
             if gb and not re.search(r"\?\w+", gb.group(1)):
                 sparql = re.sub(r"GROUP\s+BY\s*[^\n]*\n?", "", sparql, flags=re.I)
+
+    # --- (2b) doble bo:Proposicion sin vincular (ratio mal construido) ---
+    # Para un ratio (total + subconjunto), a veces el LLM declara DOS variables
+    # "a bo:Proposicion" SIN VINCULAR en vez de OPTIONAL+BIND sobre la misma
+    # variable: el COUNT del subconjunto deja de estar filtrado por las
+    # condiciones de la variable principal (p.ej. el grupo) y cuenta de más en
+    # silencio (verificado: "movilidad de EH Bildu rechazadas" daba 74 en vez
+    # de 15 — contaba TODAS las rechazadas de movilidad, no solo las de EH
+    # Bildu). Solo se corrige si comparten al menos una condición (tema/grupo)
+    # -- si no comparten nada probablemente son dos conteos independientes de
+    # verdad (p.ej. comparar dos grupos), y no se toca.
+    try:
+        decl_vars = []
+        for m in re.finditer(r"\?(\w+)\s+a\s+bo:Proposicion\b", sparql):
+            if m.group(1) not in decl_vars:
+                decl_vars.append(m.group(1))
+        if len(decl_vars) >= 2:
+            counted = set(re.findall(r"COUNT\s*\(\s*(?:DISTINCT\s+)?\?(\w+)\s*\)", sparql, re.I))
+            primary = decl_vars[0]
+
+            def _bloque(var):
+                return re.search(rf"\?{var}\s+a\s+bo:Proposicion\s*;\s*(.*?)\s*\.\s*(?=\?|\}}|$)", sparql, re.S)
+
+            m_p = _bloque(primary)
+            if primary in counted and m_p:
+                primary_preds = {p.strip() for p in m_p.group(1).split(";")}
+                for var in decl_vars[1:]:
+                    if var not in counted:
+                        continue
+                    m_r = _bloque(var)
+                    if not m_r:
+                        continue
+                    r_preds = [p.strip() for p in m_r.group(1).split(";")]
+                    compartido = set(r_preds) & primary_preds
+                    extra = [p for p in r_preds if p not in primary_preds]
+                    if not compartido or not extra:
+                        continue  # sin condicion compartida = probablemente conteos independientes de verdad
+                    nuevo = f"OPTIONAL {{ ?{primary} {' ; '.join(extra)} . BIND(?{primary} AS ?{var}) }} "
+                    sparql = sparql.replace(m_r.group(0), nuevo, 1)
+    except Exception:
+        pass  # cualquier fallo de parseo: dejar la consulta tal cual, no romper el resto de guardas
 
     # --- (3) roll-up temático a mano con skos:broader en vez de bo:trataTemaAmplio ---
     # El LLM ve "incluyendo subtemas" y escribe
@@ -787,20 +813,31 @@ def graph_answer(pregunta: str, verbose=True):
 
     # 1. Generar SPARQL
     sparql = _sanitize_sparql(
-        _clean_sparql(_llm_invoke(SPARQL_PROMPT.format(schema=SCHEMA, pregunta=pregunta))), verbose, pregunta)
+        _alias_rewrite(_clean_sparql(_llm_invoke(_build_sparql_prompt(pregunta)))), verbose, pregunta)
     if verbose:
         print(f"\n[SPARQL]\n{sparql}\n")
 
-    # 2. Ejecutar (hasta 2 reintentos si hay error de sintaxis). El prompt de
-    #    corrección REPITE el schema entero: "corrígela" a secas hacía que el
-    #    modelo inventara vocabulario (PREFIX example.org, WITH, subconsultas)
-    #    porque perdía el contexto de qué existe en el grafo.
+    # 2. Ejecutar (hasta 2 reintentos si hay error de sintaxis O si la consulta
+    #    ejecuta bien pero devuelve 0 filas — antes ese caso no reintentaba y
+    #    se narraba directamente como "no hay datos", aunque a menudo el dato
+    #    sí existe y lo que falló fue la consulta: una URI de tema/entidad mal
+    #    resuelta). El prompt de corrección REPITE el schema entero: "corrígela"
+    #    a secas hacía que el modelo inventara vocabulario (PREFIX example.org,
+    #    WITH, subconsultas) porque perdía el contexto de qué existe en el grafo.
+    error = None
     for intento in range(3):
         try:
             rows = [{str(v): str(row[v]) for v in row.labels} for row in g.query(sparql)]
-            break
+            error = None
         except Exception as e:
-            if intento == 2:
+            rows = []
+            error = e
+
+        vacia = error is None and not rows
+        if error is None and not vacia:
+            break                      # filas de verdad -> narrar con esto
+        if intento == 2:
+            if error is not None:
                 # Ninguna consulta válida en 3 intentos: la pregunta cae fuera de
                 # lo que el modelo sabe expresar en SPARQL sobre este grafo (p.ej.
                 # "proposiciones conjuntas" — el grafo solo guarda un grupo por
@@ -816,18 +853,32 @@ def graph_answer(pregunta: str, verbose=True):
                                "guarda un único grupo por proposición). Prueba a reformularla de forma "
                                "más concreta."),
                 }
+            break                      # 0 filas tras 2 intentos de reformular -> se acepta como respuesta
+
+        if error is not None:
             fix = _llm_invoke(
                 f"{SCHEMA}\n\nPREGUNTA: {pregunta}\n\n"
-                f"Esta consulta SPARQL DIO ERROR: {e}\n"
+                f"Esta consulta SPARQL DIO ERROR: {error}\n"
                 f"Consulta con error:\n{sparql}\n\n"
                 "Genera una consulta NUEVA que responda la pregunta, más simple, usando "
                 "SOLO el vocabulario del schema de arriba (NO inventes PREFIX, WITH, "
                 "subconsultas ni URIs). Para porcentajes/ratios devuelve solo el total y "
                 "el subconjunto con OPTIONAL+BIND. Devuelve SOLO la consulta SPARQL."
             )
-            sparql = _sanitize_sparql(_clean_sparql(fix), verbose, pregunta)
-            if verbose:
-                print(f"[SPARQL corregido #{intento + 1}]\n{sparql}\n")
+        else:
+            fix = _llm_invoke(
+                f"{SCHEMA}\n\nPREGUNTA: {pregunta}\n\n"
+                f"Esta consulta SPARQL se ejecutó bien pero NO devolvió NINGUNA fila:\n{sparql}\n\n"
+                "Antes de repetir el mismo patrón, revisa: ¿la URI de tema/grupo que usaste está "
+                "en la lista exacta del schema? ¿Inventaste la URI de una entidad o persona en vez "
+                "de resolverla con rdfs:label + REGEX? ¿el predicado existe tal cual? Genera una "
+                "consulta ALTERNATIVA (distinta de la anterior) que sí pueda encontrar datos si "
+                "existen en el grafo. Si tras revisarlo la consulta anterior ya era correcta y el "
+                "grafo simplemente no tiene ese dato, repite la misma. Devuelve SOLO la consulta SPARQL."
+            )
+        sparql = _sanitize_sparql(_alias_rewrite(_clean_sparql(fix)), verbose, pregunta)
+        if verbose:
+            print(f"[SPARQL corregido #{intento + 1}]\n{sparql}\n")
 
     rows = _fix_degenerate_groupby(rows, sparql)
     filas = "\n".join(str(r) for r in rows[:50]) or "(sin resultados en el grafo)"
@@ -838,6 +889,53 @@ def graph_answer(pregunta: str, verbose=True):
     # 3. Respuesta narrativa basada solo en los datos del grafo
     answer = _llm_invoke(ANSWER_PROMPT.format(pregunta=pregunta, filas=filas, sparql=sparql), prefer="groq")
     return {"sparql": sparql, "rows": rows, "answer": answer}
+
+
+# URI de una proposición individual (br:prop_<id>) — 100% de las 3422
+# proposiciones tienen bo:fecha/bo:pagina/bo:fuentePdf/bo:tituloTopic
+# (verificado), así que cualquier fila que la traiga permite una cita exacta
+# a la página real del PDF, igual de precisa que las del RAG vectorial.
+_PROP_URI_RE = re.compile(r'^http://bilbao\.tfg/resource/prop_[0-9a-f]+$')
+
+
+# extrae URIs de proposición de las filas SPARQL y devuelve sus datos de cita
+# (fecha, página, ruta del PDF, título) en una sola consulta por lotes.
+# Solo funciona si la consulta generada por el LLM enlaza ?p directamente —
+# preguntas de LISTADO ("qué proposiciones...", "lista las...") lo hacen;
+# preguntas de AGREGADO puro (COUNT/GROUP BY sin ?p en el SELECT) no tienen
+# ninguna proposición individual que citar — devuelve [] en ese caso, no un
+# error (ver memoria/decisiones_tecnicas.md 2.10: es una limitación estructural
+# de qué puede citarse desde un agregado, no un fallo).
+def graph_sources(rows: list, limit: int = 15) -> list:
+    uris = []
+    seen = set()
+    for row in rows:
+        for v in row.values():
+            if v not in seen and _PROP_URI_RE.match(v):
+                seen.add(v)
+                uris.append(v)
+                if len(uris) >= limit:
+                    break
+        if len(uris) >= limit:
+            break
+    if not uris:
+        return []
+
+    g = _load_graph()
+    values = " ".join(f"<{u}>" for u in uris)
+    q = _PREFIXES + f"""
+    SELECT ?p ?fecha ?pagina ?pdf ?titulo WHERE {{
+      VALUES ?p {{ {values} }}
+      ?p bo:fecha ?fecha ; bo:pagina ?pagina ; bo:fuentePdf ?pdf ; bo:tituloTopic ?titulo .
+    }}"""
+    out = []
+    for row in g.query(q):
+        d = {str(v): str(row[v]) for v in row.labels}
+        out.append(d)
+    # mismo orden que aparecieron en las filas originales, no el de la VALUES
+    orden = {u: i for i, u in enumerate(uris)}
+    out.sort(key=lambda d: orden.get(d.get("p", ""), 999))
+    return out
 
 
 if __name__ == "__main__":
