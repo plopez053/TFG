@@ -56,7 +56,15 @@ class LLMProvider:
             return None
         try:
             from langchain_groq import ChatGroq
-            llm = ChatGroq(model=model, temperature=0, api_key=GROQ_API_KEY)
+            # max_tokens explicito + reasoning_effort bajo: sin ellos, openai/gpt-oss-120b
+            # (modelo "razonador") puede consumir el límite de salida por defecto ENTERO en
+            # texto de razonamiento oculto (additional_kwargs.reasoning_content) sin llegar a
+            # escribir la respuesta final -> content vacío, sin ningún error (verificado en
+            # vivo: finish_reason "length", 3070/3072 tokens de salida eran razonamiento). La
+            # narración de este pipeline es resumen/extracción sobre contexto ya dado, no
+            # necesita razonamiento profundo -- mismo principio que think=False en qwen3.
+            llm = ChatGroq(model=model, temperature=0, api_key=GROQ_API_KEY,
+                          max_tokens=8192, reasoning_effort="low")
             if self._verbose:
                 print(f"[+] LLM disponible: Groq ({model})", flush=True)
             return (f"Groq/{model}", llm)

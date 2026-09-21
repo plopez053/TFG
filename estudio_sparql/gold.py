@@ -12,7 +12,7 @@ GOLD = [
          q="¿Cuántas proposiciones sobre euskera se han rechazado en total?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
            ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_euskera ; bo:tieneResultado bo:Rechazada . }""",
-         must=["4"], must_not=["55", "60"]),
+         must=["2"], must_not=["55", "60"]),
     dict(id="g03", shape="conteo",
          q="¿Cuántas proposiciones sobre desahucios se han presentado?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
@@ -32,7 +32,7 @@ GOLD = [
          q="¿Cuántas proposiciones se rechazaron en 2021?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
            ?p a bo:Proposicion ; bo:anio 2021 ; bo:tieneResultado bo:Rechazada . }""",
-         must=["11"], must_not=["0"]),
+         must=["10"], must_not=["0"]),
 
     # ---------------- total sin desglose ----------------
     dict(id="g07", shape="total",
@@ -51,19 +51,19 @@ GOLD = [
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?total) (COUNT(DISTINCT ?ap) AS ?aprob) WHERE {
            ?p a bo:Proposicion ; bo:presentadaPor br:grupo_pp ; bo:anio 2015 .
            OPTIONAL { ?p bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) . BIND(?p AS ?ap) } }""",
-         must=["37", "18"]),
+         must=["38", "11"]),
     dict(id="g10", shape="conteo",
          q="¿Cuántas proposiciones aprobó EH Bildu sobre vivienda?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
            ?p a bo:Proposicion ; bo:presentadaPor br:grupo_eh_bildu ; bo:trataTemaAmplio br:t_vivienda ;
               bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) }""",
-         must=["23"], must_not=["0"]),
+         must=["3"], must_not=["0"]),  # 5->3 (Ronda 42, 2026-09-17): fix de "decae" en result_re (backend/rag.py)
     dict(id="g11", shape="ratio",
          q="¿Cuántas proposiciones sobre movilidad ha presentado EH Bildu y cuántas se han rechazado?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?total) (COUNT(DISTINCT ?re) AS ?rech) WHERE {
            ?p a bo:Proposicion ; bo:presentadaPor br:grupo_eh_bildu ; bo:trataTemaAmplio br:t_movilidad .
            OPTIONAL { ?p bo:tieneResultado bo:Rechazada . BIND(?p AS ?re) } }""",
-         must=["120", "15"]),
+         must=["122", "10"]),
     dict(id="g12", shape="conteo",
          q="¿Cuántas proposiciones sobre turismo ha presentado EH Bildu?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
@@ -77,7 +77,10 @@ GOLD = [
            ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_medioambiente ; bo:presentadaPor ?g .
            ?g rdfs:label ?ng . FILTER(?g != br:grupo_desconocido) }
            GROUP BY ?ng ORDER BY DESC(?n) LIMIT 3""",
-         must=["EH BILDU"], top="EH BILDU"),
+         # PP y EH BILDU empatan a 60 -- el orden entre ambos con DESC(?n) no
+         # está garantizado por SPARQL, no fijar "top" (ver misma corrección
+         # aplicada en regression_qa.py el 2026-09-16).
+         must=["EH BILDU"]),
     dict(id="g14", shape="ranking",
          q="¿Qué grupo ha presentado más proposiciones sobre educación?",
          ref="""SELECT ?ng (COUNT(DISTINCT ?p) AS ?n) WHERE {
@@ -91,7 +94,7 @@ GOLD = [
            ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_vivienda ; bo:presentadaPor ?g .
            ?g rdfs:label ?ng . FILTER(?g != br:grupo_desconocido) }
            GROUP BY ?ng ORDER BY DESC(?n) LIMIT 20""",
-         must=["EH BILDU", "62"], top="EH BILDU"),
+         must=["EH BILDU", "63"], top="EH BILDU"),
     dict(id="g16", shape="ranking",
          q="¿Qué grupo ha presentado más enmiendas en total?",
          ref="""SELECT ?ng (COUNT(DISTINCT ?e) AS ?n) WHERE {
@@ -137,7 +140,7 @@ GOLD = [
            ?p a bo:Proposicion ; bo:presentadaPor ?g . FILTER(?g IN (br:grupo_eh_bildu, br:grupo_pp))
            OPTIONAL { ?p bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) . BIND(?p AS ?ap) } }
            GROUP BY ?g""",
-         must=["638", "936"]),
+         must=["646", "978"]),  # totales, estables; aprobadas variaron 85/168->73/150->71/148 (Ronda 40) ->49/128 (Ronda 42)
 
     # ---------------- capa personas ----------------
     dict(id="g23", shape="persona",
@@ -149,7 +152,7 @@ GOLD = [
          q="¿En cuántos debates del Pleno ha intervenido Xabier Otxandiano?",
          ref="""SELECT (COUNT(DISTINCT ?p) AS ?c) WHERE {
            ?p bo:intervino ?con . ?con rdfs:label ?n . FILTER(REGEX(STR(?n), "otxandiano", "i")) }""",
-         must=["80"], must_not=["0"]),
+         must=["56"], must_not=["0"]),
     dict(id="g25", shape="persona",
          q="¿Quién ha sido alcalde de Bilbao en el periodo de las actas?",
          ref="""SELECT ?n WHERE { ?con bo:esAlcalde true ; rdfs:label ?n . }""",

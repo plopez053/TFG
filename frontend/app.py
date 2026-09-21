@@ -326,7 +326,7 @@ async def on_message(message: cl.Message):
             concl_pos = concl.start() if concl else len(answer_text)
 
             item_anchors = find_item_anchors(answer_text, concl_pos)
-            asignaciones = []
+            asignaciones = []  # (start, fin, mejor) -- start hace falta para corregir Votos
             usadas = []
 
             if not is_multi_session and len(item_anchors) >= 2:
@@ -336,7 +336,6 @@ async def on_message(message: cl.Message):
                 # el texto de "Título:" de cada bloque sí distingue cada
                 # propuesta — se exige >=1 palabra compartida con el ASUNTO
                 # real del documento para no asignar una fuente al azar.
-                item_matches = []  # (start, fin, mejor) — start hace falta para corregir Votos
                 for start, fin, titulo in item_anchors:
                     candidatos = [s for s in sources_data if id(s) not in usadas]
                     if not candidatos:
@@ -344,25 +343,8 @@ async def on_message(message: cl.Message):
                     mejor = match_source_by_title(titulo, candidatos)
                     if mejor is None:
                         continue  # sin señal fiable: mejor dejarla para el lote final que forzar un enlace erróneo
-                    item_matches.append((start, fin, mejor))
+                    asignaciones.append((start, fin, mejor))
                     usadas.append(id(mejor))
-
-                # Corregir la línea "Votos:" de cada bloque con el vote_result
-                # REAL de la fuente ya emparejada (metadata determinista, no lo
-                # que escribió el LLM) — con muchas propuestas parecidas en el
-                # mismo contexto, el modelo local mezcla cifras de voto entre
-                # ellas; ni la regla del prompt ni un ejemplo concreto lo
-                # eliminan de forma fiable (ver memoria/decisiones_tecnicas.md
-                # 2.9). En orden DESCENDENTE de posición para no invalidar los
-                # índices de bloques anteriores al editar el texto in situ.
-                for start, fin, mejor in sorted(item_matches, key=lambda t: t[0], reverse=True):
-                    vote_gt = mejor.get("vote_result")
-                    if not vote_gt:
-                        continue
-                    corregido = replace_votos_line(answer_text[start:fin], vote_gt)
-                    answer_text = answer_text[:start] + corregido + answer_text[fin:]
-
-                asignaciones = [(fin, mejor) for _, fin, mejor in item_matches]
             else:
                 fechas = {s["date"] for s in sources_data}
                 bloques = []
@@ -385,17 +367,46 @@ async def on_message(message: cl.Message):
                     mejor = max(candidatos, key=lambda s: len(cab_words & _palabras_clave(s["topic"])))
                     if len(cab_words & _palabras_clave(mejor["topic"])) == 0:
                         mejor = candidatos[0]
-                    asignaciones.append((fin, mejor))
+                    asignaciones.append((start, fin, mejor))
                     usadas.append(id(mejor))
 
-            for fin, s in sorted(asignaciones, key=lambda x: x[0], reverse=True):
-                f = fin
-                while f > 0 and answer_text[f - 1] in "*#\n\r \t[":
+            # Corrección de la línea "Votos:" de cada bloque con el vote_result
+            # REAL de la fuente ya emparejada (metadata determinista, no lo que
+            # escribió el LLM — con muchas propuestas parecidas en el mismo
+            # contexto, el modelo local mezcla cifras de voto entre ellas; ni
+            # la regla del prompt ni un ejemplo concreto lo eliminan de forma
+            # fiable, ver memoria/decisiones_tecnicas.md 2.9) Y la inserción
+            # del enlace de fuente se hacen AQUÍ JUNTAS, en una única pasada
+            # por bloque, en orden DESCENDENTE de posición (Ronda 42,
+            # 2026-09-17 — antes eran dos pasadas separadas: se corregían
+            # todas las líneas de Votos primero y LUEGO, en una pasada aparte,
+            # se insertaban las fuentes reusando las posiciones `fin`
+            # ANTERIORES al cambio de longitud del propio bloque — si el
+            # `vote_result` real medía distinto que el texto original del LLM
+            # -algo que iba a pasar CASI SIEMPRE-, el enlace de fuente se
+            # insertaba en una posición desplazada, partiendo la línea de
+            # Votos por la mitad. Verificado en vivo con un caso real que
+            # decayó: "- Votos: decae la proposición...(Votos" + [FUENTE] +
+            # "emitidos: 29 | ...)" partido en dos. Al fusionar ambas
+            # correcciones en la misma pasada por bloque, la posición `fin` de
+            # CADA bloque se usa siempre sobre el texto ORIGINAL sin editar
+            # (los bloques a la derecha, ya editados en esta misma pasada
+            # descendente, no afectan a los índices de los bloques a la
+            # izquierda, que es justo la garantía que da procesar de derecha a
+            # izquierda) — ya no hace falta releer el bloque tras editarlo.
+            for start, fin, s in sorted(asignaciones, key=lambda x: x[0], reverse=True):
+                content = answer_text[start:fin]
+                vote_gt = s.get("vote_result")
+                if vote_gt:
+                    content = replace_votos_line(content, vote_gt)
+                f = len(content)
+                while f > 0 and content[f - 1] in "*#\n\r \t[":
                     f -= 1
                 linea = f"\n\n📄 *Fuente:* [{s['pdf_name']}]({s['url']})\n"
-                if s.get("vote_result"):
-                    linea += f"*Resultado:* {s['vote_result']}\n"
-                answer_text = answer_text[:f] + linea + answer_text[f:]
+                if vote_gt:
+                    linea += f"*Resultado:* {vote_gt}\n"
+                content = content[:f] + linea + content[f:]
+                answer_text = answer_text[:start] + content + answer_text[fin:]
 
             no_ubicadas = [s for s in sources_data if id(s) not in usadas]
             if no_ubicadas:

@@ -63,6 +63,30 @@ def extract_grupo(q):
     return None
 
 
+# TODOS los grupos mencionados en la pregunta, en el orden en que aparecen en
+# el texto (no en el orden de _GRUPOS) -- para plantillas que comparan varios
+# grupos a la vez, a diferencia de extract_grupo() que solo quiere el primero
+# que casa en _GRUPOS.
+def extract_grupos_multi(q):
+    encontrados = []
+    for pat, uri, _lbl in _GRUPOS:
+        m = re.search(pat, q, re.I)
+        if m:
+            encontrados.append((m.start(), uri))
+    encontrados.sort(key=lambda x: x[0])
+    return [uri for _pos, uri in encontrados]
+
+
+# cuántos grupos DISTINTOS menciona la pregunta -- extract_grupo() solo
+# devuelve el primero que aparece en _GRUPOS (no el primero en la frase), así
+# que una pregunta que compara 2 grupos ("EH Bildu o el PP") monta una
+# consulta que solo filtra por uno de los dos sin avisar. Detectado en la
+# Ronda 39 (2026-09-16) con g22 del estudio: Arm G generaba una consulta
+# válida y con filas, pero SOLO sobre el PP, ignorando EH Bildu por completo.
+def _n_grupos_mencionados(q):
+    return sum(1 for pat, _uri, _lbl in _GRUPOS if re.search(pat, q, re.I))
+
+
 def extract_anio(q):
     m = re.search(r"\b(19|20)\d{2}\b", q)
     return int(m.group(0)) if m else None
@@ -205,6 +229,35 @@ def tpl_ratio(q, slots):
         opt = "OPTIONAL { ?p bo:tieneResultado bo:Rechazada . BIND(?p AS ?sub) }"
     return (f"SELECT (COUNT(DISTINCT ?p) AS ?total) (COUNT(DISTINCT ?sub) AS ?sub) "
             f"WHERE {{ {body} {opt} }}")
+
+
+# comparar 2+ grupos nombrados en la misma pregunta ("¿qué grupo tiene mejor
+# tasa de aprobación, EH Bildu o el PP?") -- UNA fila por grupo, mismo tema/
+# año/resultado para los dos, con VALUES en vez de repetir la consulta. Antes
+# esta forma se delegaba siempre al LLM (ver _n_grupos_mencionados en
+# answer()); el LLM la resolvía de forma no fiable (predicado equivocado,
+# o solo comparaba UN grupo aunque generara filas para los dos, o añadía un
+# filtro de año no pedido) -- confirmado como el único caso que seguía
+# fallando en la regresión tras la Ronda 39. Ronda 41, 2026-09-17.
+def tpl_ratio_multigrupo(q, slots):
+    tema, anio, res = slots.get("tema"), slots.get("anio"), slots.get("resultado") or "aprobada"
+    grupos = slots.get("grupos_multi") or []
+    if len(grupos) < 2:
+        return None
+    where = ["?p a bo:Proposicion"]
+    if tema:
+        where.append(f"bo:trataTemaAmplio br:{tema}")
+    if anio:
+        where.append(f"bo:anio {anio}")
+    where.append("bo:presentadaPor ?g")
+    body = " ; ".join(where) + " . ?g rdfs:label ?ng ."
+    values = " ".join(f"br:{gr}" for gr in grupos)
+    if res == "aprobada":
+        opt = "OPTIONAL { ?p bo:tieneResultado ?r . FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)) . BIND(?p AS ?sub) }"
+    else:
+        opt = "OPTIONAL { ?p bo:tieneResultado bo:Rechazada . BIND(?p AS ?sub) }"
+    return (f"SELECT ?ng (COUNT(DISTINCT ?p) AS ?total) (COUNT(DISTINCT ?sub) AS ?sub) WHERE {{ "
+            f"VALUES ?g {{ {values} }} {body} {opt} }} GROUP BY ?g ?ng")
 
 
 def tpl_entidad(q, slots):
@@ -382,6 +435,18 @@ def answer(pregunta, threshold=0.55):
         slots["limit"] = extract_limit(pregunta)
     if "entidad" in slot_names:
         slots["entidad"] = extract_entidad(pregunta)
+    if "grupo" in slot_names and _n_grupos_mencionados(pregunta) >= 2:
+        # pregunta compara 2+ grupos a la vez (p.ej. "EH Bildu o el PP").
+        # Para "ratio" (comparar tasas/conteos) SÍ hay plantilla dedicada
+        # (tpl_ratio_multigrupo, una fila por grupo con VALUES). Para el
+        # resto de formas (conteo/voto_grupo/...) ninguna plantilla admite
+        # más de un grupo por consulta; delegar al LLM en vez de responder
+        # comparando solo uno en silencio.
+        if form_id == "ratio":
+            slots["grupos_multi"] = extract_grupos_multi(pregunta)
+            sparql = tpl_ratio_multigrupo(pregunta, slots)
+            return dict(sparql=sparql, template="ratio_multigrupo", similarity=round(sim, 3), slots=slots)
+        return dict(sparql=None, template=form_id, similarity=round(sim, 3), slots=slots)
     if builder is None:
         return dict(sparql=None, template=form_id, similarity=round(sim, 3), slots=slots)
     sparql = builder(pregunta, slots)

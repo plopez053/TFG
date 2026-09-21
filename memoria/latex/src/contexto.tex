@@ -1,0 +1,77 @@
+\chapter{Contexto}
+\label{ch:contexto}
+
+\section{Inteligencia Artificial Generativa}
+
+La Inteligencia Artificial (IA) Generativa agrupa a los modelos capaces de producir
+contenido nuevo --texto, código, imágenes-- a partir de un patrón aprendido de
+grandes cantidades de datos, en lugar de limitarse a clasificar o predecir sobre
+datos ya existentes. Los modelos de lenguaje son el caso particular relevante para
+este trabajo: reciben texto como entrada y generan texto como salida, condicionados
+por una instrucción (\textit{prompt}).
+
+\section{Modelos de Lenguaje de Gran Tamaño}
+
+Los Modelos de Lenguaje de Gran Tamaño (LLM, \textit{Large Language Models}) son
+redes neuronales entrenadas sobre corpus masivos de texto que, dada una secuencia de
+entrada, predicen la continuación más probable. Esta capacidad, combinada con un
+ajuste posterior para seguir instrucciones, permite emplearlos para tareas tan
+diversas como resumir, traducir, generar código o --el uso que se les da en este
+TFG-- extraer información estructurada de texto libre y redactar respuestas a
+partir de datos ya recuperados.
+
+Un LLM no tiene, por sí mismo, acceso a información posterior a su entrenamiento
+ni a documentos privados como las actas de un ayuntamiento concreto. Tampoco
+garantiza que lo que genera sea correcto: puede producir afirmaciones plausibles
+pero falsas, fenómeno conocido como \textit{alucinación}. Ambas limitaciones son
+las que motivan la siguiente técnica.
+
+\section{Retrieval Augmented Generation (RAG)}
+
+Retrieval Augmented Generation (RAG) es una arquitectura que combina un sistema de
+recuperación de información con un LLM: antes de generar la respuesta, se buscan
+en una base documental los fragmentos más relevantes para la pregunta y se
+proporcionan al modelo como contexto. El LLM genera entonces la respuesta
+apoyándose únicamente en esos fragmentos, no en su conocimiento interno.
+
+Esto tiene dos ventajas directas para este proyecto: permite responder sobre un
+corpus privado y actualizable (las actas del Pleno) sin reentrenar ningún modelo,
+y permite citar la fuente exacta de cada afirmación, ya que se conoce qué
+fragmentos --y por tanto qué documento y página-- sustentan la respuesta.
+
+La recuperación de los fragmentos relevantes suele apoyarse en \textit{embeddings}:
+representaciones vectoriales del texto en las que fragmentos semánticamente
+similares quedan cerca en el espacio vectorial, lo que permite buscar por
+significado y no solo por coincidencia literal de palabras.
+
+\section{Grafos de Conocimiento}
+
+Un grafo de conocimiento representa la información como una red de entidades
+(nodos) y relaciones entre ellas (aristas), en lugar de como texto libre. El
+estándar utilizado en este trabajo es RDF (\textit{Resource Description
+Framework}), que modela cada hecho como una tripleta \textit{sujeto-predicado-objeto}
+(por ejemplo, \texttt{proposición~X --presentadaPor--> Grupo~PP}). Sobre RDF se
+puede definir una ontología con OWL (\textit{Web Ontology Language}) --las clases y
+relaciones válidas del dominio-- y consultar el grafo con el lenguaje SPARQL.
+
+Una ventaja de este modelo frente al texto libre es el razonamiento automático: un
+motor de inferencia (\textit{reasoner}) puede derivar hechos nuevos que no están
+escritos explícitamente pero se siguen de la ontología --por ejemplo, que una
+proposición sobre "desahucios" trata también, por herencia temática, de
+"vivienda"-- sin que haga falta repetir esa relación en cada dato.
+
+\section{GraphRAG}
+
+GraphRAG es la variante de RAG en la que la fuente de recuperación no es un
+almacén de fragmentos de texto sino un grafo de conocimiento consultado mediante
+un lenguaje de consulta estructurado (SPARQL en este trabajo). En lugar de
+recuperar pasajes de texto parecidos a la pregunta, un LLM traduce la pregunta en
+lenguaje natural a una consulta formal, el motor de grafos la ejecuta y devuelve
+filas de datos exactos, que un segundo LLM convierte en una respuesta narrada.
+
+Esto resulta especialmente adecuado para preguntas de agregación y razonamiento
+multi-salto --"¿qué grupo ha presentado más proposiciones sobre vivienda?",
+"¿cuántas se han aprobado por año?"-- que un sistema de recuperación de texto
+libre no puede responder con precisión, porque exigen contar y cruzar datos de
+todo el corpus, no solo encontrar un pasaje parecido a la pregunta. Es, junto con
+el RAG vectorial tradicional, uno de los dos sistemas comparados en este TFG.

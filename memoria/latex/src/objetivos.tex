@@ -1,0 +1,63 @@
+\chapter{Objetivos y alcance}
+\label{ch:objetivos}
+
+\section{Objetivos del TFG}
+
+El objetivo general de este trabajo es construir un sistema que permita consultar
+en lenguaje natural el contenido de las actas del Pleno del Ayuntamiento de Bilbao
+(2007--2026) y comparar, sobre el mismo corpus, dos arquitecturas de recuperación
+de información complementarias: RAG vectorial y GraphRAG.
+
+De este objetivo general se derivan los siguientes objetivos específicos:
+
+\begin{itemize}
+	\item Extraer, a partir de los PDF de las actas, las proposiciones individuales
+	del Pleno junto con sus metadatos (fecha, grupo proponente, resultado de la
+	votación, página de origen).
+	\item Construir una ontología OWL y un grafo de conocimiento RDF que modele
+	proposiciones, grupos políticos, concejales, temas y votaciones, enriquecido
+	mediante un LLM y consultable por SPARQL con razonamiento automático
+	(\textit{roll-up} temático).
+	\item Construir un censo de concejales del Pleno (con su grupo y periodo de
+	actividad) y una capa determinista de listas nominales de voto, para poder
+	responder preguntas sobre personas concretas y no solo sobre grupos.
+	\item Implementar un sistema de RAG vectorial sobre el mismo corpus, con
+	recuperación híbrida (semántica, literal y temática) y re-ranking.
+	\item Implementar un sistema GraphRAG que traduzca la pregunta a SPARQL
+	mediante un LLM, ejecute la consulta sobre el grafo y narre la respuesta a
+	partir de los datos obtenidos.
+	\item Dotar a ambos sistemas de citas de fuente verificables --enlace directo
+	a la página del PDF de origen de cada dato mostrado.
+	\item Validar la calidad e integridad del grafo de conocimiento mediante
+	restricciones formales SHACL, como red de seguridad independiente del
+	código que lo construye.
+	\item Evaluar y comparar ambos sistemas de forma sistemática, con un conjunto
+	de preguntas de referencia con respuesta verificada a mano.
+	\item Exponer ambos sistemas mediante una interfaz web conversacional.
+\end{itemize}
+
+\section{Alcance del sistema desarrollado}
+
+El sistema final integra los dos motores de recuperación descritos --RAG
+vectorial y GraphRAG-- detrás de una única interfaz web conversacional
+(Chainlit), donde el usuario puede formular preguntas en castellano y recibir una
+respuesta narrada con las fuentes citadas. El grafo de conocimiento incluye,
+además de las proposiciones y su clasificación temática, el censo de concejales
+del Pleno y las listas nominales de voto cuando el acta las recoge de forma
+explícita, y se valida mediante un conjunto de \textit{shapes} SHACL
+(\texttt{shapes.ttl}) que comprueban la integridad estructural del grafo ya
+construido de forma independiente del código que lo genera.
+
+Queda fuera del alcance de esta versión del sistema el enlazado de las
+entidades del grafo con identificadores externos de Wikidata mediante
+\texttt{owl:sameAs}. Se valoró explícitamente durante el desarrollo y se
+descartó para esta entrega: la cobertura de Wikidata sobre los concejales del
+Pleno es muy limitada (solo los alcaldes y un pequeño número de cargos que
+alcanzaron relevancia autonómica o estatal, frente a los aproximadamente 94
+concejales del censo), por lo que no habría resuelto el hueco real de datos
+--la falta de afiliación de partido en una parte del censo-- descrito en el
+Capítulo~\ref{ch:conclusiones}. El enlazado sí tendría valor claro sobre
+entidades no personales mencionadas en las actas (empresas, organizaciones,
+lugares), donde Wikidata ofrece buena cobertura y datos adicionales como
+coordenadas geográficas; se retoma como mejora futura en el
+Capítulo~\ref{ch:conclusiones}.

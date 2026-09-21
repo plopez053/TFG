@@ -116,6 +116,19 @@ _PROMPT_MULTI_SESSION = (
     "- Si un pleno del contexto NO tiene relación real con la pregunta, OMÍTELO "
     "POR COMPLETO — nunca escribas un bloque diciendo que no hay información o que "
     "no se encuentra en el contexto; simplemente no lo incluyas.\n"
+    "- El contexto es una MUESTRA recuperada por búsqueda, NUNCA todas las actas del "
+    "Ayuntamiento. Si la pregunta pide un TOTAL, un MÁXIMO o \"quién/qué grupo/concejal "
+    "más\" sobre el conjunto completo (p.ej. \"cuántas en total\", \"qué grupo ha "
+    "presentado más\", \"el concejal que más...\"), dejar CLARO en la conclusión que la "
+    "cifra es sobre los fragmentos recuperados en esta búsqueda, NUNCA presentarla como "
+    "si fuera el recuento completo o definitivo de todas las actas — este sistema no "
+    "puede hacer un recuento exhaustivo sobre el corpus completo, solo puede narrar "
+    "sobre lo que ha recuperado.\n"
+    "- Si varios fragmentos del contexto mencionan la MISMA entidad, empresa o persona "
+    "(p.ej. varias menciones sueltas de un mismo nombre en plenos distintos), cuenta y "
+    "menciona TODAS las fechas/fragmentos distintos que aparecen en el contexto antes de "
+    "concluir cuántas veces aparece — no te quedes solo con el primero que encuentres ni "
+    "digas \"solo una vez\" si el contexto trae más de una fecha con esa mención.\n"
     "- Termina con un párrafo de CONCLUSIÓN que sintetice la evolución del tema.\n\n"
     "ACTAS:\n{context}\n\n"
     "PREGUNTA: {question}\n"
@@ -677,12 +690,49 @@ class RAGPipeline:
         # (evita tragarse narración posterior como "- Siendo las 14:05 horas, el
         # señor Alcalde anuncia el receso..."). Margen amplio (0,400) para no cortar
         # a media palabra frases largas con varios grupos ("...el Grupo ELKARREKIN...").
+        # "aceptad[ao]"/"retirad[ao]" añadidos a la rama "queda ..." (Ronda 40,
+        # 2026-09-16): faltaban del vocabulario y, como este regex se usa con
+        # LA ÚLTIMA coincidencia dentro del segmento (rms[-1] más abajo), una
+        # frase final real como "queda ACEPTADA la enmienda... por lo que
+        # decae la proposición..." se saltaba entera y el "último match" caía
+        # en una frase ANTERIOR y no decisiva del mismo segmento (verificado
+        # en vivo: 24-09-2015 ítem 49, el resultado real -- decae -- nunca
+        # llegaba a vote_result porque "queda aceptada" no disparaba nada).
+        # "retirad[ao]" es un desenlace real y muy frecuente en el corpus
+        # ("Queda retirada la proposición a instancia del Grupo...", 103
+        # apariciones) que antes NUNCA se detectaba de forma determinista, solo
+        # por el fallback (más flojo) de clasificación libre del LLM.
+        # "decaen?\b[^.]{0,400}" (Ronda 42, 2026-09-17): tercer hueco de vocabulario
+        # real, distinto de los ya arreglados en la Ronda 40. Cuando una enmienda se
+        # acepta SIN necesidad de someterla a votación ("El Pleno municipal acepta la
+        # Enmienda..., sin necesidad de someterla a votación, por lo que decae la
+        # proposición...") NINGUNA rama anterior coincide -- no dice "se acepta"
+        # (dice "El Pleno municipal acepta", sin el "se"), no tiene "queda"/"resulta",
+        # y el desenlace real ("decae") vive en su propia cláusula/frase, a veces tras
+        # un punto ("En su virtud, decae la proposición..."). Verificado en vivo
+        # (25-11-2010 puntos 17 y 19, actas\2010): antes vote_result quedaba en None o
+        # sin mención de "decae" pese a que el texto completo de la proposición sí lo
+        # decía sin ambigüedad -- build_rdf.py::_RE_DECAE_PROP nunca llegaba a
+        # aplicarse porque no había "decae" en el propio vote_result que recibe.
         result_re = re.compile(
             r'(?:se\s+(?:acepta|aprueba|rechaza|desestima|deniega)\b[^.]{0,30}?'
             r'(?:enmienda|proposici[óo]n|propuesta|moci[óo]n|mozio|proposamen)[^.]{0,400}|'
-            r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao])[^.]{0,400}|'
-            r'resulta\s+(?:aprobad[ao]|rechazad[ao])[^.]{0,400})',
+            r'queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao]|aceptad[ao]|retirad[ao])[^.]{0,400}|'
+            r'resulta\s+(?:aprobad[ao]|rechazad[ao])[^.]{0,400}|'
+            r'decaen?\b[^.]{0,400})',
             re.IGNORECASE | re.DOTALL
+        )
+        # Marcadores de cierre FORMALES (mismo vocabulario que build_rdf.py sobre
+        # vote_result): a diferencia de la rama "se acepta/aprueba/..." -- que
+        # también podría en teoría aparecer citada dentro de una intervención de
+        # debate -- estas formas ("queda ...", "resulta ...", "decae(n)") son
+        # lenguaje de acta/secretaría, no de discurso; se usan para no descartar un
+        # resultado_text decisivo solo por no mencionar "unanimidad"/"asentimiento"
+        # ni traer cifras de voto (ver más abajo).
+        _STRONG_RESULT_RE = re.compile(
+            r'\b(?:queda\s+(?:aprobad[ao]|rechazad[ao]|desestimad[ao]|aceptad[ao]|retirad[ao])'
+            r'|resulta\s+(?:aprobad[ao]|rechazad[ao])|decaen?\b)',
+            re.IGNORECASE
         )
         # Resultados SIN cifras (acuerdos unánimes / por asentimiento). Muy frecuentes,
         # sobre todo en actas antiguas: "El Pleno Municipal, por unanimidad de miembros
@@ -799,13 +849,22 @@ class RAGPipeline:
                         partes.append(f"abstenciones: {absten}")
                     cab = f"Votos emitidos: {emitidos} | " if emitidos else ""
                     resultado_num = cab + ", ".join(partes)
-            # Prioridad: cifras > texto unánime/asentimiento. Se evita guardar texto de
-            # resultado "a secas" sin cifras (podría ser discurso); solo se acepta sin
-            # cifras si es claramente un acuerdo unánime o por asentimiento.
-
+            # Prioridad: cifras > texto unánime/asentimiento > marcador formal fuerte
+            # (queda.../resulta.../decae(n), Ronda 42). Se evita guardar texto de
+            # resultado "a secas" sin cifras cuando viene de la rama "se acepta/
+            # aprueba/..." (podría ser discurso citando la propuesta); pero un
+            # marcador de cierre de acta -- "queda aprobada", "decae" -- no se
+            # descarta solo por no traer cifras ni decir "unanimidad": ambos son
+            # lenguaje de secretaría, no de intervención, y a menudo la proposición
+            # decae/queda retirada precisamente SIN llegar a votación (verificado
+            # en vivo, 25-11-2010 puntos 17/19: "sin necesidad de someterla a
+            # votación, por lo que decae..." se perdía entero sin este fix).
             if resultado_num:
                 vote_result = f"{resultado_text} ({resultado_num})" if resultado_text else resultado_num
-            elif resultado_text and re.search(r'unanimidad|asentimiento', resultado_text, re.I):
+            elif resultado_text and (
+                re.search(r'unanimidad|asentimiento', resultado_text, re.I)
+                or _STRONG_RESULT_RE.search(resultado_text)
+            ):
                 vote_result = resultado_text
             else:
                 um = unanim_re.search(seg_flat)

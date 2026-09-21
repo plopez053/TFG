@@ -80,6 +80,24 @@ def build_derived_map():
         res = resultado_cruzado(r.get("vote_result", ""), res)
         meta["resultado"] = res
 
+        # El campo vote_result ORIGINAL de cada chunk (calculado por
+        # backend/rag.py::_process_single_pdf en la indexación de ChromaDB)
+        # se queda desactualizado si `_process_single_pdf` se corrige más
+        # tarde (Ronda 42, 2026-09-17: fix de "decae") sin re-indexar de cero
+        # (operación de horas, no la hace este script). `build_sources_data`/
+        # `replace_votos_line` (backend/rag.py, usados por frontend/app.py)
+        # leen justo esta clave como texto "de verdad" para sustituir la
+        # línea de Votos del LLM -- si se queda obsoleta, el fix de "decae"
+        # nunca llega a la respuesta real del RAG vectorial aunque el campo
+        # derivado `resultado` de aquí abajo sí esté al día. Se sobrescribe
+        # con el valor ya corregido de proposals_enriched.jsonl: dentro de UN
+        # mismo segmento todos los chunks comparten idénticamente el mismo
+        # vote_result (se asigna una vez por segmento, no por chunk), así que
+        # no hay pérdida de precisión frente al original -- mismo riesgo
+        # residual ya aceptado para `resultado` en los ~25/3422 casos de
+        # desalineación segmento/chunk documentados y sin arreglar.
+        meta["vote_result"] = r.get("vote_result") or None
+
         vf, vc = parse_votos(r.get("vote_result", ""))
         if vf is not None:
             meta["votos_favor"] = vf

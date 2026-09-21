@@ -68,3 +68,7 @@ estudio_sparql/_bank_embeds.json
 
 # Baterías crudas / borradores de trabajo (los informes finales sí se versionan)
 graphrag/graphrag/bateria_comparativa_cruda_*.md
+
+# Memoria de referencia de otra persona (solo consulta local, no es contenido propio)
+TFG_OiherRodríguezLuengo.pdf
+TFG_Nahia_Iturregi.pdf

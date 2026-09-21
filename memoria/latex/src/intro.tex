@@ -1,0 +1,38 @@
+\chapter{Introducción}
+
+\section{Descripción del problema}
+
+Las actas del Pleno del Ayuntamiento de Bilbao son el registro oficial de todas las
+proposiciones, debates y votaciones municipales desde 2007 hasta la actualidad. Se
+publican como documentos PDF, uno por sesión, y cada acta puede superar el centenar
+de páginas. El corpus completo utilizado en este trabajo reúne cerca de veinte años de
+actas y más de 3.900 proposiciones distintas.
+
+Este formato tiene un problema práctico: encontrar información concreta --qué votó
+un grupo político sobre un tema, cuántas proposiciones sobre vivienda se presentaron en
+un año determinado, cómo ha evolucionado un asunto a lo largo de los mandatos-- exige
+leer manualmente decenas de documentos extensos, o como mínimo saber de antemano en
+qué fecha y página buscar. No existe ninguna vía para hacer preguntas en lenguaje natural
+sobre este archivo y obtener una respuesta verificable, con cifras y citas a la fuente
+original.
+
+\subsection{Acceso a la información municipal}
+
+El objetivo de este TFG es cerrar esa brecha: construir un sistema que permita consultar
+en castellano, mediante preguntas formuladas de forma natural, el contenido íntegro de
+las actas del Pleno, y que responda con datos verificables --enlazados a la página exacta
+del PDF de origen-- en lugar de con texto generado sin respaldo documental.
+
+\section{Estructura de la memoria}
+
+Esta memoria se organiza como sigue. El Capítulo~\ref{ch:contexto} introduce los
+conceptos técnicos en los que se apoya el sistema (modelos de lenguaje, RAG,
+grafos de conocimiento y GraphRAG). El Capítulo~\ref{ch:objetivos} concreta los
+objetivos del trabajo y su alcance real. El Capítulo~\ref{ch:beneficios} discute
+los beneficios del sistema y su relación con los Objetivos de Desarrollo Sostenible.
+Los capítulos siguientes describen el estado del arte, el análisis de alternativas
+tecnológicas, los riesgos del proyecto y, con más detalle, la solución desarrollada:
+los dos sistemas de recuperación de información construidos --uno basado en
+búsqueda vectorial y otro en un grafo de conocimiento RDF/OWL consultado por
+SPARQL-- y la interfaz web conversacional que los expone al usuario. La memoria
+cierra con la planificación seguida, el presupuesto, las conclusiones y los anexos.

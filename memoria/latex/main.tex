@@ -16,7 +16,7 @@
 \usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{indentfirst}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{verbatim}
 \usepackage{keyval}
 \usepackage{etoolbox}
@@ -26,11 +26,31 @@
 \usepackage{caption}
 \usepackage{chngcntr}
 \usepackage[bottom]{footmisc}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
 \usetikzlibrary{positioning}
 
 \definecolor{eus-color}{gray}{0.4}
 \definecolor{eng-color}{gray}{0.5}
 \definecolor{ehu-blue}{RGB}{27,74,120}
+
+% ------------------------------------------------------------ %
+% COLORES DE TABLAS (estilo "ficha" de paquetes de trabajo y   %
+% riesgos, y cabecera sombreada de tablas de datos --ver la    %
+% memoria de Nahia Iturregi como referencia de estilo)         %
+% ------------------------------------------------------------ %
+
+% Una por cada categoría de primer nivel del diagrama EDT (Sección 5.2).
+\definecolor{pkg-gestion}{RGB}{229,57,53}        % rojo
+\definecolor{pkg-investigacion}{RGB}{156,39,176} % morado
+\definecolor{pkg-desarrollo}{RGB}{67,160,71}     % verde
+\definecolor{pkg-evaluacion}{RGB}{30,136,229}    % azul
+\definecolor{pkg-documentacion}{RGB}{251,140,0}  % naranja
+\definecolor{riesgo-header}{RGB}{66,66,66}       % gris oscuro, cabecera de tablas de riesgo
+\definecolor{tabla-header}{gray}{0.85}           % gris claro, cabecera de tablas de datos
+\definecolor{fila-alterna}{gray}{0.93}           % gris muy claro, para alternar filas
 
 \newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
 \addtocontents{lof}{\protect\noaddvspace}
@@ -299,14 +319,22 @@
 	\end{description}
 
 	% MEMORIA:
+	% ============================================================ %
+	% Estructura general de este documento, adaptada de la de la   %
+	% memoria de Nahia Iturregi (TFG_Nahia_Iturregi.pdf) a petición %
+	% del director, con dos excepciones explícitas: se mantienen   %
+	% "Estado del arte" y "Análisis de alternativas" como capítulos %
+	% propios (Nahia los integra en Contexto/decisiones de          %
+	% implementación), y no hay capítulo de evaluación de usuarios  %
+	% porque este TFG no incluye una evaluación con usuarios reales.%
+	% ============================================================ %
 
 	% ============================================================ %
 	% INTRODUCCIÓN (antes src/intro.tex)                            %
 	% ============================================================ %
 
 	\chapter{Introducción}
-
-	\section{Descripción del problema}
+	\label{ch:introduccion}
 
 	El portal de actas del Ayuntamiento de Bilbao publica, para cada sesión del Pleno
 	desde 2007 hasta la actualidad, varios documentos PDF distintos: el orden del día,
@@ -316,7 +344,13 @@
 	superar el centenar de páginas, y el corpus completo reúne cerca de veinte años de
 	actas y más de 3.900 proposiciones distintas.
 
-	Dentro de cada acta, además, el contenido relevante --las proposiciones y sus
+	Este capítulo presenta la motivación que ha llevado al desarrollo del proyecto,
+	los objetivos planteados, su relación con los Objetivos de Desarrollo Sostenible
+	y la estructura del resto de la memoria.
+
+	\section{Motivación}
+
+	Dentro de cada acta, el contenido relevante --las proposiciones y sus
 	votaciones-- se mezcla con una cantidad considerable de contenido puramente
 	procedimental: listas de asistentes, fórmulas de quórum, aprobación del acta
 	anterior, cuestiones de orden o informes que solo se dan por conocidos sin
@@ -331,26 +365,55 @@
 	preguntas en lenguaje natural sobre este archivo y obtener una respuesta
 	verificable, con cifras y citas a la fuente original.
 
-	\subsection{Acceso a la información municipal}
+	\subsection{A quién beneficia el sistema}
 
-	El objetivo de este TFG es cerrar esa brecha: construir un sistema que permita consultar
-	en castellano, mediante preguntas formuladas de forma natural, el contenido íntegro de
-	las actas del Pleno, y que responda con datos verificables --enlazados a la página exacta
-	del PDF de origen-- en lugar de con texto generado sin respaldo documental.
+	Se identifican aquí los distintos perfiles de usuario a los que beneficia el
+	sistema desarrollado --ciudadanía, periodistas, personal técnico municipal,
+	investigadores-- y de qué forma concreta les resulta útil cada uno de los dos
+	sistemas de consulta implementados.
+
+	\section{Objetivos y alcance}
+
+	El objetivo general de este TFG es cerrar la brecha descrita en la motivación:
+	construir un sistema que permita consultar en castellano, mediante preguntas
+	formuladas de forma natural, el contenido íntegro de las actas del Pleno, y que
+	responda con datos verificables --enlazados a la página exacta del PDF de
+	origen-- en lugar de con texto generado sin respaldo documental.
+
+	\subsection{Objetivos específicos}
+
+	Se detallan los objetivos específicos que se derivan del objetivo general
+	(extracción y estructuración del corpus, construcción del grafo de
+	conocimiento, implementación de los dos sistemas de recuperación, interfaz de
+	consulta, evaluación comparativa).
+
+	\subsection{Alcance del sistema desarrollado}
+
+	Se describe qué incluye y qué queda fuera del sistema final, y por qué --p.ej.
+	el enlazado con Wikidata, que se valoró y se descartó para esta entrega.
+
+	\section{Conexión con los Objetivos de Desarrollo Sostenible}
+
+	Se relacionan los Objetivos de Desarrollo Sostenible de la Agenda 2030
+	pertinentes con el trabajo desarrollado --en particular los vinculados a
+	transparencia institucional y acceso a la información pública.
 
 	\section{Estructura de la memoria}
 
 	Esta memoria se organiza como sigue. El Capítulo~\ref{ch:contexto} introduce los
 	conceptos técnicos en los que se apoya el sistema (modelos de lenguaje, RAG,
-	grafos de conocimiento y GraphRAG). El Capítulo~\ref{ch:objetivos} concreta los
-	objetivos del trabajo y su alcance real. El Capítulo~\ref{ch:beneficios} discute
-	los beneficios del sistema y su relación con los Objetivos de Desarrollo Sostenible.
-	Los capítulos siguientes describen el estado del arte, el análisis de alternativas
-	tecnológicas, los riesgos del proyecto y, con más detalle, la solución desarrollada:
-	los dos sistemas de recuperación de información construidos --uno basado en
-	búsqueda vectorial y otro en un grafo de conocimiento RDF/OWL consultado por
-	SPARQL-- y la interfaz web conversacional que los expone al usuario. La memoria
-	cierra con la planificación seguida, el presupuesto, las conclusiones y los anexos.
+	grafos de conocimiento y GraphRAG). El Capítulo~\ref{ch:estadodelarte} describe
+	el corpus documental de partida, los requisitos del sistema y el estado del arte
+	de las tecnologías empleadas. El Capítulo~\ref{ch:alternativas} analiza las
+	principales alternativas tecnológicas evaluadas antes de fijar la arquitectura
+	final. El Capítulo~\ref{ch:planificacion} recoge la planificación temporal
+	seguida, la evaluación económica y el análisis de riesgos del proyecto. El
+	Capítulo~\ref{ch:solucion} describe en detalle la solución desarrollada: los dos
+	sistemas de recuperación de información construidos --uno basado en búsqueda
+	vectorial y otro en un grafo de conocimiento RDF/OWL consultado por SPARQL-- y la
+	interfaz web conversacional que los expone al usuario. El
+	Capítulo~\ref{ch:resultados} presenta la evaluación comparativa de ambos
+	sistemas. La memoria cierra con las conclusiones y los anexos.
 
 	% ============================================================ %
 	% CONTEXTO (antes src/contexto.tex)                             %
@@ -441,46 +504,9 @@
 	el RAG vectorial tradicional, uno de los dos sistemas comparados en este TFG.
 
 	% ============================================================ %
-	% OBJETIVOS Y ALCANCE (antes src/objetivos.tex)                 %
-	% ============================================================ %
-
-	\chapter{Objetivos y alcance}
-	\label{ch:objetivos}
-
-	A continuación se presentan los objetivos definidos para este TFG, así como el
-	alcance del sistema finalmente implementado.
-
-	\section{Objetivos del TFG}
-
-	Se presenta el objetivo general del trabajo y los objetivos específicos que se
-	derivan de él.
-
-	\section{Alcance del sistema desarrollado}
-
-	Se describe qué incluye y qué queda fuera del sistema final, y por qué -- p.ej.
-	el enlazado con Wikidata, que se valoró y se descartó para esta entrega.
-
-	% ============================================================ %
-	% BENEFICIOS Y ODS (antes src/beneficios.tex)                   %
-	% ============================================================ %
-
-	\chapter{Beneficios que aporta el trabajo y relación con los Objetivos de Desarrollo Sostenible}
-	\label{ch:beneficios}
-
-	A continuación se explica a quién beneficia el sistema desarrollado y cómo se
-	relaciona con los Objetivos de Desarrollo Sostenible de la Agenda 2030.
-
-	\section{Beneficios del sistema desarrollado}
-
-	Se identifican los distintos perfiles de usuario a los que beneficia el sistema
-	y de qué forma.
-
-	\section{Relación con los Objetivos de Desarrollo Sostenible}
-
-	Se relacionan los ODS pertinentes con el trabajo desarrollado.
-
-	% ============================================================ %
-	% ESTADO DEL ARTE (nuevo capítulo, esqueleto)                   %
+	% ESTADO DEL ARTE (se mantiene como capítulo propio, a         %
+	% diferencia de la memoria de Nahia, por decisión explícita    %
+	% del alumno/director)                                         %
 	% ============================================================ %
 
 	\chapter{Descripción de requerimientos y análisis del estado del arte}
@@ -501,15 +527,18 @@
 
 	\section{Estado del arte de las tecnologías utilizadas}
 
-	Se revisan trabajos y sistemas similares existentes -- otros RAG/GraphRAG sobre
-	actas o documentos administrativos -- y se compara con el TFG de Oiher
+	Se revisan trabajos y sistemas similares existentes --otros RAG/GraphRAG sobre
+	actas o documentos administrativos-- y se compara con el TFG de Oiher
 	Rodríguez Luengo como referencia más cercana.
 
 	% ============================================================ %
-	% ANÁLISIS DE ALTERNATIVAS (antes src/alternativas.tex)         %
+	% ANÁLISIS DE ALTERNATIVAS (antes src/alternativas.tex; se      %
+	% mantiene como capítulo propio, a diferencia de la memoria de  %
+	% Nahia, por decisión explícita del alumno/director)            %
 	% ============================================================ %
 
 	\chapter{Análisis de alternativas}
+	\label{ch:alternativas}
 
 	A continuación se comparan las principales decisiones tecnológicas evaluadas
 	antes de fijar la arquitectura final del sistema.
@@ -533,20 +562,134 @@
 	\subsection{Conclusión}
 
 	% ============================================================ %
-	% ANÁLISIS DE RIESGOS (nuevo capítulo, esqueleto)                %
+	% PLANIFICACIÓN (antes src/gantt.tex; ahora absorbe también     %
+	% src/presupuesto.tex y src/riesgos.tex, siguiendo la           %
+	% estructura de la memoria de Nahia, cuyo capítulo 3            %
+	% "Planificación" incluye evaluación económica y riesgos como   %
+	% secciones propias en vez de capítulos aparte)                 %
 	% ============================================================ %
 
-	\chapter{Análisis de riesgos}
-	\label{ch:riesgos}
+	\chapter{Planificación del proyecto}
+	\label{ch:planificacion}
 
-	A continuación se identifican los principales riesgos del proyecto y las
-	medidas adoptadas para prevenirlos o mitigarlos.
+	A continuación se describe la planificación temporal seguida durante el
+	desarrollo del trabajo, su evaluación económica y el análisis de riesgos
+	asociado.
 
-	\section{Medidas de prevención y contingencia}
+	\section{Diagrama EDT}
+
+	\section{Descripción de tareas}
+
+	En esta sección se describen los paquetes de trabajo mostrados en el diagrama
+	EDT. Cada paquete se presenta en una tabla con su tiempo estimado, descripción,
+	recursos empleados, predecesores y entregables --mismo formato en toda la
+	memoria, un color por categoría de primer nivel del EDT.
+
+	\subsection{Gestión del proyecto}
+
+	% Tabla "ficha" de paquete de trabajo: cabecera de color a ancho completo con
+	% \multicolumn, filas alternas con \rowcolor{fila-alterna} para que se lean
+	% mejor las descripciones largas. Cambia el color (\rowcolor{pkg-...}) según
+	% la categoría de primer nivel a la que pertenezca cada paquete.
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-gestion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{1. Gestión y planificación}}} \\
+			\hline
+			Tiempo estimado & 40 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Tareas relacionadas con la planificación del proyecto y la
+			gestión del tiempo con el director. \\
+			\hline
+			Recursos & Reuniones periódicas con el director, herramienta de diagramación. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & - \\
+			\hline
+			Entregables/salidas & Diagramas EDT y Gantt, apuntes de seguimiento del
+			trabajo. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 1. Gestión y planificación}
+		\label{tab:pkg-gestion}
+	\end{table}
+
+	\subsection{Investigación y estudio previo}
+	\subsection{Desarrollo del sistema}
+	\subsection{Evaluación del sistema}
+	\subsection{Documentación}
+
+	\section{Gestión del tiempo}
+
+	\subsection{Estimación de horas frente a duración real}
+
+	Se compara la estimación inicial de horas por tarea con el tiempo que
+	realmente ha llevado cada una, y se comentan las desviaciones más
+	significativas.
+
+	\subsection{Diagrama de Gantt}
+
+	\section{Metodología de desarrollo}
+
+	% ------------------------------------------------------------ %
+	% (antes capítulo aparte "Descripción del presupuesto")        %
+	% ------------------------------------------------------------ %
+
+	\section{Evaluación económica}
+
+	\subsection{Costes en software y hardware}
+
+	\subsection{Costes por mano de obra}
+
+	\subsection{Coste total}
+
+	% ------------------------------------------------------------ %
+	% (antes capítulo aparte "Análisis de riesgos")                %
+	% ------------------------------------------------------------ %
+
+	\section{Análisis de riesgos}
+
+	\subsection{Medidas de prevención y contingencia}
 
 	Se detallan los riesgos identificados (p.ej. dependencia de APIs externas,
 	calidad del OCR de las actas antiguas, coste o límite de peticiones a los LLM)
-	y cómo se mitigó cada uno.
+	y cómo se mitigó cada uno. Por cada riesgo se especifica también la
+	probabilidad de que ocurra y el impacto que supondría, en una tabla con el
+	mismo formato para los dos.
+
+	% Tabla "ficha" de riesgo: misma estructura que la de paquete de trabajo pero
+	% con cabecera gris oscura (riesgo-header) en vez de un color por categoría.
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{riesgo-header}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{1. Dependencia de APIs externas (Groq)}}} \\
+			\hline
+			Descripción & El sistema usa la API de Groq para generar las respuestas
+			finales; si el servicio falla o se agota la cuota diaria, la calidad de
+			la respuesta puede degradarse. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Plan de prevención & Vigilar el consumo de cuota antes de lanzar
+			baterías de pruebas extensas. \\
+			\hline
+			Plan de contingencia & \textit{Fallback} automático a un modelo local
+			vía Ollama cuando Groq no responde o se agota la cuota. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Probabilidad & Media \\
+			\hline
+			Impacto & Bajo (el sistema sigue funcionando, con menor calidad de
+			redacción) \\
+			\hline
+		\end{tabularx}
+		\caption{Riesgo: 1. Dependencia de APIs externas}
+		\label{tab:riesgo-groq}
+	\end{table}
 
 	% ============================================================ %
 	% DESCRIPCIÓN DE LA SOLUCIÓN (antes src/solucion.tex)           %
@@ -556,8 +699,9 @@
 	\label{ch:solucion}
 
 	A continuación se describe en detalle el sistema desarrollado: su arquitectura,
-	el pipeline de datos, el grafo de conocimiento, los dos motores de recuperación
-	y la interfaz que los expone al usuario.
+	el pipeline de datos, el grafo de conocimiento, los dos motores de recuperación,
+	la interfaz que los expone al usuario y las decisiones concretas de
+	implementación adoptadas.
 
 	\section{Arquitectura general del sistema}
 
@@ -594,36 +738,29 @@
 
 	\section{Flujo completo del sistema}
 
-	\section{Implementación técnica}
+	\section{Configuración y decisiones de implementación}
 
-	% METODOLOGÍA SEGUIDA EN EL DESARROLLO DEL TRABAJO:
+	Se documentan las decisiones concretas tomadas ya sobre la alternativa
+	elegida en cada caso (Capítulo~\ref{ch:alternativas}) --no la comparación
+	entre opciones, sino los parámetros y ajustes finales con los que corre el
+	sistema.
 
-	% ============================================================ %
-	% PLANIFICACIÓN / GANTT (antes src/gantt.tex)                   %
-	% ============================================================ %
+	\subsection{Temperatura y parámetros de los LLM}
 
-	\chapter{Planificación del proyecto}
-	\label{ch:planificacion}
+	\subsection{Gestión de cuotas y memoria}
 
-	A continuación se describe la planificación temporal seguida durante el
-	desarrollo del trabajo.
+	Se documentan los límites prácticos encontrados (cuota diaria de la API de
+	Groq, memoria VRAM disponible en local con Ollama) y cómo el sistema
+	degrada con gracia cuando se alcanzan.
 
-	\section{Diagrama EDT}
-
-	\section{Descripción de tareas}
-
-	\subsection{Gestión del proyecto}
-	\subsection{Investigación y estudio previo}
-	\subsection{Desarrollo del sistema}
-	\subsection{Evaluación del sistema}
-	\subsection{Documentación}
-
-	\section{Diagrama de Gantt}
-
-	\section{Metodología de desarrollo}
+	\subsection{Construcción del \textit{prompt} para generación}
 
 	% ============================================================ %
-	% ANÁLISIS DE RESULTADOS (nuevo capítulo, esqueleto)             %
+	% ANÁLISIS DE RESULTADOS (antes src/resultados.tex; reorganizado%
+	% siguiendo la estructura de la memoria de Nahia --separación   %
+	% explícita entre calidad de la recuperación y de la generación-%
+	% y ampliado con la comparativa GraphRAG/vectorial, propia de   %
+	% este TFG al tener dos sistemas en vez de uno)                 %
 	% ============================================================ %
 
 	\chapter{Análisis de resultados}
@@ -641,47 +778,80 @@
 	Se describe la batería de preguntas de referencia y su verificación manual
 	contra las actas originales en PDF.
 
-	\section{Métricas utilizadas}
+	% Tabla de DATOS (no "ficha"): cabecera sombreada en gris (tabla-header), sin
+	% color por categoría. Mismo patrón para cualquier tabla de métricas/conteos
+	% del resto del capítulo. [EJEMPLO ilustrativo -- sustituir por las categorías
+	% y cifras reales de la batería de referencia definitiva.]
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Categoría de pregunta} & \textbf{GraphRAG} & \textbf{Vectorial} \\
+			\hline
+			Conteo simple & 6 & -- \\
+			\hline
+			Ratio / comparación de grupos & 4 & -- \\
+			\hline
+			Ranking & 3 & -- \\
+			\hline
+			Consulta narrativa / contexto abierto & -- & 13 \\
+			\hline
+		\end{tabular}
+		\caption{Categorías de preguntas de la batería de referencia (ejemplo)}
+		\label{tab:categorias-preguntas}
+	\end{table}
 
-	\section{Experimentos realizados}
+	Para tablas con más de un nivel de cabecera (p.ej. una métrica desglosada en
+	media y desviación típica para varios modelos a la vez) se puede usar
+	\texttt{multirow}/\texttt{multicolumn} sobre la misma base --ver el paquete
+	\texttt{multirow} ya cargado en el preámbulo-- cuando se tengan los datos
+	definitivos que mostrar.
 
-	\section{Resultados obtenidos}
+	\section{Análisis sobre la recuperación}
+
+	Se evalúa, por separado del contenido generado, si cada sistema recupera
+	los fragmentos/datos correctos para cada pregunta (precisión de las
+	fuentes citadas, cobertura del corpus).
+
+	\section{Análisis sobre la generación}
+
+	Se evalúa la fidelidad (\textit{faithfulness}) de la respuesta narrada
+	respecto a los datos realmente recuperados, y la calidad estructural de
+	la respuesta (formato, citación, ausencia de bloques duplicados o vacíos).
+
+	\section{Comparativa GraphRAG frente a RAG vectorial}
+
+	Se comparan ambos sistemas sobre el mismo conjunto de preguntas, señalando
+	en qué tipo de consultas destaca cada uno --agregaciones y razonamiento
+	multi-salto en GraphRAG frente a preguntas abiertas o de contexto narrativo
+	en el RAG vectorial-- con ejemplos concretos verificados contra el PDF
+	original.
+
+	\section{Configuración final y valoración global}
 
 	\section{Limitaciones}
-
-	% ASPECTOS ECONÓMICOS:
-
-	% ============================================================ %
-	% DESCRIPCIÓN DEL PRESUPUESTO (antes src/presupuesto.tex)       %
-	% ============================================================ %
-
-	\chapter{Descripción del presupuesto}
-
-	A continuación se detalla el presupuesto estimado del proyecto.
-
-	\section{Costes en software y hardware}
-
-	\section{Costes por mano de obra}
-
-	% CONCLUSIONES:
 
 	% ============================================================ %
 	% CONCLUSIONES (antes src/conclusiones.tex)                     %
 	% ============================================================ %
 
-	\chapter{Conclusiones}
+	\chapter{Conclusiones y trabajo futuro}
 	\label{ch:conclusiones}
 
 	A continuación se recogen las conclusiones del trabajo, el grado de
-	cumplimiento de los objetivos planteados y las mejoras futuras identificadas.
+	cumplimiento de los objetivos planteados, las contribuciones
+	científico-técnicas y las mejoras futuras identificadas.
 
-	\section{Conclusiones sobre el sistema}
+	\section{Conclusiones del trabajo}
 
 	\section{Cumplimiento de objetivos}
 
 	\section{Conclusiones sobre las pruebas realizadas}
 
-	\section{Mejoras futuras}
+	\section{Contribuciones científico-técnicas}
+
+	\section{Trabajo futuro}
 
 	Se recogen el enlazado con Wikidata sobre entidades no personales, la
 	desambiguación por género de concejales homónimos, y otras mejoras apuntadas

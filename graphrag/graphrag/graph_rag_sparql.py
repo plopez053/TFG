@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import threading
+import unicodedata
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -72,6 +73,12 @@ NUNCA inventes una URI de tema que no este arriba.
 REGLAS:
 - Nombres de persona/entidad: ?x rdfs:label ?n . FILTER(REGEX(STR(?n), "apellido", "i")). NUNCA nodo anonimo [rdfs:label "x"].
 - Ano: FILTER(?anio = 2023) (entero, sin comillas ni ^^xsd:*).
+- Fecha exacta: bo:fecha se guarda como "DD-MM-AAAA" CON GUIONES (p.ej. "24-09-2015"), NUNCA con barras.
+- Pregunta sobre UNA proposicion concreta (nombra grupo+fecha+un tema/asunto especifico, tipo
+  "que paso con la proposicion de X sobre Y del [fecha]"): ademas de filtrar por grupo/fecha,
+  anade SIEMPRE FILTER(REGEX(STR(?titulo), "palabra_clave_del_asunto", "i")) sobre bo:tituloTopic
+  -- si no, la consulta trae TODAS las proposiciones de ese grupo en esa fecha (puede haber varias)
+  y no se puede saber cual es la que se pregunta.
 - "aprobadas" sin mas matiz = bo:Aprobada Y bo:AprobadaConEnmienda: FILTER(?r IN (bo:Aprobada, bo:AprobadaConEnmienda)).
 - Conteo simple de un resultado: pon bo:tieneResultado DIRECTO en el WHERE, nunca en OPTIONAL.
 - Ratio (total + subconjunto en la misma consulta): usa OPTIONAL { ... BIND(?p AS ?sub) } y COUNT de cada uno, NUNCA FILTER.
@@ -80,6 +87,10 @@ REGLAS:
 - Filtras por grupo concreto + quieres su label: ?p bo:presentadaPor ?g . ?g rdfs:label ?ng . FILTER(?g = br:grupo_pp).
 - No anadas filtro de tema si la pregunta no menciona un tema.
 - Evita UNION. No calcules porcentajes dentro del SPARQL.
+- "que argumentos/postura/opinion ha dado el grupo X en/a favor/en contra de <tema>" es sobre las
+  proposiciones que X MISMO presento sobre ese tema (bo:presentadaPor + bo:trataTemaAmplio), NO su
+  historial de voto en propuestas ajenas. Usa bo:votoAFavorDe/votoEnContraDe SOLO si la pregunta
+  habla explicitamente de como VOTO/VOTACION X una propuesta (de otro grupo).
 """
 
 # banco de 18 preguntas -> SPARQL de referencia para el few-shot dinamico
@@ -142,7 +153,7 @@ GROUP BY ?n ORDER BY DESC(?c) LIMIT 1"""),
   ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_urbanismo ; bo:seAbstuvo br:grupo_eh_bildu . }"""),
     dict(q=u"\u00bfSe ha mencionado a Petronor en alg\u00fan pleno?",
          sparql="""SELECT (COUNT(DISTINCT ?p) AS ?c) WHERE {
-  ?p bo:menciona ?e . ?e rdfs:label ?n . FILTER(REGEX(STR(?n), "\\bpetronor\\b", "i")) }"""),
+  ?p bo:menciona ?e . ?e rdfs:label ?n . FILTER(REGEX(STR(?n), "\\\\bpetronor\\\\b", "i")) }"""),
     dict(q=u"\u00bfCu\u00e1ntas enmiendas ha presentado el grupo EH Bildu?",
          sparql="""SELECT (COUNT(DISTINCT ?e) AS ?n) WHERE {
   ?e a bo:Enmienda ; bo:enmiendaPor br:grupo_eh_bildu . }"""),
@@ -156,6 +167,26 @@ GROUP BY ?lab ORDER BY ASC(?n) LIMIT 1"""),
     dict(q=u"\u00bfCu\u00e1ntas proposiciones hay sobre igualdad y feminismo presentadas por el PP?",
          sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
   ?p a bo:Proposicion ; bo:trataTemaAmplio br:t_igualdad ; bo:presentadaPor br:grupo_pp . }"""),
+    dict(q=u"\u00bfQu\u00e9 argumentos ha dado Elkarrekin Bilbao en contra de los pisos tur\u00edsticos?",
+         sparql="""SELECT ?p WHERE {
+  ?p a bo:Proposicion ; bo:presentadaPor br:grupo_elkarrekin_bilbao ; bo:trataTemaAmplio br:t_vivienda . }
+LIMIT 20"""),
+    dict(q=u"\u00bfQu\u00e9 pas\u00f3 con la proposici\u00f3n del PP sobre el Bilbob\u00fas del 24 de septiembre de 2015?",
+         sparql="""SELECT ?p ?titulo ?res WHERE {
+  ?p a bo:Proposicion ; bo:presentadaPor br:grupo_pp ; bo:fecha "24-09-2015" ;
+     bo:tituloTopic ?titulo ; bo:tieneResultado ?res .
+  FILTER(REGEX(STR(?titulo), "bilbobus", "i")) }"""),
+    # Ronda 42 (2026-09-17): ningun ejemplo anterior usaba bo:Decae ni la
+    # palabra "decaido/decaido" -- verificado en vivo que "Cuantas
+    # proposiciones han decaido en 2019?" generaba SPARQL SIN ningun filtro
+    # de resultado (contaba TODAS las proposiciones de 2019, 111, en vez de
+    # solo las decaidas), porque los 3 ejemplos mas cercanos por similitud
+    # eran de conteo simple por anio, sin bo:tieneResultado. La consulta
+    # ejecutaba sin error y con filas -> se aceptaba tal cual, sin reintento,
+    # dando una respuesta con seguridad total pero equivocada.
+    dict(q=u"\u00bfCu\u00e1ntas proposiciones han decaido en 2019?",
+         sparql="""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {
+  ?p a bo:Proposicion ; bo:tieneResultado bo:Decae ; bo:anio 2019 . }"""),
 ]
 
 
@@ -311,9 +342,19 @@ def _get_llm(provider: str):
                     # con dos tablas y categorización) necesita bastante más que
                     # el límite por defecto -- verificado un corte real a mitad
                     # de frase con el límite implícito anterior.
-                    _llm_cache[provider] = ChatOllama(model=LLM_MODEL_GRAPHRAG, temperature=0,
-                                                     num_predict=8192,
-                                                     client_kwargs={"timeout": 300})
+                    # reasoning=False + num_ctx=8192: misma config que ganó el estudio de
+                    # ablación (ESTUDIO_SPARQL_LOCAL.md, estudio_sparql/runner.py) para
+                    # qwen3:8b -- el modo "pensamiento" no mejora esta tarea estructurada
+                    # y, sin desactivarlo, una pregunta con agregación difícil (p.ej.
+                    # enmiendas por grupo) puede consumir los 8192 tokens de num_predict
+                    # enteros en razonamiento oculto sin llegar a emitir el SPARQL: medido
+                    # en vivo, ~32 min y 3 intentos en blanco en vez de un fallo rápido.
+                    opts = dict(model=LLM_MODEL_GRAPHRAG, temperature=0,
+                                num_predict=8192, num_ctx=8192,
+                                client_kwargs={"timeout": 300})
+                    if LLM_MODEL_GRAPHRAG.startswith("qwen3"):
+                        opts["reasoning"] = False
+                    _llm_cache[provider] = ChatOllama(**opts)
                     print(f"[+] GraphRAG LLM: Ollama ({LLM_MODEL_GRAPHRAG})", flush=True)
                 elif provider == "groq":
                     from langchain_groq import ChatGroq
@@ -459,6 +500,193 @@ _REAL_TEMA_URIS = frozenset((
     "t_violencia_genero", "t_vivienda", "t_vivienda_social", "t_vivienda_vacia",
 ))
 
+# label (prefLabel/altLabel, en minúsculas) -> slug del tema de NIVEL 1 al que
+# pertenece (generado de themes_skos.ttl siguiendo skos:broader hasta la raíz).
+# Usado por dos guardas de _sanitize_sparql: (a) colapsar un OR de etiquetas
+# sueltas que en realidad pertenecen todas al mismo tema padre a una única
+# bo:trataTemaAmplio directa (el roll-up materializado ya las incluye todas,
+# enumerarlas a mano se queda corto si falta alguna -- verificado: "movilidad
+# por año" enumerando solo 3 etiquetas dio 2024=24, el roll-up completo da 50);
+# (b) detectar cuando bo:trataTemaAmplio+REGEX se usa sobre un literal que NO
+# es un tema real (un nombre propio de empresa/persona confundido con un tema).
+_LABEL_TOPLEVEL = {
+    "accesibilidad": "t_movilidad", "alquiler": "t_vivienda",
+    "alquiler social": "t_vivienda", "alquileres": "t_vivienda",
+    "aparcamiento": "t_movilidad", "aparcamientos": "t_movilidad",
+    "arte": "t_cultura", "ascensores": "t_movilidad", "aste nagusia": "t_cultura",
+    "aurrekontuak eta fiskalitatea": "t_presupuestos", "autobuses": "t_movilidad",
+    "autobús": "t_movilidad", "ayudas": "t_presupuestos",
+    "ayudas económicas": "t_presupuestos", "ayudas sociales": "t_serviciossociales",
+    "barrio": "t_urbanismo", "barrios": "t_urbanismo", "basuras": "t_medioambiente",
+    "berdintasuna eta feminismoa": "t_igualdad", "besteak": "t_otros",
+    "biblioteca": "t_cultura", "bibliotecas": "t_cultura", "bicicleta": "t_movilidad",
+    "bicicletas": "t_movilidad", "bidebarrieta": "t_cultura", "bidegorri": "t_movilidad",
+    "bidegorris": "t_movilidad", "bilbobus": "t_movilidad", "bonificaciones": "t_presupuestos",
+    "buen gobierno": "t_participacion", "calidad del aire": "t_medioambiente",
+    "calles peatonales": "t_movilidad", "carril bici": "t_movilidad",
+    "circulación": "t_movilidad", "ciudad 30": "t_movilidad", "comercio": "t_empleoeconomia",
+    "comercio local": "t_empleoeconomia", "contaminación atmosférica": "t_medioambiente",
+    "contaminación del aire": "t_medioambiente", "cultura": "t_cultura",
+    "deporte": "t_deporte", "deportes": "t_deporte", "derechos humanos": "t_derechoshumanos",
+    "desahucio": "t_vivienda", "desahucios": "t_vivienda", "desempleo": "t_empleoeconomia",
+    "discapacidad": "t_serviciossociales", "distritos": "t_urbanismo",
+    "diversidad funcional": "t_serviciossociales", "economía": "t_empleoeconomia",
+    "educación": "t_educacion", "eficiencia energética": "t_medioambiente",
+    "emisiones": "t_medioambiente", "empleo": "t_empleoeconomia",
+    "empleo público": "t_empleoeconomia", "empleo y economía": "t_empleoeconomia",
+    "empresa": "t_empleoeconomia", "empresas": "t_empleoeconomia",
+    "energética": "t_medioambiente", "energético": "t_medioambiente",
+    "energía": "t_medioambiente", "energías renovables": "t_medioambiente",
+    "enplegua eta ekonomia": "t_empleoeconomia", "envejecimiento": "t_serviciossociales",
+    "ertzaintza": "t_seguridad", "espacio público": "t_urbanismo", "etxebizitza": "t_vivienda",
+    "euskara": "t_euskera", "euskera": "t_euskera", "exclusión social": "t_serviciossociales",
+    "feminismo": "t_igualdad", "fiestas": "t_cultura", "fiestas populares": "t_cultura",
+    "financiación": "t_presupuestos", "fiscalidad": "t_presupuestos",
+    "gaztedia": "t_serviciossociales", "giza eskubideak": "t_derechoshumanos",
+    "gizarte zerbitzuak": "t_serviciossociales", "herritarren parte-hartzea": "t_participacion",
+    "hezkuntza": "t_educacion", "hirigintza": "t_urbanismo", "hostelería": "t_empleoeconomia",
+    "igualdad": "t_igualdad", "igualdad de género": "t_igualdad",
+    "igualdad de mujeres y hombres": "t_igualdad", "igualdad y feminismo": "t_igualdad",
+    "impuestos": "t_presupuestos", "industria": "t_empleoeconomia",
+    "ingurumena": "t_medioambiente", "inversiones": "t_presupuestos",
+    "joven": "t_serviciossociales", "juvenil": "t_serviciossociales",
+    "juveniles": "t_serviciossociales", "juventud": "t_serviciossociales",
+    "jóvenes": "t_serviciossociales", "kirola": "t_deporte", "kultura": "t_cultura",
+    "limitación de velocidad": "t_movilidad", "limpieza": "t_medioambiente",
+    "limpieza viaria": "t_medioambiente", "mayores": "t_serviciossociales",
+    "medio ambiente": "t_medioambiente", "medioambiente": "t_medioambiente",
+    "memoria historikoa": "t_memoriahistorica", "memoria histórica": "t_memoriahistorica",
+    "mercados": "t_empleoeconomia", "metro": "t_movilidad", "metro bilbao": "t_movilidad",
+    "movilidad": "t_movilidad", "movilidad y transporte": "t_movilidad",
+    "mugikortasuna eta garraioa": "t_movilidad", "mujeres": "t_igualdad",
+    "museo": "t_cultura", "museos": "t_cultura", "ordenación urbana": "t_urbanismo",
+    "ordenanza fiscal": "t_presupuestos", "ordenanzas fiscales": "t_presupuestos",
+    "osasuna": "t_sanidad", "ota": "t_movilidad", "otros": "t_otros",
+    "pacificación del tráfico": "t_movilidad", "parking": "t_movilidad",
+    "paro": "t_empleoeconomia", "parques y jardines": "t_urbanismo",
+    "participación": "t_participacion", "participación ciudadana": "t_participacion",
+    "peatonalizaciones": "t_movilidad", "peatonalización": "t_movilidad",
+    "personas mayores": "t_serviciossociales", "pgou": "t_urbanismo",
+    "plan general": "t_urbanismo", "planeamiento": "t_urbanismo", "plazas": "t_urbanismo",
+    "pobreza": "t_serviciossociales", "pobreza energética": "t_medioambiente",
+    "policía": "t_seguridad", "policía municipal": "t_seguridad",
+    "presupuesto": "t_presupuestos", "presupuesto municipal": "t_presupuestos",
+    "presupuestos": "t_presupuestos", "presupuestos municipales": "t_presupuestos",
+    "presupuestos y fiscalidad": "t_presupuestos", "pymes": "t_empleoeconomia",
+    "reciclaje": "t_medioambiente", "reducción de emisiones": "t_medioambiente",
+    "regeneración urbana": "t_urbanismo", "rehabilitación": "t_urbanismo",
+    "residuos": "t_medioambiente", "retribuciones": "t_presupuestos",
+    "sala de estudio": "t_cultura", "salarios": "t_presupuestos",
+    "salas de estudio": "t_cultura", "salud": "t_sanidad", "salud pública": "t_sanidad",
+    "sanidad": "t_sanidad", "seguridad": "t_seguridad", "seguridad ciudadana": "t_seguridad",
+    "segurtasuna": "t_seguridad", "servicios sociales": "t_serviciossociales",
+    "sostenibilidad": "t_medioambiente", "subvenciones": "t_presupuestos",
+    "subvención": "t_presupuestos", "sueldos": "t_presupuestos",
+    "tasas": "t_presupuestos", "tercera edad": "t_serviciossociales",
+    "transición energética": "t_medioambiente", "transparencia": "t_participacion",
+    "transporte": "t_movilidad", "transporte público": "t_movilidad",
+    "tranvía": "t_movilidad", "tráfico": "t_movilidad", "turismo": "t_turismo",
+    "turismoa": "t_turismo", "urbanismo": "t_urbanismo",
+    "violencia de género": "t_igualdad", "violencia machista": "t_igualdad",
+    "vivienda": "t_vivienda", "vivienda deshabitada": "t_vivienda",
+    "vivienda en alquiler": "t_vivienda", "vivienda protegida": "t_vivienda",
+    "vivienda pública": "t_vivienda", "vivienda social": "t_vivienda",
+    "vivienda vacía": "t_vivienda", "viviendas": "t_vivienda",
+    "viviendas deshabitadas": "t_vivienda", "viviendas sociales": "t_vivienda",
+    "viviendas vacías": "t_vivienda", "vpo": "t_vivienda", "zbe": "t_medioambiente",
+    "zona 30": "t_movilidad", "zona de bajas emisiones": "t_medioambiente",
+    "zonas de bajas emisiones": "t_medioambiente",
+}
+
+
+def _strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+# mismo diccionario, pero con las claves sin acentos -- el LLM genera "tranvia"
+# tan a menudo como "tranvía", y el lookup debe casar los dos.
+_LABEL_TOPLEVEL_NORM = {_strip_accents(k): v for k, v in _LABEL_TOPLEVEL.items()}
+
+
+# ---------------------------------------------------------------------------
+# Validación semántica por embeddings (Ronda 41, 2026-09-17): generaliza la
+# idea de las guardas deterministas de arriba -- en vez de un patrón regex
+# nuevo por cada invención concreta que se va descubriendo una a una, esto
+# cubre el "resto" (la cola larga de slugs inventados que no casan por
+# substring con ninguno de los 19 temas de nivel 1 de _CANON_TEMAS, p.ej.
+# "br:t_ciclovia" para bicicleta, o "br:t_okupacion" para desahucios -- sin
+# solape de texto con el canónico real, el fixer por substring de abajo
+# nunca los habría corregido). Sigue el enfoque de Sharma/Pal/Zouaq
+# ("Reducing Hallucinations in LM-based SPARQL Query Generation Using
+# Post-Generation Memory Retrieval", arXiv:2502.13369, citado en la
+# bibliografía del TFG, Ronda 38): recuperación semántica contra las
+# entidades REALES del grafo para corregir lo que el LLM se inventó, en vez
+# de una guarda por patrón. Usa bge-m3 (mismo modelo que ya usa el proyecto
+# en estudio_sparql/embed_bank.py y en la selección de few-shot dinámica de
+# más arriba en este mismo archivo) contra TODAS las etiquetas reales
+# (skos:prefLabel + skos:altLabel, castellano y euskera) de los 61 temas y
+# subtemas de themes_skos.ttl -- no solo los 19 de nivel 1.
+_THEMES_TTL = os.path.join(HERE, "themes_skos.ttl")
+_tema_embed_cache = None
+_tema_embed_lock = threading.Lock()
+
+
+def _tema_embed_index():
+    global _tema_embed_cache
+    if _tema_embed_cache is not None:
+        return _tema_embed_cache
+    with _tema_embed_lock:
+        if _tema_embed_cache is not None:
+            return _tema_embed_cache
+        import rdflib
+        from rdflib.namespace import SKOS
+        g = rdflib.Graph()
+        g.parse(_THEMES_TTL, format="turtle")
+        BO_ = rdflib.Namespace("http://bilbao.tfg/ontology#")
+        textos, slugs = [], []
+        for t in g.subjects(rdflib.RDF.type, BO_.Tema):
+            slug = str(t).rsplit("/", 1)[-1]
+            for pred in (SKOS.prefLabel, SKOS.altLabel):
+                for lab in g.objects(t, pred):
+                    textos.append(str(lab))
+                    slugs.append(slug)
+        from langchain_ollama import OllamaEmbeddings
+        embedder = OllamaEmbeddings(model="bge-m3")
+        vecs = embedder.embed_documents(textos)
+        _tema_embed_cache = (textos, slugs, vecs, embedder)
+        return _tema_embed_cache
+
+
+# Umbral calibrado a mano contra 8 slugs inventados de prueba (Ronda 41):
+# coincidencias genuinas (ciclovía->bicicleta, tráfico->movilidad, residuos->
+# reciclaje, contaminación acústica->calidad_aire) puntuaron 0.71-1.00;
+# coincidencias forzadas sin tema real equivalente en la taxonomía
+# (arbolado, empadronamiento, wifi público, okupación) puntuaron 0.62-0.68 --
+# corte limpio en 0.70. Por debajo, mejor dejar el slug sin corregir (cae al
+# mecanismo ya existente de "0 filas -> reintento") que sustituir con
+# confianza por un tema que no encaja de verdad.
+def _fix_tema_uri_semantic(uri_slug: str, umbral: float = 0.70):
+    try:
+        textos, slugs, vecs, embedder = _tema_embed_index()
+        qv = embedder.embed_query(uri_slug.replace("_", " ").replace("-", " "))
+
+        def _cos(a, b):
+            dot = sum(x * y for x, y in zip(a, b))
+            na = sum(x * x for x in a) ** 0.5
+            nb = sum(y * y for y in b) ** 0.5
+            return dot / (na * nb + 1e-9)
+
+        mejor_sim, mejor_slug = -1.0, None
+        for i, v in enumerate(vecs):
+            s = _cos(qv, v)
+            if s > mejor_sim:
+                mejor_sim, mejor_slug = s, slugs[i]
+        if mejor_sim >= umbral:
+            return f"br:{mejor_slug}"
+    except Exception:
+        pass
+    return None
+
 
 # mapea un slug de tema inventado por el LLM (br:t_presupuestos_fiscalidad...) al canónico real
 def _fix_tema_uri(uri_slug: str) -> str:
@@ -466,7 +694,10 @@ def _fix_tema_uri(uri_slug: str) -> str:
     for canon in _CANON_TEMAS:
         if s.startswith(canon) or canon.startswith(s) or canon in s:
             return f"br:t_{canon}"
-    return f"br:t_{uri_slug}"
+    # substring falló (p.ej. "ciclovia" no comparte texto con "bicicleta") --
+    # fallback semántico antes de rendirse.
+    semantico = _fix_tema_uri_semantic(uri_slug)
+    return semantico or f"br:t_{uri_slug}"
 
 
 # ---------------------------------------------------------------------------
@@ -585,6 +816,25 @@ def _alias_rewrite(sparql: str) -> str:
 def _sanitize_sparql(sparql: str, verbose: bool = False, pregunta: str = "") -> str:
     original = sparql
 
+    # --- (0) COUNT(DISTINCT ?x) donde ?x nunca se liga en el WHERE ---
+    # El LLM a veces nombra la variable del SELECT sin que coincida con
+    # ninguna del cuerpo de la consulta (p.ej. "SELECT (COUNT(DISTINCT ?c) AS
+    # ?c) WHERE { ?p a bo:Proposicion ; ... }" -- ?c no aparece en ningún
+    # triple). Una variable sin ligar en COUNT(DISTINCT ...) da 0 SIEMPRE, sin
+    # error, independientemente de si existen filas reales. Si ?x no aparece
+    # en ningún otro sitio del cuerpo, se sustituye por la variable de
+    # Proposicion (la que sí se liga en "?p a bo:Proposicion"), que es
+    # prácticamente siempre la entidad que se pretende contar.
+    m0 = re.search(r"COUNT\s*\(\s*DISTINCT\s+\?(\w+)\s*\)", sparql, re.I)
+    if m0:
+        cvar = m0.group(1)
+        where_m = re.search(r"WHERE\s*\{(.*)\}\s*$", sparql, re.I | re.S)
+        body = where_m.group(1) if where_m else sparql
+        if not re.search(rf"(?<!\w)\?{cvar}\b", body):
+            subj_m = re.search(r"\?(\w+)\s+a\s+bo:Proposicion\b", sparql)
+            if subj_m and subj_m.group(1) != cvar:
+                sparql = re.sub(rf"(?<!\w)\?{cvar}\b", f"?{subj_m.group(1)}", sparql)
+
     # --- (1) OPTIONAL no-op en consulta de agregación ---
     if re.search(r"\bCOUNT\s*\(", sparql, re.I):
         # variables usadas dentro de agregados del SELECT (COUNT/SUM/AVG/MIN/MAX)
@@ -700,6 +950,19 @@ def _sanitize_sparql(sparql: str, verbose: bool = False, pregunta: str = "") -> 
     sparql = re.sub(r'"(\d{4})"\s*\^\^\s*xsd:\w+', r"\1", sparql)
     sparql = re.sub(r'(bo:anio\s+)"(\d{4})"', r"\1\2", sparql)
 
+    # --- (4a-bis) bo:fecha con tipo xsd:date equivocado ---
+    # El grafo guarda bo:fecha como STRING plano "DD-MM-AAAA" (Literal sin
+    # tipo, build_rdf.py: Literal(r["date"])), no como xsd:date. Si el LLM
+    # escribe `bo:fecha "25-11-2010"^^xsd:date`, rdflib intenta parsear el
+    # literal como fecha ISO al CONSTRUIR la consulta -- "25-11-2010" no es
+    # ISO (DD-MM-AAAA, no AAAA-MM-DD) -> ValueError, la pregunta entera
+    # fallaba sin llegar siquiera a ejecutarse contra el grafo (verificado en
+    # vivo, Ronda 42, 2026-09-17: "¿Qué ocurrió con la proposición ... del
+    # pleno del 25-11-2010?"). Se quita el tipo de cualquier literal con
+    # forma DD-MM-AAAA (no solo tras bo:fecha, por si el LLM lo repite en un
+    # FILTER aparte sobre la misma variable).
+    sparql = re.sub(r'"(\d{2}-\d{2}-\d{4})"\s*\^\^\s*xsd:\w+', r'"\1"', sparql)
+
     # --- (4b) rdfs:label de grupo con nombre no canónico y/o lang tag ---
     # El LLM escribe `?g rdfs:label "Partido Popular"@es` en vez de usar
     # br:grupo_pp; los labels reales son planos y son "PP", "EH BILDU"... ->
@@ -718,10 +981,38 @@ def _sanitize_sparql(sparql: str, verbose: bool = False, pregunta: str = "") -> 
     # aprobación en general (sin pedir "sin enmienda"), se amplían las dos.
     pl = pregunta.lower()
     if re.search(r"aprob", pl) and not re.search(r"sin enmienda|con enmienda|estrict|tal cual|sin modificar", pl):
-        sparql = re.sub(
-            r"bo:tieneResultado\s+bo:Aprobada\b(\s*[.}\n])",
-            r"bo:tieneResultado ?_rApr . FILTER(?_rApr IN (bo:Aprobada, bo:AprobadaConEnmienda))\1",
-            sparql)
+        # bo:tieneResultado bo:Aprobada puede venir seguido de "." / "}" / salto
+        # de línea (fin del triple) o de ";" (sigue una lista de predicados sobre
+        # el MISMO sujeto, p.ej. "...bo:tieneResultado bo:Aprobada ; bo:presentadaPor
+        # ..."). Con ";" no se puede sustituir por "bo:tieneResultado ?_rApr .
+        # FILTER(...)" tal cual -- dejaría un "." seguido de ";" inválido, o
+        # cortaría la lista de predicados del sujeto. En su lugar: se cambia el
+        # objeto a la variable y el FILTER se añade aparte, justo antes del "}"
+        # que cierra el bloque ENVOLVENTE de ESE match concreto (contando
+        # profundidad de llaves desde el punto de sustitución) -- insertarlo
+        # antes del último "}" de toda la consulta (versión previa de este fix)
+        # es incorrecto si el match está dentro de un OPTIONAL anidado: el
+        # FILTER queda FUERA del OPTIONAL y lo convierte en obligatorio,
+        # rompiendo el patrón de ratio/porcentaje (verificado en vivo: "%
+        # aprobadas de vivienda" pasó de total=200 a total=41=aprob, el WHERE
+        # entero quedó restringido a solo las aprobadas). Cada aparición se
+        # trata por separado, de atrás hacia adelante para no invalidar índices.
+        for mm in reversed(list(re.finditer(r"bo:tieneResultado\s+bo:Aprobada\b", sparql))):
+            depth = 0
+            cierre = None
+            for i in range(mm.end(), len(sparql)):
+                if sparql[i] == "{":
+                    depth += 1
+                elif sparql[i] == "}":
+                    if depth == 0:
+                        cierre = i
+                        break
+                    depth -= 1
+            if cierre is None:
+                continue
+            filtro = " FILTER(?_rApr IN (bo:Aprobada, bo:AprobadaConEnmienda)) "
+            sparql = (sparql[:mm.start()] + "bo:tieneResultado ?_rApr"
+                      + sparql[mm.end():cierre] + filtro + sparql[cierre:])
 
     # --- (6) nombres de propiedad inexistentes que el LLM inventa por analogía ---
     # bo:interviene / bo:intervieneEn -> bo:intervino ; bo:proponente / bo:firmadaPor
@@ -791,6 +1082,143 @@ def _sanitize_sparql(sparql: str, verbose: bool = False, pregunta: str = "") -> 
         r'(REGEX\s*\(\s*(?:LCASE\s*\(\s*)?(?:STR\s*\(\s*)?\?\w+\s*\)*\s*,\s*")([^"]+)"',
         _acc_insens, sparql, flags=re.I)
 
+    # --- (10) "\b" de límite de palabra con UNA sola barra invertida dentro de un
+    # literal REGEX -> SPARQL lo interpreta como ECHAR de retroceso (\x08), no como
+    # backslash+b, y el regex deja de casar NADA sin dar ningún error (falso negativo
+    # silencioso). Hace falta escribir DOS barras en el texto fuente de la consulta
+    # para que, tras el unescape de SPARQL, llegue una sola al motor de regex.
+    # Verificado en vivo: "Torre BBVA" con \b (una barra) -> 0 filas; con \\b -> 1.
+    # El propio ejemplo few-shot de Petronor tenía este bug (corregido también).
+    def _fix_lone_b_escape(m):
+        head, pat = m.group(1), m.group(2)
+        return head + re.sub(r"(?<!\\)\\b", r"\\\\b", pat) + '"'
+    sparql = re.sub(
+        r'(REGEX\s*\(\s*(?:LCASE\s*\(\s*)?(?:STR\s*\(\s*)?\?\w+\s*\)*\s*,\s*")([^"]+)"',
+        _fix_lone_b_escape, sparql, flags=re.I)
+
+    # --- (11) roll-up temático hecho a mano con un OR de etiquetas sueltas ---
+    # "?p bo:trataTemaAmplio ?t . ?t skos:prefLabel ?lab .
+    #  FILTER(STR(?lab)="movilidad" || STR(?lab)="tranvia" || ...)"
+    # se queda corto en silencio si el LLM no enumera TODOS los subtemas reales
+    # (verificado en vivo: "movilidad por año" con 3 etiquetas sueltas dio
+    # 2024=24; el roll-up completo real da 2024=50). Si TODAS las etiquetas
+    # listadas resuelven, vía la taxonomía real, al MISMO tema de nivel 1, se
+    # colapsa a una única bo:trataTemaAmplio sobre ese tema padre -- el
+    # razonador ya materializó el roll-up completo, así que no hace falta (ni
+    # es fiable) que el LLM enumere subtemas a mano.
+    def _collapse_rollup(m):
+        tvar, lvar, disj = m.group(1), m.group(2), m.group(3)
+        labels = re.findall(r'STR\s*\(\s*\?' + re.escape(lvar) + r'\s*\)\s*=\s*"([^"]+)"', disj, re.I)
+        if len(labels) < 2:
+            return m.group(0)
+        tops = [_LABEL_TOPLEVEL_NORM.get(_strip_accents(lab.lower())) for lab in labels]
+        if any(t is None for t in tops) or len(set(tops)) != 1:
+            return m.group(0)  # etiqueta desconocida o no todas del mismo padre: no tocar
+        return f"bo:trataTemaAmplio br:{tops[0]} ."
+    sparql = re.sub(
+        r"bo:trataTemaAmplio\s+\?(\w+)\s*\.\s*\?\1\s+skos:prefLabel\s+\?(\w+)\s*\.\s*"
+        r'FILTER\s*\(\s*((?:STR\s*\(\s*\?\2\s*\)\s*=\s*"[^"]+"\s*(?:\|\|\s*)?)+)\)\s*\.?',
+        _collapse_rollup, sparql, flags=re.I)
+
+    # --- (12) bo:trataTemaAmplio con una etiqueta que NO es un tema real ---
+    # (nombre propio de empresa/persona/lugar confundido con un tema de la
+    # taxonomía) -> 0 resultados en silencio, porque ese "tema" no existe.
+    # bo:menciona SÍ es el predicado correcto para "qué se ha dicho sobre <nombre
+    # propio>" -- verificado en vivo: "qué se ha dicho sobre el BBVA" generó
+    # bo:trataTemaAmplio con REGEX "bbva" 2 de 3 veces (no determinista), pese a
+    # que el esquema ya trae un ejemplo few-shot equivalente (Petronor,
+    # bo:menciona). Solo se reescribe si el literal no casa NINGÚN tema/subtema
+    # real conocido (evita falsos positivos: "vivienda", "tráfico"... sí siguen
+    # usando trataTemaAmplio).
+    def _fix_tema_vs_entidad(m):
+        tvar, lvar, pat = m.group(1), m.group(2), m.group(3)
+        # colapsa cada clase [eé] a su primera letra -- NO la borra entera: el
+        # propio guard (9) de arriba expande cada vocal de un literal legítimo
+        # ("presupuestos" -> "pr[eé]s[uú]p[uú][eé]st[oó]s") ANTES de llegar aquí;
+        # borrar la clase entera (versión previa de este guard) destrozaba la
+        # palabra hasta dejarla irreconocible y causaba un falso "no es un tema
+        # real" -- verificado en vivo: "presupuestos y fiscalidad, incluyendo
+        # subtemas" pasó de 733 a 0 por este bug exacto.
+        sin_clases = re.sub(r"\[([^\]]+)\]", lambda cm: cm.group(1)[0], pat)
+        sin_clases = re.sub(r"\\+b", "", sin_clases)
+        # el patrón puede ser una alternancia "presupuestos|fiscalidad" (varios
+        # temas reales a la vez, no una sola entidad) -- si CUALQUIER término
+        # de la alternancia casa un tema/subtema real, se deja tal cual.
+        terminos = [_strip_accents(re.sub(r"[^a-záéíóúñ]", "", t.lower())) for t in sin_clases.split("|")]
+        if any(term and any(term in lab or lab in term for lab in _LABEL_TOPLEVEL_NORM) for term in terminos):
+            return m.group(0)  # sí es un tema/subtema real (o una alternancia de varios): no tocar
+        return (f'bo:menciona ?{tvar} . ?{tvar} rdfs:label ?{lvar} . '
+                f'FILTER(REGEX(STR(?{lvar}), "{pat}", "i"))')
+    sparql = re.sub(
+        r'bo:trataTemaAmplio\s+\?(\w+)\s*\.\s*\?\1\s+skos:prefLabel\s+\?(\w+)\s*\.\s*'
+        r'FILTER\s*\(\s*REGEX\s*\(\s*STR\s*\(\s*\?\2\s*\)\s*,\s*"([^"]+)"\s*,\s*"i"\s*\)\s*\)\s*\.?',
+        _fix_tema_vs_entidad, sparql, flags=re.I)
+
+    # --- (13) "mandato actual/legislatura...hasta ahora" reducido a un único
+    # año exacto en vez de un rango abierto ---
+    # "desde que empezó el mandato actual en 2023 hasta ahora" es un RANGO
+    # plurianual (desde el inicio del mandato hasta la fecha más reciente del
+    # corpus), no un año exacto -- verificado en vivo: el LLM ve "2023" en la
+    # pregunta y genera FILTER(?anio = 2023) (328, solo ese año) en vez de
+    # FILTER(?anio >= 2023) (~1065 reales, 2023-2026). Solo se reescribe si la
+    # pregunta menciona explícitamente mandato/legislatura EN CURSO (para no
+    # tocar preguntas legítimas sobre un año exacto o un mandato ya cerrado).
+    _MANDATO_INICIO = (2007, 2011, 2015, 2019, 2023)
+    if re.search(r"\bmandato\b|\blegislatura\b", pregunta, re.I) and \
+       re.search(r"actual|en curso|hasta (la fecha|ahora|hoy)", pregunta, re.I):
+        def _mandato_range(m):
+            var, anio = m.group(1), int(m.group(2))
+            if anio in _MANDATO_INICIO:
+                return f"FILTER(?{var} >= {anio})"
+            return m.group(0)
+        sparql = re.sub(r"FILTER\s*\(\s*\?(\w+)\s*=\s*(\d{4})\s*\)", _mandato_range, sparql)
+
+    # --- (14) prefijo de espacio de nombres inventado (p.ej. "r3:label" en
+    # vez de "rdfs:label") ---
+    # Visto en vivo (Ronda 40, 2026-09-16): al pedirle al LLM que "corrija"
+    # una consulta con varios "rdfs:label" repetidos (p.ej. una pregunta de
+    # una sola proposición con muchos OPTIONAL: grupo, tema, entidad,
+    # concejal...), en vez de arreglar el error real introdujo un prefijo que
+    # nunca declaró ("r3:") copiando el patrón "xx:label" -- rdflib falla con
+    # "Unknown namespace prefix" y, al pedir corrección otra vez con el mismo
+    # contexto, el modelo repitió y amplió el mismo error en vez de
+    # eliminarlo (verificado: 3/3 intentos fallidos, la pregunta degradó a
+    # "no he podido traducir esa pregunta" en vez de responder). Cualquier
+    # prefijo NO declarado en el PREFIX de cabecera se reescribe al prefijo
+    # real ya usado en la MISMA consulta con ese mismo nombre local (p.ej.
+    # otro "rdfs:label" presente); si no hay ninguna coincidencia así,
+    # "label"/"comment"/etc. caen a rdfs: por ser el vocabulario común más
+    # repetido del schema. No toca "bo:"/"br:"/"skos:"/"rdfs:"/"xsd:" (los
+    # únicos realmente declarados) ni las URIs http:// del PREFIX en sí.
+    _KNOWN_PREFIXES = {"bo", "br", "skos", "rdfs", "xsd", "rdf", "owl"}
+    _RDFS_TERMS = {"label", "comment", "seeAlso", "subClassOf", "domain", "range"}
+    _declared_used = {}
+    for _pfx, _local in re.findall(r"\b([a-zA-Z][\w-]*):([a-zA-Z_][\w-]*)", sparql):
+        if _pfx in _KNOWN_PREFIXES:
+            _declared_used.setdefault(_local, _pfx)
+
+    def _fix_unknown_prefix(m):
+        pfx, local = m.group(1), m.group(2)
+        if pfx in _KNOWN_PREFIXES:
+            return m.group(0)
+        real = _declared_used.get(local) or ("rdfs" if local in _RDFS_TERMS else None)
+        return f"{real}:{local}" if real else m.group(0)
+
+    sparql = re.sub(r"\b([a-zA-Z][\w-]*):([a-zA-Z_][\w-]*)", _fix_unknown_prefix, sparql)
+
+    # --- (15) fecha literal en formato DD/MM/YYYY en vez de DD-MM-YYYY ---
+    # bo:fecha se guarda SIEMPRE con guiones y cero a la izquierda ("24-09-2015",
+    # ver build_rdf.py: Literal(r["date"]) tal cual viene del acta) pero el
+    # SCHEMA no lo dice explícitamente y el LLM a veces escribe la fecha con
+    # barras (formato habitual en español) -- comparación silenciosa contra un
+    # string que nunca puede coincidir, 0 filas sin error (verificado en vivo,
+    # Ronda 40: "24/09/2015" no encuentra nada, "24-09-2015" sí). Cualquier
+    # literal "D/M/AAAA" o "DD/MM/AAAA" se normaliza a guiones + 2 dígitos.
+    def _fix_date_slash(m):
+        d, mth, y = m.group(1), m.group(2), m.group(3)
+        return f'"{int(d):02d}-{int(mth):02d}-{y}"'
+    sparql = re.sub(r'"(\d{1,2})/(\d{1,2})/(\d{4})"', _fix_date_slash, sparql)
+
     sparql = re.sub(r"[ \t]+\n", "\n", re.sub(r"\n{3,}", "\n\n", sparql)).strip()
     if verbose and sparql != original:
         print(f"[SPARQL saneado]\n{sparql}\n")
@@ -819,77 +1247,134 @@ def _augment_ratios(rows: list, pregunta: str) -> str:
             + "\n".join(out)) if out else ""
 
 
-def graph_answer(pregunta: str, verbose=True):
+# ---------------------------------------------------------------------------
+# Filtro previo cero-LLM (Ronda 39, 2026-09-16): estudio_sparql/arm_g.py es
+# un prototipo de investigación que reconoce ~13 formas de pregunta frecuentes
+# (por embedding bge-m3) y monta la SPARQL con plantillas + regex, sin tocar
+# ningún LLM. Contra las 22 preguntas reales de regression_qa.py resuelve
+# 17/22 (77%) en ~300ms y gratis, con 0 fallos conocidos tras añadir la guarda
+# de "2+ grupos mencionados" (ver arm_g._n_grupos_mencionados). Se acepta su
+# respuesta SOLO si la consulta ejecuta sin error y devuelve filas no vacías;
+# cualquier otro caso (patrón no reconocido, plantilla no aplicable, o el
+# propio Ollama de embeddings caído) cae al camino normal con LLM sin más
+# efecto que la latencia de haberlo intentado.
+_ESTUDIO_SPARQL_DIR = os.path.join(os.path.dirname(os.path.dirname(HERE)), "estudio_sparql")
+
+
+def _try_arm_g(pregunta, g, verbose):
+    try:
+        if _ESTUDIO_SPARQL_DIR not in sys.path:
+            sys.path.append(_ESTUDIO_SPARQL_DIR)   # arm_g.py hace "import embed_bank" a pelo
+        import arm_g as _arm_g
+    except ImportError:
+        return None
+    try:
+        res = _arm_g.answer(pregunta)
+    except Exception as e:
+        if verbose:
+            print(f"[Arm G] fallo al intentar el filtro previo, cae a LLM: {e}", flush=True)
+        return None
+    if not res.get("sparql"):
+        return None
+    try:
+        rows = [{str(v): str(row[v]) for v in row.labels} for row in g.query(res["sparql"])]
+    except Exception:
+        return None
+    if not rows:
+        return None
+    if verbose:
+        print(f"[Arm G] resuelto sin LLM (tmpl={res['template']} sim={res['similarity']})"
+              f"\n[SPARQL]\n{res['sparql']}\n")
+    return res["sparql"], rows
+
+
+def graph_answer(pregunta: str, verbose=True, sparql_provider: str = "ollama"):
+    # sparql_provider: "ollama" (qwen3:8b, por defecto -- local y gratis) o
+    # "groq" (openai/gpt-oss-120b) para el paso de GENERACIÓN de SPARQL (no
+    # afecta a la narración del paso 3, que ya usa Groq por separado). Permite
+    # comparar en vivo cuál acierta más en los casos que qwen3:8b falla de
+    # forma no determinista (ver ESTUDIO_SPARQL_LOCAL.md: Groq ~90% vs
+    # qwen3:8b+F_embed 94% en el gold set -- ayuda pero no es infalible, y
+    # comparte la misma cuota diaria de Groq que la narración).
     g = _load_graph()
 
-    # 1. Generar SPARQL
-    sparql = _sanitize_sparql(
-        _alias_rewrite(_clean_sparql(_llm_invoke(_build_sparql_prompt(pregunta)))), verbose, pregunta)
-    if verbose:
-        print(f"\n[SPARQL]\n{sparql}\n")
+    # 0. Filtro previo cero-LLM (ver _try_arm_g) -- si resuelve la pregunta,
+    # nos saltamos los pasos 1-2 (generación + reintentos con LLM) y vamos
+    # directos a la narración con estas mismas filas.
+    armg = _try_arm_g(pregunta, g, verbose)
+    sparql, rows = armg if armg else (None, None)
 
-    # 2. Ejecutar (hasta 2 reintentos si hay error de sintaxis O si la consulta
-    #    ejecuta bien pero devuelve 0 filas — antes ese caso no reintentaba y
-    #    se narraba directamente como "no hay datos", aunque a menudo el dato
-    #    sí existe y lo que falló fue la consulta: una URI de tema/entidad mal
-    #    resuelta). El prompt de corrección REPITE el schema entero: "corrígela"
-    #    a secas hacía que el modelo inventara vocabulario (PREFIX example.org,
-    #    WITH, subconsultas) porque perdía el contexto de qué existe en el grafo.
-    error = None
-    for intento in range(3):
-        try:
-            rows = [{str(v): str(row[v]) for v in row.labels} for row in g.query(sparql)]
-            error = None
-        except Exception as e:
-            rows = []
-            error = e
-
-        vacia = error is None and not rows
-        if error is None and not vacia:
-            break                      # filas de verdad -> narrar con esto
-        if intento == 2:
-            if error is not None:
-                # Ninguna consulta válida en 3 intentos: la pregunta cae fuera de
-                # lo que el modelo sabe expresar en SPARQL sobre este grafo (p.ej.
-                # "proposiciones conjuntas" — el grafo solo guarda un grupo por
-                # proposición). Degradar con gracia en vez de romper el chat.
-                if verbose:
-                    print(f"[!] SPARQL irrecuperable tras 3 intentos: {e}", flush=True)
-                return {
-                    "sparql": sparql,
-                    "rows": [],
-                    "answer": ("No he podido traducir esa pregunta a una consulta válida sobre el "
-                               "grafo. Puede que pida un dato que el grafo no distingue (por ejemplo, "
-                               "proposiciones presentadas conjuntamente por varios grupos: el grafo "
-                               "guarda un único grupo por proposición). Prueba a reformularla de forma "
-                               "más concreta."),
-                }
-            break                      # 0 filas tras 2 intentos de reformular -> se acepta como respuesta
-
-        if error is not None:
-            fix = _llm_invoke(
-                f"{SCHEMA}\n\nPREGUNTA: {pregunta}\n\n"
-                f"Esta consulta SPARQL DIO ERROR: {error}\n"
-                f"Consulta con error:\n{sparql}\n\n"
-                "Genera una consulta NUEVA que responda la pregunta, más simple, usando "
-                "SOLO el vocabulario del schema de arriba (NO inventes PREFIX, WITH, "
-                "subconsultas ni URIs). Para porcentajes/ratios devuelve solo el total y "
-                "el subconjunto con OPTIONAL+BIND. Devuelve SOLO la consulta SPARQL."
-            )
-        else:
-            fix = _llm_invoke(
-                f"{SCHEMA}\n\nPREGUNTA: {pregunta}\n\n"
-                f"Esta consulta SPARQL se ejecutó bien pero NO devolvió NINGUNA fila:\n{sparql}\n\n"
-                "Antes de repetir el mismo patrón, revisa: ¿la URI de tema/grupo que usaste está "
-                "en la lista exacta del schema? ¿Inventaste la URI de una entidad o persona en vez "
-                "de resolverla con rdfs:label + REGEX? ¿el predicado existe tal cual? Genera una "
-                "consulta ALTERNATIVA (distinta de la anterior) que sí pueda encontrar datos si "
-                "existen en el grafo. Si tras revisarlo la consulta anterior ya era correcta y el "
-                "grafo simplemente no tiene ese dato, repite la misma. Devuelve SOLO la consulta SPARQL."
-            )
-        sparql = _sanitize_sparql(_alias_rewrite(_clean_sparql(fix)), verbose, pregunta)
+    if rows is None:
+        # 1. Generar SPARQL
+        sparql = _sanitize_sparql(
+            _alias_rewrite(_clean_sparql(_llm_invoke(_build_sparql_prompt(pregunta), prefer=sparql_provider))), verbose, pregunta)
         if verbose:
-            print(f"[SPARQL corregido #{intento + 1}]\n{sparql}\n")
+            print(f"\n[SPARQL]\n{sparql}\n")
+
+        # 2. Ejecutar (hasta 2 reintentos si hay error de sintaxis O si la consulta
+        #    ejecuta bien pero devuelve 0 filas — antes ese caso no reintentaba y
+        #    se narraba directamente como "no hay datos", aunque a menudo el dato
+        #    sí existe y lo que falló fue la consulta: una URI de tema/entidad mal
+        #    resuelta). El prompt de corrección REPITE el schema entero: "corrígela"
+        #    a secas hacía que el modelo inventara vocabulario (PREFIX example.org,
+        #    WITH, subconsultas) porque perdía el contexto de qué existe en el grafo.
+        error = None
+        for intento in range(3):
+            try:
+                rows = [{str(v): str(row[v]) for v in row.labels} for row in g.query(sparql)]
+                error = None
+            except Exception as e:
+                rows = []
+                error = e
+
+            vacia = error is None and not rows
+            if error is None and not vacia:
+                break                      # filas de verdad -> narrar con esto
+            if intento == 2:
+                if error is not None:
+                    # Ninguna consulta válida en 3 intentos: la pregunta cae fuera de
+                    # lo que el modelo sabe expresar en SPARQL sobre este grafo (p.ej.
+                    # "proposiciones conjuntas" — el grafo solo guarda un grupo por
+                    # proposición). Degradar con gracia en vez de romper el chat.
+                    if verbose:
+                        print(f"[!] SPARQL irrecuperable tras 3 intentos: {error}", flush=True)
+                    return {
+                        "sparql": sparql,
+                        "rows": [],
+                        "answer": ("No he podido traducir esa pregunta a una consulta válida sobre el "
+                                   "grafo. Puede que pida un dato que el grafo no distingue (por ejemplo, "
+                                   "proposiciones presentadas conjuntamente por varios grupos: el grafo "
+                                   "guarda un único grupo por proposición). Prueba a reformularla de forma "
+                                   "más concreta."),
+                    }
+                break                      # 0 filas tras 2 intentos de reformular -> se acepta como respuesta
+
+            if error is not None:
+                fix = _llm_invoke(
+                    f"{SCHEMA}\n\nPREGUNTA: {pregunta}\n\n"
+                    f"Esta consulta SPARQL DIO ERROR: {error}\n"
+                    f"Consulta con error:\n{sparql}\n\n"
+                    "Genera una consulta NUEVA que responda la pregunta, más simple, usando "
+                    "SOLO el vocabulario del schema de arriba (NO inventes PREFIX, WITH, "
+                    "subconsultas ni URIs). Para porcentajes/ratios devuelve solo el total y "
+                    "el subconjunto con OPTIONAL+BIND. Devuelve SOLO la consulta SPARQL.",
+                    prefer=sparql_provider,
+                )
+            else:
+                fix = _llm_invoke(
+                    f"{SCHEMA}\n\nPREGUNTA: {pregunta}\n\n"
+                    f"Esta consulta SPARQL se ejecutó bien pero NO devolvió NINGUNA fila:\n{sparql}\n\n"
+                    "Antes de repetir el mismo patrón, revisa: ¿la URI de tema/grupo que usaste está "
+                    "en la lista exacta del schema? ¿Inventaste la URI de una entidad o persona en vez "
+                    "de resolverla con rdfs:label + REGEX? ¿el predicado existe tal cual? Genera una "
+                    "consulta ALTERNATIVA (distinta de la anterior) que sí pueda encontrar datos si "
+                    "existen en el grafo. Si tras revisarlo la consulta anterior ya era correcta y el "
+                    "grafo simplemente no tiene ese dato, repite la misma. Devuelve SOLO la consulta SPARQL.",
+                    prefer=sparql_provider,
+                )
+            sparql = _sanitize_sparql(_alias_rewrite(_clean_sparql(fix)), verbose, pregunta)
+            if verbose:
+                print(f"[SPARQL corregido #{intento + 1}]\n{sparql}\n")
 
     rows = _fix_degenerate_groupby(rows, sparql)
     filas = "\n".join(str(r) for r in rows[:50]) or "(sin resultados en el grafo)"

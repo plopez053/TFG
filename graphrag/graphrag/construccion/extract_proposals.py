@@ -75,7 +75,20 @@ def extract_proposals():
             parties = [c.metadata.get("party") for c in cs
                        if c.metadata.get("party") and c.metadata.get("party") != "Desconocido"]
             party = Counter(parties).most_common(1)[0][0] if parties else "Desconocido"
-            vote = next((c.metadata.get("vote_result") for c in cs if c.metadata.get("vote_result")), None)
+            # el ÚLTIMO vote_result no vacío entre los chunks del topic (ya
+            # ordenados por chunk_index = orden real en el acta), no el
+            # primero: en proposiciones con varias enmiendas compitiendo, el
+            # acta registra un voto por cada enmienda antes del resultado
+            # final -- quedarse con el primero capturaba un voto intermedio
+            # (p.ej. "rechazada la enmienda de GOAZEN BILBAO") en vez del que
+            # decide de verdad la suerte de la proposición ("se acepta la
+            # enmienda del Equipo de Gobierno, por lo que decaen... la
+            # proposición del PP"). Verificado contra el PDF real (Ronda 40,
+            # 2026-09-16, 24-09-2015 ítem 49): con "primero" se perdía el
+            # "decaen" final y la proposición quedaba mal clasificada como
+            # "aprobada con enmienda" por el fallback del LLM.
+            votos_topic = [c.metadata.get("vote_result") for c in cs if c.metadata.get("vote_result")]
+            vote = votos_topic[-1] if votos_topic else None
             texto_completo = _merge_overlapping([_strip_header(c.page_content) for c in cs])
             text = texto_completo[:MAX_TEXT]
             # Capa determinista: listas nominales de voto tal cual las escribe el

@@ -109,22 +109,53 @@ _RE_RECHAZADA_PROP = re.compile(
     r"(?:queda|resulta)\s+rechazad[ao]\s+la\s+proposici[oó]n|se\s+rechaza\s+la\s+proposici[oó]n",
     re.IGNORECASE,
 )
+# "queda aprobada" añadido junto a "se acepta/aprueba" -- asimetría real
+# encontrada 2026-09-16 (Ronda 40, verificación por texto completo del
+# corpus): _RE_RECHAZADA_PROP ya reconocía "queda rechazada" ADEMÁS de "se
+# rechaza", pero esta regex solo reconocía "se acepta/aprueba", nunca "queda
+# aprobada la proposición..." (frase real y habitual del acta, ej.
+# 18-06-2008 ítem 38: "queda aprobada la proposición formulada por el
+# Gobierno Municipal del EAJ-PNV..." clasificada como "sin resultado" por el
+# fallback del LLM cuando el acta lo decía sin ambigüedad).
 _RE_APROBADA_PROP = re.compile(
-    r"se\s+(?:acepta|aprueba)\s+la\s+proposici[oó]n(?!.*enmienda)", re.IGNORECASE
+    r"(?:se\s+(?:acepta|aprueba)|queda\s+aprobada)\s+la\s+proposici[oó]n(?!.*enmienda)", re.IGNORECASE
 )
-_RE_DECAE_PROP = re.compile(r"\bdecae\b", re.IGNORECASE)
+# \bdecaen?\b: "decae" (singular) Y "decaen" (plural, cuando varias enmiendas/
+# la proposición decaen juntas en la misma frase -- "\bdecae\b" solo (sin la
+# "n" opcional) se quedaba sin disparar en el 100% de los 51 casos reales de
+# "decaen" del corpus, cayendo al fallback del LLM, que en muchos de ellos
+# clasificaba mal (verificado contra el PDF real: 24-09-2015, ítem 49, PP,
+# "...decaen tanto la enmienda de UDALBERRI... como la proposición presentada
+# por el Grupo Municipal PARTIDO POPULAR" clasificado por el LLM como
+# "aprobada con enmienda" cuando en realidad decayó). Ronda 40, 2026-09-16.
+_RE_DECAE_PROP = re.compile(r"\bdecaen?\b", re.IGNORECASE)
+# "Queda retirada la (precedente) proposición/Moción..." -- desenlace real y
+# MUY frecuente (103 apariciones en el texto completo del corpus, Ronda 40,
+# 2026-09-16) que antes nunca se comprobaba aquí: dependía enteramente del
+# fallback (más flojo) de la clasificación libre del LLM. Comprobado ANTES
+# que _RE_DECAE_PROP porque el mismo vote_result puede mencionar ambas cosas
+# a la vez ("Queda retirada la proposición n.º 23... por lo que decae
+# también la enmienda...") -- ahí el desenlace de LA PROPOSICIÓN es
+# "retirada" (el "decae" de después es sobre la enmienda, consecuencia
+# secundaria, no la proposición en sí).
+_RE_RETIRADA_PROP = re.compile(
+    r"queda\s+retirad[ao]\s+la\s+(?:precedente\s+)?(?:proposici[oó]n|moci[oó]n)", re.IGNORECASE
+)
 
 
 # usa vote_result cuando indica el desenlace sin ambigüedad, en vez de la clasificación del LLM.
-# "decae" va PRIMERO y SIN gate: es la frase legal más inequívoca de las tres
-# (bug real corregido 2026-09-11 — el LLM clasificaba sistemáticamente "se aprueba
-# la enmienda..., por lo que decae la proposición" como "aprobada con enmienda" o
-# "rechazada" en cientos de casos; el gate anterior solo confiaba en "decae" cuando
-# el LLM no había dado ninguna respuesta, así que nunca corregía una respuesta
-# equivocada con confianza, ver memoria/decisiones_tecnicas.md §4.5).
+# "retirada"/"decae" van PRIMERO y SIN gate: son las frases legales más
+# inequívocas (bug real corregido 2026-09-11 — el LLM clasificaba
+# sistemáticamente "se aprueba la enmienda..., por lo que decae la
+# proposición" como "aprobada con enmienda" o "rechazada" en cientos de
+# casos; el gate anterior solo confiaba en "decae" cuando el LLM no había
+# dado ninguna respuesta, así que nunca corregía una respuesta equivocada con
+# confianza, ver memoria/decisiones_tecnicas.md §4.5).
 def resultado_cruzado(vote_result: str, resultado_llm: str) -> str:
     if not vote_result:
         return resultado_llm
+    if _RE_RETIRADA_PROP.search(vote_result):
+        return "retirada"
     if _RE_DECAE_PROP.search(vote_result):
         return "decae"
     if _RE_RECHAZADA_PROP.search(vote_result):
@@ -318,7 +349,17 @@ def build():
     for r in recs:
         pr = BR[f"prop_{r['id']}"]
         g.add((pr, RDF.type, BO.Proposicion))
-        g.add((pr, BO.tituloTopic, Literal(r["topic"][:200])))
+        # 500, no 200: el título de un punto del orden del día casi siempre
+        # empieza con el mismo boilerplate ("PROPOSICIÓN que presenta el
+        # Grupo Municipal X, cuya parte dispositiva es del tenor literal
+        # siguiente:") antes de llegar al asunto real -- con 200 caracteres,
+        # 46/3422 proposiciones (1,3%) se cortaban ANTES de que apareciera
+        # ninguna palabra del contenido real (verificado: "Bilbobús" quedaba
+        # fuera del título truncado de una proposición sobre el Bilbobús,
+        # rompiendo cualquier FILTER por palabra clave del asunto sobre
+        # bo:tituloTopic). Con 500, 0/3422 quedan cortados dentro del
+        # boilerplate. Ronda 40, 2026-09-16.
+        g.add((pr, BO.tituloTopic, Literal(r["topic"][:500])))
         g.add((pr, BO.fecha, Literal(r["date"])))
         año = (r["date"].split("-")[-1] if r.get("date") else "")
         if año.isdigit():
