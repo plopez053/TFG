@@ -77,8 +77,11 @@
 % Tipografía Computer Modern Roman (vía CM-Unicode), la clásica de LaTeX,
 % en vez de la sans-serif corporativa EHUSans, para un aspecto más formal
 % y en línea con el de otras memorias de TFG (p.ej. la de Oiher).
+% Ruta relativa a fonts/ (los .otf de CM-Unicode van empaquetados con la
+% memoria) para que compile igual en cualquier equipo sin depender de una
+% instalación concreta de MiKTeX/TeX Live.
 \setmainfont[
-	Path          = C:/Users/peiol/AppData/Local/Programs/MiKTeX/fonts/opentype/public/cm-unicode/,
+	Path          = fonts/,
 	Ligatures     = TeX,
 	UprightFont   = cmunrm.otf,
 	BoldFont      = cmunbx.otf,
@@ -117,7 +120,16 @@
  UprightFont   = EHUSerif-Black.otf
  ]{EHUSerif}
 
-\newfontfamily{\calibrifont}{Calibri}
+% Calibri es propietaria (Microsoft) y no está disponible en Linux; se usa
+% Carlito, clon libre métricamente compatible, empaquetado en fonts/ para que
+% la portada se vea igual en cualquier equipo sin instalar la fuente.
+\newfontfamily{\calibrifont}[
+	Path          = fonts/,
+	UprightFont   = Carlito-Regular.ttf,
+	BoldFont      = Carlito-Bold.ttf,
+	ItalicFont    = Carlito-Italic.ttf,
+	BoldItalicFont= Carlito-BoldItalic.ttf
+]{Carlito}
 
 % ------------------------------------------------------------ %
 % ETIQUETAS EN LAS TABLAS Y FIGURAS							   %
@@ -322,11 +334,13 @@
 	% ============================================================ %
 	% Estructura general de este documento, adaptada de la de la   %
 	% memoria de Nahia Iturregi (TFG_Nahia_Iturregi.pdf) a petición %
-	% del director, con dos excepciones explícitas: se mantienen   %
+	% del director. Diferencias explícitas con Nahia: se mantienen  %
 	% "Estado del arte" y "Análisis de alternativas" como capítulos %
 	% propios (Nahia los integra en Contexto/decisiones de          %
-	% implementación), y no hay capítulo de evaluación de usuarios  %
-	% porque este TFG no incluye una evaluación con usuarios reales.%
+	% implementación); el capítulo "Corpus y preprocesado de datos" %
+	% se corresponde con su capítulo 5 "Entorno experimental"; y no %
+	% hay capítulo de evaluación de usuarios porque este TFG no      %
+	% incluye una evaluación con usuarios reales.                   %
 	% ============================================================ %
 
 	% ============================================================ %
@@ -366,11 +380,37 @@
 	verificable, con cifras y citas a la fuente original.
 
 	\subsection{A quién beneficia el sistema}
+	\label{sec:beneficiarios}
 
-	Se identifican aquí los distintos perfiles de usuario a los que beneficia el
-	sistema desarrollado --ciudadanía, periodistas, personal técnico municipal,
-	investigadores-- y de qué forma concreta les resulta útil cada uno de los dos
-	sistemas de consulta implementados.
+	El sistema desarrollado tiene utilidad directa para varios perfiles distintos
+	de usuario, cada uno con una forma de preguntar y un tipo de respuesta que le
+	interesa más:
+
+	\begin{description}
+		\item[Ciudadanía] Puede preguntar en lenguaje natural por el estado o el
+		resultado de una propuesta concreta --p.~ej. "¿qué se votó sobre el
+		polideportivo de mi barrio?"-- sin necesidad de conocer de antemano en
+		qué acta ni en qué página buscar, y obtener la cita exacta al documento
+		original como respaldo.
+
+		\item[Periodistas] Se benefician sobre todo de las preguntas de
+		agregación y comparación entre grupos políticos --p.~ej. cuántas
+		propuestas sobre vivienda ha presentado cada partido en un mandato, o
+		cómo ha votado cada grupo un asunto concreto--, el tipo de consulta en el
+		que el sistema GraphRAG aporta más valor frente a una búsqueda de texto
+		convencional (Capítulo~\ref{ch:contexto}).
+
+		\item[Personal técnico municipal] Puede recuperar rápidamente el
+		precedente de un asunto ya tratado en plenos anteriores --qué se acordó,
+		qué grupo lo propuso, si se aprobó con enmienda-- sin depender de la
+		memoria de quien estuvo presente en aquella sesión ni de una búsqueda
+		manual en el archivo.
+
+		\item[Investigadores] Disponen de un corpus estructurado y consultable de
+		forma sistemática --por tema, por grupo, por periodo temporal-- que
+		permite estudiar la actividad plenaria a lo largo de casi veinte años sin
+		procesar manualmente cada acta en PDF.
+	\end{description}
 
 	\section{Objetivos y alcance}
 
@@ -382,36 +422,134 @@
 
 	\subsection{Objetivos específicos}
 
-	Se detallan los objetivos específicos que se derivan del objetivo general
-	(extracción y estructuración del corpus, construcción del grafo de
-	conocimiento, implementación de los dos sistemas de recuperación, interfaz de
-	consulta, evaluación comparativa).
+	Del objetivo general se derivan los siguientes objetivos específicos:
+
+	\begin{enumerate}
+		\item Extraer de forma automatizada las proposiciones individuales de
+		cada acta --junto con su fecha, grupo o particular proponente, tema,
+		entidades mencionadas y resultado de la votación-- a partir del corpus de
+		PDF publicado por el Ayuntamiento (Capítulo~\ref{ch:corpus}).
+
+		\item Construir un grafo de conocimiento RDF/OWL que modele las
+		proposiciones, los grupos políticos, los concejales y los temas, y que
+		permita razonamiento automático sobre relaciones temáticas jerárquicas
+		(Capítulo~\ref{ch:solucion}).
+
+		\item Implementar un sistema de recuperación de información basado en
+		búsqueda vectorial híbrida (semántica, literal y temática) sobre el mismo
+		corpus.
+
+		\item Implementar un segundo sistema de recuperación, GraphRAG, que
+		traduzca la pregunta del usuario a una consulta SPARQL y la ejecute sobre
+		el grafo de conocimiento, para responder preguntas de agregación y
+		razonamiento multi-salto que el sistema vectorial no puede resolver con
+		precisión.
+
+		\item Exponer ambos sistemas mediante una interfaz web conversacional
+		que cite, para cada dato mostrado, el documento y la página exacta del
+		PDF de origen.
+
+		\item Evaluar de forma comparativa ambos sistemas sobre un conjunto de
+		preguntas de referencia con respuesta verificada a mano contra las actas
+		originales, para caracterizar en qué tipo de preguntas destaca cada
+		arquitectura (Capítulo~\ref{ch:resultados}).
+	\end{enumerate}
 
 	\subsection{Alcance del sistema desarrollado}
 
-	Se describe qué incluye y qué queda fuera del sistema final, y por qué --p.ej.
-	el enlazado con Wikidata, que se valoró y se descartó para esta entrega.
+	El sistema cubre el corpus completo de actas del Pleno publicadas por el
+	Ayuntamiento de Bilbao entre 2007 y 2026 (cerca de 3.900 proposiciones), con
+	extracción de metadatos, clasificación temática, dos sistemas de recuperación
+	de información independientes y una interfaz web conversacional común a ambos.
+
+	Quedan fuera del alcance de esta entrega:
+
+	\begin{itemize}
+		\item El enlazado del grafo de conocimiento con Wikidata para
+		desambiguar y enriquecer entidades no personales (empresas, lugares,
+		organismos). Se valoró como extensión natural del grafo RDF/OWL, pero se
+		descartó para esta entrega por el coste de desambiguación fiable que
+		exige --en particular, distinguir entidades homónimas sin introducir
+		enlaces incorrectos-- y queda recogido como trabajo futuro
+		(Capítulo~\ref{ch:conclusiones}).
+
+		\item La desambiguación por género de concejales homónimos en la capa
+		de voto nominal, más allá de la resolución por apellido ya implementada
+		(Capítulo~\ref{ch:corpus}).
+
+		\item Una evaluación con usuarios reales del sistema: la evaluación de
+		este trabajo es exclusivamente técnica, sobre una batería de preguntas de
+		referencia verificada contra las actas originales
+		(Capítulo~\ref{ch:resultados}), sin sesiones de uso con los perfiles
+		reales identificados en la Sección~\ref{sec:beneficiarios}.
+	\end{itemize}
 
 	\section{Conexión con los Objetivos de Desarrollo Sostenible}
 
-	Se relacionan los Objetivos de Desarrollo Sostenible de la Agenda 2030
-	pertinentes con el trabajo desarrollado --en particular los vinculados a
-	transparencia institucional y acceso a la información pública.
+	Con el objetivo de conseguir un futuro sostenible en el que se haya
+	erradicado la desigualdad, se proteja el medioambiente y se garantice el
+	bienestar de todos, los estados miembros de las Naciones Unidas aprobaron 17
+	objetivos el 25 de septiembre de 2015, con el propósito de cumplirlos para el
+	año 2030.
+
+	El Objetivo de Desarrollo Sostenible (ODS) 16, \textit{Paz, justicia e
+	instituciones sólidas}, busca promover sociedades pacíficas e inclusivas,
+	facilitar el acceso a la justicia para todos y construir instituciones
+	eficaces, responsables e inclusivas a todos los niveles. En particular, su
+	meta 16.10 persigue garantizar el acceso público a la información y proteger
+	las libertades fundamentales, de acuerdo con la legislación nacional y los
+	acuerdos internacionales.
+
+	El presente TFG se alinea con este objetivo al desarrollar una herramienta
+	que convierte un archivo público municipal --las actas del Pleno del
+	Ayuntamiento de Bilbao-- en una fuente consultable en lenguaje natural, con
+	cifras y citas verificables a la fuente original. Aunque las actas ya son
+	públicas, su volumen (cerca de veinte años, más de un centenar de páginas por
+	sesión) y su formato PDF no estructurado las hacen, en la práctica, de
+	difícil acceso para quien no dispone del tiempo o la pericia necesarios para
+	revisarlas manualmente. El sistema desarrollado reduce esa asimetría de
+	información y facilita el escrutinio de la actividad municipal por parte de
+	la ciudadanía, la prensa y la investigación, tal como se detalla en la
+	Sección~\ref{sec:beneficiarios}.
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=4cm]{ODS16.png}
+		\caption{Icono del Objetivo 16: Paz, justicia e instituciones sólidas}
+		\label{fig:ods16}
+	\end{figure}
+
+	En segundo término, el trabajo conecta también con el ODS 11,
+	\textit{Ciudades y comunidades sostenibles}, cuya meta 11.3 promueve una
+	urbanización inclusiva y participativa. Un acceso más directo al historial de
+	decisiones del Pleno --qué se propuso, quién lo propuso y qué se decidió-- es
+	una condición previa para que la ciudadanía pueda participar de forma
+	informada en los asuntos municipales, más allá del mero acceso a la
+	información que cubre el ODS 16.
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=4cm]{ODS11.png}
+		\caption{Icono del Objetivo 11: Ciudades y comunidades sostenibles}
+		\label{fig:ods11}
+	\end{figure}
 
 	\section{Estructura de la memoria}
 
 	Esta memoria se organiza como sigue. El Capítulo~\ref{ch:contexto} introduce los
 	conceptos técnicos en los que se apoya el sistema (modelos de lenguaje, RAG,
-	grafos de conocimiento y GraphRAG). El Capítulo~\ref{ch:estadodelarte} describe
-	el corpus documental de partida, los requisitos del sistema y el estado del arte
-	de las tecnologías empleadas. El Capítulo~\ref{ch:alternativas} analiza las
-	principales alternativas tecnológicas evaluadas antes de fijar la arquitectura
-	final. El Capítulo~\ref{ch:planificacion} recoge la planificación temporal
-	seguida, la evaluación económica y el análisis de riesgos del proyecto. El
-	Capítulo~\ref{ch:solucion} describe en detalle la solución desarrollada: los dos
-	sistemas de recuperación de información construidos --uno basado en búsqueda
-	vectorial y otro en un grafo de conocimiento RDF/OWL consultado por SPARQL-- y la
-	interfaz web conversacional que los expone al usuario. El
+	grafos de conocimiento y GraphRAG) y describe el entorno institucional del
+	Pleno del Ayuntamiento de Bilbao. El Capítulo~\ref{ch:estadodelarte} recoge los
+	requisitos del sistema y el estado del arte de las tecnologías empleadas. El
+	Capítulo~\ref{ch:planificacion} recoge la planificación temporal seguida, la
+	evaluación económica y el análisis de riesgos del proyecto. El
+	Capítulo~\ref{ch:alternativas} analiza las principales alternativas tecnológicas
+	evaluadas antes de fijar la arquitectura final. El Capítulo~\ref{ch:solucion}
+	describe en detalle la solución desarrollada: los dos sistemas de recuperación de
+	información construidos --uno basado en búsqueda vectorial y otro en un grafo de
+	conocimiento RDF/OWL consultado por SPARQL-- y la interfaz web conversacional que
+	los expone al usuario. El Capítulo~\ref{ch:corpus} describe el corpus de actas de
+	partida y el pipeline que lo transforma en proposiciones estructuradas. El
 	Capítulo~\ref{ch:resultados} presenta la evaluación comparativa de ambos
 	sistemas. La memoria cierra con las conclusiones y los anexos.
 
@@ -422,56 +560,117 @@
 	\chapter{Contexto}
 	\label{ch:contexto}
 
-	A continuación se presentan los conceptos técnicos en los que se apoya este
-	trabajo: los modelos de lenguaje y la generación aumentada por recuperación
-	(RAG), los grafos de conocimiento, y GraphRAG como la combinación de ambos. Estos
-	conceptos son la base sobre la que se construyen los dos sistemas de recuperación
-	de información comparados en este TFG.
+	En este capítulo se presenta el contexto en el que se enmarca el trabajo, se
+	introducen los conceptos de LLM, RAG, grafos de conocimiento y GraphRAG, que
+	constituyen la base técnica del sistema desarrollado, y se describe el
+	entorno institucional --el Pleno del Ayuntamiento de Bilbao-- sobre el que
+	se aplica.
 
-	\section{Inteligencia Artificial Generativa}
+	\section{Transparencia y digitalización de la administración pública}
 
-	La Inteligencia Artificial (IA) Generativa agrupa a los modelos capaces de producir
-	contenido nuevo --texto, código, imágenes-- a partir de un patrón aprendido de
-	grandes cantidades de datos, en lugar de limitarse a clasificar o predecir sobre
-	datos ya existentes. Los modelos de lenguaje son el caso particular relevante para
-	este trabajo: reciben texto como entrada y generan texto como salida, condicionados
-	por una instrucción (\textit{prompt}).
+	La transparencia y el acceso a la información pública son, desde hace más de
+	una década, un objetivo explícito de la administración española. La Ley
+	19/2013, de 9 de diciembre, de transparencia, acceso a la información pública
+	y buen gobierno, obliga a las administraciones públicas a publicar de forma
+	activa la información relativa a su actividad institucional. En paralelo, el
+	movimiento de \textit{open government} promueve que esa información no solo
+	se publique, sino que se haga accesible y reutilizable, en vez de limitarse a
+	cumplir el mínimo legal de publicación.
 
-	\section{Modelos de Lenguaje de Gran Tamaño}
+	En la práctica, sin embargo, publicar un documento no equivale a hacerlo
+	accesible. Los portales de transparencia municipales publican de forma
+	sistemática actas, órdenes del día y resúmenes de sesión en formato PDF, un
+	formato pensado para la lectura secuencial y no para la consulta puntual ni
+	el análisis agregado. Cuando el volumen de documentos publicados crece --como
+	ocurre con casi veinte años de actas del Pleno de una ciudad como Bilbao--
+	esa distancia entre "publicado" y "accesible" se hace más evidente: la
+	información está disponible en sentido legal, pero encontrar un dato concreto
+	dentro de ella exige un esfuerzo de búsqueda manual que en la práctica limita
+	quién puede efectivamente usarla.
 
-	Los Modelos de Lenguaje de Gran Tamaño (LLM, \textit{Large Language Models}) son
-	redes neuronales entrenadas sobre corpus masivos de texto que, dada una secuencia de
-	entrada, predicen la continuación más probable. Esta capacidad, combinada con un
-	ajuste posterior para seguir instrucciones, permite emplearlos para tareas tan
-	diversas como resumir, traducir, generar código o --el uso que se les da en este
-	TFG-- extraer información estructurada de texto libre y redactar respuestas a
-	partir de datos ya recuperados.
+	En este contexto, las técnicas de inteligencia artificial que permiten
+	consultar documentación extensa en lenguaje natural --y en particular las
+	técnicas RAG y GraphRAG que se presentan en las siguientes secciones-- ofrecen
+	una vía para cerrar esa distancia entre publicación y acceso real, aplicada
+	aquí a un caso concreto de documentación administrativa pública.
 
-	Un LLM no tiene, por sí mismo, acceso a información posterior a su entrenamiento
-	ni a documentos privados como las actas de un ayuntamiento concreto. Tampoco
-	garantiza que lo que genera sea correcto: puede producir afirmaciones plausibles
-	pero falsas, fenómeno conocido como \textit{alucinación}. Ambas limitaciones son
-	las que motivan la siguiente técnica.
+	\section{El auge de los LLMs}
 
-	\section{Retrieval Augmented Generation (RAG)}
+	Los modelos de lenguaje de gran tamaño, conocidos como LLM por sus siglas en
+	inglés \textit{Large Language Models}, son modelos de inteligencia artificial
+	entrenados sobre corpus masivos de texto que, dada una secuencia de entrada,
+	predicen la continuación más probable. Esta capacidad, combinada con un
+	ajuste posterior para seguir instrucciones, les permite realizar tareas tan
+	diversas como responder preguntas, resumir documentos o mantener una
+	conversación con el usuario a partir de una instrucción (\textit{prompt}).
 
-	Retrieval Augmented Generation (RAG) es una arquitectura que combina un sistema de
-	recuperación de información con un LLM: antes de generar la respuesta, se buscan
-	en una base documental los fragmentos más relevantes para la pregunta y se
-	proporcionan al modelo como contexto. El LLM genera entonces la respuesta
-	apoyándose únicamente en esos fragmentos, no en su conocimiento interno.
+	El interés generalizado por los LLM se intensificó a partir de noviembre de
+	2022, cuando OpenAI presentó ChatGPT, una interfaz conversacional que
+	popularizó el uso de estos modelos entre el público general. Desde entonces,
+	la oferta de LLM disponibles --tanto propietarios como de código abierto-- se
+	ha ampliado considerablemente, lo que permite hoy elegir entre modelos servidos
+	como API en la nube o modelos más pequeños ejecutables en local.
 
-	Esto tiene dos ventajas directas para este proyecto: permite responder sobre un
-	corpus privado y actualizable (las actas del Pleno) sin reentrenar ningún modelo,
-	y permite citar la fuente exacta de cada afirmación, ya que se conoce qué
-	fragmentos --y por tanto qué documento y página-- sustentan la respuesta.
+	Un LLM, sin embargo, no tiene por sí mismo acceso a información posterior a su
+	entrenamiento ni a documentos privados o muy específicos --como las actas de
+	un ayuntamiento concreto--, y tampoco garantiza que lo que genera sea correcto:
+	puede producir afirmaciones plausibles pero falsas, fenómeno conocido como
+	\textit{alucinación}, especialmente relevante en un contexto donde se maneja
+	información institucional que debe ser verificable. A diferencia de un
+	escenario con documentación empresarial confidencial, en este trabajo las
+	actas del Pleno son de por sí públicas, por lo que la motivación para
+	complementar el LLM con una fuente documental externa no es la
+	confidencialidad, sino la precisión y la trazabilidad de cada dato: la
+	respuesta debe poder verificarse contra el documento original, algo que el
+	conocimiento interno del modelo no puede ofrecer por sí solo. Ambas
+	limitaciones --la falta de acceso a documentación específica y la falta de
+	verificabilidad-- son las que motivan la técnica que se presenta a
+	continuación.
 
-	La recuperación de los fragmentos relevantes suele apoyarse en \textit{embeddings}:
-	representaciones vectoriales del texto en las que fragmentos semánticamente
-	similares quedan cerca en el espacio vectorial, lo que permite buscar por
-	significado y no solo por coincidencia literal de palabras.
+	\section{RAG}
+
+	La generación aumentada por recuperación, conocida como RAG por sus siglas en
+	inglés \textit{Retrieval-Augmented Generation}, es una técnica que combina un
+	LLM con un mecanismo de recuperación de información, con el objetivo de que
+	el modelo genere respuestas apoyándose en información obtenida de una base de
+	conocimiento externa en lugar de únicamente en lo aprendido durante su
+	entrenamiento.
+
+	El funcionamiento de un sistema RAG puede dividirse en dos fases. En la fase
+	de preparación se construye la base de conocimiento: los documentos se
+	procesan y se dividen en fragmentos más pequeños (\textit{chunks}), que se
+	transforman en representaciones vectoriales (\textit{embeddings}) --números
+	que capturan el significado del texto, de forma que fragmentos
+	semánticamente similares quedan cerca en el espacio vectorial-- y se
+	almacenan en una base de datos vectorial. En la fase de consulta, la pregunta
+	del usuario se transforma también en un \textit{embedding}, se compara con
+	los almacenados para recuperar los fragmentos más relevantes, y estos se
+	incorporan al \textit{prompt} que recibe el LLM para generar la respuesta.
+
+	Esta arquitectura tiene dos ventajas directas para este proyecto: permite
+	responder sobre un corpus privado y actualizable (las actas del Pleno) sin
+	reentrenar ningún modelo, y permite citar la fuente exacta de cada
+	afirmación, ya que se conoce qué fragmentos --y por tanto qué documento y
+	página-- sustentan la respuesta generada.
+
+	La variante más directa de RAG se conoce como \textit{Naive RAG}, que sigue
+	exactamente el esquema de dos fases descrito arriba sin ningún refinamiento
+	adicional. Sobre esa base existen variantes más avanzadas: \textit{Advanced
+	RAG} introduce mejoras en las distintas fases del proceso --como la
+	reformulación de la consulta o la reordenación de los fragmentos
+	recuperados-- sin cambiar la arquitectura de fondo; y otras aproximaciones
+	sustituyen el almacén de fragmentos de texto por una base de conocimiento
+	estructurada, como un grafo de conocimiento, dando lugar a GraphRAG (véanse
+	las Secciones~\ref{sec:grafos} y~\ref{sec:graphrag}).
+
+	En este trabajo se implementan dos sistemas de recuperación sobre el mismo
+	corpus, no uno solo: un RAG vectorial de tipo \textit{Advanced RAG} --con
+	recuperación híbrida y reordenación de resultados-- y un sistema GraphRAG
+	completo, con el fin de comparar ambos enfoques sobre las mismas preguntas
+	(Capítulo~\ref{ch:resultados}).
 
 	\section{Grafos de Conocimiento}
+	\label{sec:grafos}
 
 	Un grafo de conocimiento representa la información como una red de entidades
 	(nodos) y relaciones entre ellas (aristas), en lugar de como texto libre. El
@@ -488,6 +687,7 @@
 	"vivienda"-- sin que haga falta repetir esa relación en cada dato.
 
 	\section{GraphRAG}
+	\label{sec:graphrag}
 
 	GraphRAG es la variante de RAG en la que la fuente de recuperación no es un
 	almacén de fragmentos de texto sino un grafo de conocimiento consultado mediante
@@ -503,6 +703,32 @@
 	todo el corpus, no solo encontrar un pasaje parecido a la pregunta. Es, junto con
 	el RAG vectorial tradicional, uno de los dos sistemas comparados en este TFG.
 
+	\section{El Pleno del Ayuntamiento de Bilbao}
+
+	Este trabajo se ha desarrollado sobre la documentación pública del Pleno del
+	Ayuntamiento de Bilbao, el órgano superior de gobierno y control del
+	municipio, integrado por la alcaldía y los concejales electos en cada
+	mandato. En sus sesiones, ordinarias o extraordinarias, los distintos grupos
+	políticos y la propia alcaldía presentan proposiciones que se debaten y se
+	someten a votación; el resultado de esa votación --aprobada, rechazada,
+	aprobada con enmienda o decaída-- queda recogido, junto con el resto del
+	debate, en el acta de la sesión.
+
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[width=7cm]{ayuntamiento_bilbao.jpg}
+		\caption{Fachada del Ayuntamiento de Bilbao}
+		\label{fig:ayuntamiento-bilbao}
+		{\small Fuente: Wikimedia Commons, licencia CC0 (dominio público).}
+	\end{figure}
+
+	El Ayuntamiento publica estas actas, junto con el resto de documentación de
+	cada sesión (orden del día, extractos, resumen), en su portal de actas del
+	Pleno, de acceso público. Es precisamente este archivo --de casi veinte años
+	y más de 3.900 proposiciones-- el que constituye el corpus documental de este
+	trabajo; su descripción detallada, junto con el proceso que lo transforma en
+	datos estructurados, se recoge en el Capítulo~\ref{ch:corpus}.
+
 	% ============================================================ %
 	% ESTADO DEL ARTE (se mantiene como capítulo propio, a         %
 	% diferencia de la memoria de Nahia, por decisión explícita    %
@@ -512,73 +738,88 @@
 	\chapter{Descripción de requerimientos y análisis del estado del arte}
 	\label{ch:estadodelarte}
 
-	A continuación se describe el corpus documental de partida, los requisitos que
-	debía cumplir el sistema y el estado del arte de las tecnologías empleadas.
-
-	\section{Corpus documental}
-
-	Se describen los documentos que publica el portal de actas del Ayuntamiento,
-	cuál de ellos usa este trabajo y por qué, y las limitaciones que tiene como
-	fuente (PDF escaneado/OCR, falta de estructura, etc.).
+	El corpus documental de partida --las actas del Pleno-- se describe en
+	detalle, junto con su preprocesado, en el Capítulo~\ref{ch:corpus}.
 
 	\section{Requisitos del sistema}
 
-	Se enumeran los requisitos funcionales y no funcionales del sistema final.
-
 	\section{Estado del arte de las tecnologías utilizadas}
-
-	Se revisan trabajos y sistemas similares existentes --otros RAG/GraphRAG sobre
-	actas o documentos administrativos-- y se compara con el TFG de Oiher
-	Rodríguez Luengo como referencia más cercana.
-
-	% ============================================================ %
-	% ANÁLISIS DE ALTERNATIVAS (antes src/alternativas.tex; se      %
-	% mantiene como capítulo propio, a diferencia de la memoria de  %
-	% Nahia, por decisión explícita del alumno/director)            %
-	% ============================================================ %
-
-	\chapter{Análisis de alternativas}
-	\label{ch:alternativas}
-
-	A continuación se comparan las principales decisiones tecnológicas evaluadas
-	antes de fijar la arquitectura final del sistema.
-
-	\section{Modelos de lenguaje: local (Ollama) frente a API en la nube (Groq / Gemini)}
-
-	\subsection{Puntos positivos}
-	\subsection{Puntos negativos}
-	\subsection{Conclusión}
-
-	\section{Almacenamiento del grafo: rdflib/OWL-RL frente a una base de grafos dedicada (p.ej. GraphDB, Neo4j)}
-
-	\subsection{Puntos positivos}
-	\subsection{Puntos negativos}
-	\subsection{Conclusión}
-
-	\section{Almacén vectorial y recuperación: ChromaDB e híbrida (semántica + literal + temática) frente a solo semántica}
-
-	\subsection{Puntos positivos}
-	\subsection{Puntos negativos}
-	\subsection{Conclusión}
 
 	% ============================================================ %
 	% PLANIFICACIÓN (antes src/gantt.tex; ahora absorbe también     %
 	% src/presupuesto.tex y src/riesgos.tex, siguiendo la           %
 	% estructura de la memoria de Nahia, cuyo capítulo 3            %
 	% "Planificación" incluye evaluación económica y riesgos como   %
-	% secciones propias en vez de capítulos aparte)                 %
+	% secciones propias en vez de capítulos aparte. Se sitúa antes  %
+	% de "Análisis de alternativas", como en Nahia, que planifica   %
+	% justo tras el contexto)                                       %
 	% ============================================================ %
 
 	\chapter{Planificación del proyecto}
 	\label{ch:planificacion}
 
-	A continuación se describe la planificación temporal seguida durante el
-	desarrollo del trabajo, su evaluación económica y el análisis de riesgos
-	asociado.
-
 	\section{Diagrama EDT}
 
+	La Figura~\ref{fig:edt} muestra la Estructura de Desglose del Trabajo (EDT)
+	del proyecto, con los cinco paquetes de trabajo de primer nivel y sus
+	subpaquetes, que se detallan en la Sección~\ref{sec:descripcion-tareas}.
+
+	% Diagrama EDT: un nodo raíz, 5 categorías de primer nivel (un color por
+	% categoría, mismo criterio que las tablas "ficha" de paquete de trabajo) y
+	% sus subpaquetes en vertical debajo de cada una. Envuelto en \resizebox
+	% para que quepa siempre en el ancho de página sin ajustar coordenadas a
+	% mano si se añade o quita algún subpaquete.
+	\begin{figure}[htbp]
+		\centering
+		\resizebox{\linewidth}{!}{%
+		\begin{tikzpicture}[
+			font=\small,
+			every node/.style={draw, rounded corners, align=center, text width=3.1cm, minimum height=0.9cm},
+			root/.style={fill=ehu-blue, text=white, text width=6cm},
+			cat/.style={text=white, minimum height=1.1cm},
+			leaf/.style={fill=white},
+		]
+			\node[root] (root) {Sistema RAG/GraphRAG\\actas del Pleno de Bilbao};
+
+			\node[cat, fill=pkg-gestion, below=1.3cm of root, xshift=-11.5cm] (c1) {1. Gestión y\\planificación\\45h};
+			\node[cat, fill=pkg-investigacion, below=1.3cm of root, xshift=-6cm] (c2) {2. Investigación\\y estudio previo\\70h};
+			\node[cat, fill=pkg-desarrollo, below=1.3cm of root] (c3) {3. Desarrollo\\del sistema\\135h};
+			\node[cat, fill=pkg-evaluacion, below=1.3cm of root, xshift=6cm] (c4) {4. Evaluación\\del sistema\\80h};
+			\node[cat, fill=pkg-documentacion, below=1.3cm of root, xshift=11.5cm] (c5) {5. Documentación\\90h};
+
+			\foreach \c in {c1,c2,c3,c4,c5} \draw (root) -- (\c);
+
+			\node[leaf, below=0.5cm of c1] (c1a) {1.1. Reuniones\\30h};
+			\node[leaf, below=0.5cm of c1a] (c1b) {1.2. Gestión\\del tiempo\\15h};
+
+			\node[leaf, below=0.5cm of c2] (c2a) {2.1. Estado\\del arte\\30h};
+			\node[leaf, below=0.5cm of c2a] (c2b) {2.2. Análisis de\\alternativas\\40h};
+
+			\node[leaf, below=0.5cm of c3] (c3a) {3.1. Extracción\\y preprocesado\\20h};
+			\node[leaf, below=0.5cm of c3a] (c3b) {3.2. RAG\\vectorial\\55h};
+			\node[leaf, below=0.5cm of c3b] (c3c) {3.3. GraphRAG\\40h};
+			\node[leaf, below=0.5cm of c3c] (c3d) {3.4. Interfaz\\web\\20h};
+
+			\node[leaf, below=0.5cm of c4] (c4a) {4.1. Batería de\\preguntas\\15h};
+			\node[leaf, below=0.5cm of c4a] (c4b) {4.2. Evaluaciones\\y comparativa\\40h};
+			\node[leaf, below=0.5cm of c4b] (c4c) {4.3. Validación\\PDF/regresión\\25h};
+
+			\node[leaf, below=0.5cm of c5] (c5a) {5.1. Redacción\\de la memoria\\70h};
+			\node[leaf, below=0.5cm of c5a] (c5b) {5.2. Documentación\\técnica\\20h};
+
+			\draw (c1) -- (c1a); \draw (c1a) -- (c1b);
+			\draw (c2) -- (c2a); \draw (c2a) -- (c2b);
+			\draw (c3) -- (c3a); \draw (c3a) -- (c3b); \draw (c3b) -- (c3c); \draw (c3c) -- (c3d);
+			\draw (c4) -- (c4a); \draw (c4a) -- (c4b); \draw (c4b) -- (c4c);
+			\draw (c5) -- (c5a); \draw (c5a) -- (c5b);
+		\end{tikzpicture}%
+		}
+		\caption{Diagrama EDT del proyecto}
+		\label{fig:edt}
+	\end{figure}
+
 	\section{Descripción de tareas}
+	\label{sec:descripcion-tareas}
 
 	En esta sección se describen los paquetes de trabajo mostrados en el diagrama
 	EDT. Cada paquete se presenta en una tabla con su tiempo estimado, descripción,
@@ -598,7 +839,7 @@
 			\rowcolor{pkg-gestion}
 			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{1. Gestión y planificación}}} \\
 			\hline
-			Tiempo estimado & 40 horas \\
+			Tiempo estimado & 45 horas \\
 			\hline
 			\rowcolor{fila-alterna}
 			Descripción & Tareas relacionadas con la planificación del proyecto y la
@@ -617,34 +858,645 @@
 		\label{tab:pkg-gestion}
 	\end{table}
 
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-gestion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{1.1. Reuniones con el director}}} \\
+			\hline
+			Tiempo estimado & 30 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Reuniones periódicas de seguimiento con el director para
+			revisar el avance, resolver dudas técnicas y ajustar la planificación. \\
+			\hline
+			Recursos & Videollamada / presencial. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & - \\
+			\hline
+			Entregables/salidas & Valoraciones del trabajo realizado y tareas
+			siguientes acordadas. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 1.1. Reuniones con el director}
+		\label{tab:pkg-reuniones}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-gestion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{1.2. Gestión del tiempo}}} \\
+			\hline
+			Tiempo estimado & 15 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Planificación y seguimiento del tiempo dedicado a cada
+			paquete de trabajo; elaboración de los diagramas EDT y Gantt. \\
+			\hline
+			Recursos & Herramienta de diagramación (Draw.io). \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & - \\
+			\hline
+			Entregables/salidas & Diagramas EDT y Gantt. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 1.2. Gestión del tiempo}
+		\label{tab:pkg-gestion-tiempo}
+	\end{table}
+
 	\subsection{Investigación y estudio previo}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-investigacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{2. Investigación y estudio previo}}} \\
+			\hline
+			Tiempo estimado & 70 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Estudio de las técnicas y tecnologías en las que se apoya
+			el sistema, y análisis de las principales alternativas tecnológicas
+			antes de fijar la arquitectura. \\
+			\hline
+			Recursos & Los recursos empleados se especifican en cada subpaquete. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & - \\
+			\hline
+			Entregables/salidas & Capítulos de Contexto y Análisis de alternativas
+			de la memoria. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 2. Investigación y estudio previo}
+		\label{tab:pkg-investigacion}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-investigacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{2.1. Estudio del estado del arte}}} \\
+			\hline
+			Tiempo estimado & 30 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Estudio de LLM, RAG y sistemas GraphRAG existentes, y de
+			trabajos similares sobre documentación administrativa. \\
+			\hline
+			Recursos & Documentación técnica y bibliografía de referencia. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & - \\
+			\hline
+			Entregables/salidas & Capítulo de Contexto y estado del arte de la
+			memoria. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 2.1. Estudio del estado del arte}
+		\label{tab:pkg-estado-arte}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-investigacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{2.2. Análisis de alternativas tecnológicas}}} \\
+			\hline
+			Tiempo estimado & 40 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Comparación de LLM local frente a API en la nube,
+			almacenamiento del grafo (rdflib/OWL-RL frente a una base de grafos
+			dedicada) y estrategia de recuperación vectorial, incluyendo el diseño
+			de la ontología OWL y el enfoque de razonamiento de GraphRAG. \\
+			\hline
+			Recursos & Documentación de las tecnologías evaluadas, pruebas
+			exploratorias. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 2.1. Estudio del estado del arte \\
+			\hline
+			Entregables/salidas & Capítulo de Análisis de alternativas de la
+			memoria. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 2.2. Análisis de alternativas tecnológicas}
+		\label{tab:pkg-alternativas}
+	\end{table}
+
 	\subsection{Desarrollo del sistema}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-desarrollo}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{3. Desarrollo del sistema}}} \\
+			\hline
+			Tiempo estimado & 135 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Implementación del corpus estructurado, los dos sistemas
+			de recuperación de información y la interfaz web. \\
+			\hline
+			Recursos & Los recursos empleados se especifican en cada subpaquete. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 2.2. Análisis de alternativas tecnológicas \\
+			\hline
+			Entregables/salidas & Sistema completo: corpus estructurado, grafo de
+			conocimiento, RAG vectorial, GraphRAG e interfaz web. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 3. Desarrollo del sistema}
+		\label{tab:pkg-desarrollo}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-desarrollo}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{3.1. Extracción y preprocesado del corpus}}} \\
+			\hline
+			Tiempo estimado & 20 horas de trabajo activo \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Scraping del portal de actas, extracción de
+			proposiciones y enriquecimiento temático mediante LLM
+			(Capítulo~\ref{ch:corpus}). No incluye el tiempo de cómputo del propio
+			enriquecimiento, que corre sin supervisión (ver
+			Sección~\ref{sec:costes-hardware}). \\
+			\hline
+			Recursos & Python, LangChain, API de Gemini. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 2.2. Análisis de alternativas tecnológicas \\
+			\hline
+			Entregables/salidas & Corpus estructurado de proposiciones
+			(\texttt{proposals\_enriched.jsonl}). \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 3.1. Extracción y preprocesado del corpus}
+		\label{tab:pkg-extraccion}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-desarrollo}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{3.2. RAG vectorial}}} \\
+			\hline
+			Tiempo estimado & 55 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Implementación de la recuperación híbrida (semántica,
+			literal y temática), reordenación de resultados y generación de
+			respuestas con citación de fuentes. \\
+			\hline
+			Recursos & ChromaDB, LangChain, Cohere (reordenación), Groq/Ollama
+			(generación). \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 3.1. Extracción y preprocesado del corpus \\
+			\hline
+			Entregables/salidas & Sistema RAG vectorial funcional. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 3.2. RAG vectorial}
+		\label{tab:pkg-rag-vectorial}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-desarrollo}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{3.3. GraphRAG}}} \\
+			\hline
+			Tiempo estimado & 40 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Construcción del grafo RDF/OWL, razonamiento automático,
+			generación de SPARQL a partir de lenguaje natural y sanitización de
+			los anti-patrones más frecuentes en las consultas generadas por el
+			LLM. \\
+			\hline
+			Recursos & rdflib, owlrl, Ollama (generación de SPARQL y narración). \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 3.1. Extracción y preprocesado del corpus \\
+			\hline
+			Entregables/salidas & Sistema GraphRAG funcional
+			(\texttt{bilbao\_reasoned.ttl} + \texttt{graph\_rag\_sparql.py}). \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 3.3. GraphRAG}
+		\label{tab:pkg-graphrag}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-desarrollo}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{3.4. Interfaz web}}} \\
+			\hline
+			Tiempo estimado & 20 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Integración de ambos sistemas de recuperación en una
+			interfaz web conversacional común, con citación de fuentes enlazada
+			a la página exacta del PDF. Al construirse sobre Chainlit, un
+			\textit{framework} ya dado, el esfuerzo se centra en la integración
+			de los dos \textit{backends}, no en construir la interfaz desde cero. \\
+			\hline
+			Recursos & Chainlit. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 3.2. RAG vectorial, 3.3. GraphRAG \\
+			\hline
+			Entregables/salidas & Interfaz web funcional. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 3.4. Interfaz web}
+		\label{tab:pkg-interfaz}
+	\end{table}
+
 	\subsection{Evaluación del sistema}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-evaluacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{4. Evaluación del sistema}}} \\
+			\hline
+			Tiempo estimado & 80 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Diseño y ejecución de la evaluación comparativa de
+			ambos sistemas, y validación de las respuestas contra las actas
+			originales en PDF. \\
+			\hline
+			Recursos & Los recursos empleados se especifican en cada subpaquete. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 3.4. Interfaz web \\
+			\hline
+			Entregables/salidas & Resultados de la evaluación comparativa
+			(Capítulo~\ref{ch:resultados}). \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 4. Evaluación del sistema}
+		\label{tab:pkg-evaluacion}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-evaluacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{4.1. Diseño de la batería de preguntas de referencia}}} \\
+			\hline
+			Tiempo estimado & 15 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Diseño de las preguntas de referencia y verificación
+			manual de su respuesta correcta contra las actas originales. \\
+			\hline
+			Recursos & Lectura directa de las actas en PDF. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 3.4. Interfaz web \\
+			\hline
+			Entregables/salidas & Batería de preguntas de referencia con
+			respuesta verificada. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 4.1. Diseño de la batería de preguntas de referencia}
+		\label{tab:pkg-bateria}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-evaluacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{4.2. Evaluaciones y comparativa}}} \\
+			\hline
+			Tiempo estimado & 40 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Ejecución de la batería sobre ambos sistemas, análisis
+			de la calidad de recuperación y de generación, y comparativa
+			GraphRAG frente a RAG vectorial. \\
+			\hline
+			Recursos & Scripts de evaluación propios. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 4.1. Diseño de la batería de preguntas de referencia \\
+			\hline
+			Entregables/salidas & Resultados comparativos entre ambos sistemas. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 4.2. Evaluaciones y comparativa}
+		\label{tab:pkg-comparativa}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-evaluacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{4.3. Validación contra PDF real y regresión}}} \\
+			\hline
+			Tiempo estimado & 25 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Verificación manual del contenido de las respuestas
+			contra el texto original de las actas (no solo contra la estructura
+			de la respuesta), y ejecución de la suite de regresión ante cada
+			cambio relevante. \\
+			\hline
+			Recursos & \texttt{scripts/regression\_qa.py}, lectura directa de
+			PDF. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 4.2. Evaluaciones y comparativa \\
+			\hline
+			Entregables/salidas & Conjunto de casos verificados y corregidos
+			(véase \texttt{decisiones\_tecnicas.md} para el detalle de los
+			casos encontrados). \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 4.3. Validación contra PDF real y regresión}
+		\label{tab:pkg-validacion}
+	\end{table}
+
 	\subsection{Documentación}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-documentacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{5. Documentación}}} \\
+			\hline
+			Tiempo estimado & 90 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Redacción de la memoria del TFG y de la documentación
+			técnica del proyecto. \\
+			\hline
+			Recursos & Los recursos empleados se especifican en cada subpaquete. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 4.3. Validación contra PDF real y regresión \\
+			\hline
+			Entregables/salidas & Memoria del TFG. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 5. Documentación}
+		\label{tab:pkg-documentacion}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-documentacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{5.1. Redacción de la memoria}}} \\
+			\hline
+			Tiempo estimado & 70 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Redacción de los capítulos de la memoria del TFG. \\
+			\hline
+			Recursos & \LaTeX{} (plantilla EHU). \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & 4.3. Validación contra PDF real y regresión \\
+			\hline
+			Entregables/salidas & Memoria del TFG. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 5.1. Redacción de la memoria}
+		\label{tab:pkg-memoria}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{pkg-documentacion}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{5.2. Documentación técnica}}} \\
+			\hline
+			Tiempo estimado & 20 horas \\
+			\hline
+			\rowcolor{fila-alterna}
+			Descripción & Documentación del razonamiento detrás de las
+			decisiones técnicas no evidentes del sistema, separada del código
+			(\texttt{decisiones\_tecnicas.md}), y de los procedimientos de
+			despliegue y uso (\textit{READMEs}, \textit{runbook}). \\
+			\hline
+			Recursos & Markdown. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Predecesores & - (paralelo al resto de paquetes) \\
+			\hline
+			Entregables/salidas & \texttt{decisiones\_tecnicas.md},
+			\textit{READMEs} y \textit{runbook} del proyecto. \\
+			\hline
+		\end{tabularx}
+		\caption{Paquete de trabajo: 5.2. Documentación técnica}
+		\label{tab:pkg-doc-tecnica}
+	\end{table}
 
 	\section{Gestión del tiempo}
 
 	\subsection{Estimación de horas frente a duración real}
 
-	Se compara la estimación inicial de horas por tarea con el tiempo que
-	realmente ha llevado cada una, y se comentan las desviaciones más
-	significativas.
-
 	\subsection{Diagrama de Gantt}
 
 	\section{Metodología de desarrollo}
+
+	El desarrollo ha seguido un enfoque iterativo: cada componente se implementa,
+	se prueba en vivo contra preguntas reales y se corrige antes de pasar al
+	siguiente, en vez de implementar el sistema completo y evaluarlo solo al
+	final. Cada iteración de corrección se apoya en dos verificaciones
+	complementarias: una suite de regresión automática (\texttt{scripts/}
+	\texttt{regression\_qa.py}) que se relanza tras cualquier cambio relevante en
+	la recuperación o la generación de SPARQL, y una validación manual contra el
+	texto original de las actas en PDF --no solo contra la estructura de la
+	respuesta o el propio sistema-- para detectar fallos que la regresión
+	automática no puede ver, como una mezcla de contenido entre dos
+	proposiciones distintas dentro de un mismo bloque bien formado. Este
+	proceso, con sus hallazgos y las correcciones aplicadas en cada ronda, queda
+	documentado en \texttt{decisiones\_tecnicas.md}, que sirve además de base
+	directa para la Sección~\ref{ch:solucion} de esta memoria.
 
 	% ------------------------------------------------------------ %
 	% (antes capítulo aparte "Descripción del presupuesto")        %
 	% ------------------------------------------------------------ %
 
 	\section{Evaluación económica}
-
-	\subsection{Costes en software y hardware}
+	\label{sec:costes-hardware}
 
 	\subsection{Costes por mano de obra}
 
+	El coste de mano de obra se calcula a partir del total de horas estimadas
+	en el diagrama EDT (Sección~\ref{sec:descripcion-tareas}), valoradas a una
+	tarifa de referencia de ingeniero junior/becario en prácticas.
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Concepto} & \textbf{Valor} \\
+			\hline
+			Horas totales estimadas & 420 h \\
+			\hline
+			\rowcolor{fila-alterna}
+			Tarifa/hora & 15 €/h \\
+			\hline
+			\textbf{Coste de mano de obra} & \textbf{6.300 €} \\
+			\hline
+		\end{tabular}
+		\caption{Coste de mano de obra}
+		\label{tab:coste-mano-obra}
+	\end{table}
+
+	\subsection{Costes en hardware}
+
+	El proyecto se ha desarrollado con dos equipos propios: un portátil, usado
+	para la práctica totalidad del trabajo activo (desarrollo, redacción,
+	reuniones), y un ordenador de sobremesa, usado únicamente para el cómputo
+	sin supervisión que no requiere intervención activa --el enriquecimiento
+	LLM local del corpus completo y el estudio de comparación de modelos para la
+	generación de SPARQL (Sección~\ref{sec:graphrag})--. Ambos equipos se
+	amortizan de forma proporcional a las horas dedicadas al proyecto sobre una
+	vida útil estimada de 4 años (\textasciitilde7.000 horas de uso).
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|c|c|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Equipo} & \textbf{Precio} & \textbf{Horas usadas} & \textbf{Vida útil} & \textbf{Coste} \\
+			\hline
+			Portátil (Huawei, Ryzen 5) & 650 € & 420 h & 7.000 h & 39 € \\
+			\hline
+			\rowcolor{fila-alterna}
+			Ordenador de sobremesa\footnotemark & 900 € & 65 h & 7.000 h & 8 € \\
+			\hline
+			\multicolumn{4}{|r|}{\textbf{Coste de hardware}} & \textbf{47 €} \\
+			\hline
+		\end{tabular}
+		\caption{Coste de hardware (amortizado)}
+		\label{tab:coste-hardware}
+	\end{table}
+	\footnotetext{Precio y horas de uso estimados; especificaciones exactas
+	pendientes de confirmar.}
+
+	\subsection{Costes en software}
+
+	Todas las herramientas de software empleadas son de código abierto o se han
+	usado en su capa gratuita (ChromaDB, LangChain, Chainlit, Ollama, Groq y el
+	plan de prueba de Cohere), salvo el enriquecimiento temático del corpus con
+	la API de pago de Gemini, cuyo coste real quedó medido y documentado durante
+	el desarrollo.
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Servicio} & \textbf{Coste} \\
+			\hline
+			Groq (capa gratuita) & 0 € \\
+			\hline
+			\rowcolor{fila-alterna}
+			Cohere (plan de prueba) & 0 € \\
+			\hline
+			Ollama, ChromaDB, LangChain, Chainlit (código abierto) & 0 € \\
+			\hline
+			\rowcolor{fila-alterna}
+			API de Gemini (enriquecimiento del corpus) & 7 € \\
+			\hline
+			\textbf{Coste de software} & \textbf{7 €} \\
+			\hline
+		\end{tabular}
+		\caption{Coste de software}
+		\label{tab:coste-software}
+	\end{table}
+
+	\subsection{Costes indirectos}
+
+	Se considera como coste indirecto el consumo eléctrico de ambos equipos
+	durante las horas dedicadas al proyecto, a una tarifa media residencial de
+	referencia de 0,20 €/kWh.
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|c|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Equipo} & \textbf{Consumo} & \textbf{Horas} & \textbf{Coste} \\
+			\hline
+			Portátil & \textasciitilde50 W & 420 h & 4 € \\
+			\hline
+			\rowcolor{fila-alterna}
+			Ordenador de sobremesa & \textasciitilde300 W & 65 h & 4 € \\
+			\hline
+			\multicolumn{3}{|r|}{\textbf{Coste indirecto (electricidad)}} & \textbf{8 €} \\
+			\hline
+		\end{tabular}
+		\caption{Costes indirectos (electricidad)}
+		\label{tab:coste-indirecto}
+	\end{table}
+
 	\subsection{Coste total}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Concepto} & \textbf{Coste} \\
+			\hline
+			Mano de obra & 6.300 € \\
+			\hline
+			\rowcolor{fila-alterna}
+			Hardware (amortizado) & 47 € \\
+			\hline
+			Software & 7 € \\
+			\hline
+			\rowcolor{fila-alterna}
+			Indirectos (electricidad) & 8 € \\
+			\hline
+			\textbf{Coste total} & \textbf{6.362 €} \\
+			\hline
+		\end{tabular}
+		\caption{Coste total del proyecto}
+		\label{tab:coste-total}
+	\end{table}
+
+	El coste de mano de obra domina claramente el presupuesto (\textasciitilde99\,\%
+	del total), lo cual es coherente con un proyecto que no requiere hardware
+	especializado ni servicios de pago más allá de una única pasada puntual de
+	enriquecimiento del corpus.
 
 	% ------------------------------------------------------------ %
 	% (antes capítulo aparte "Análisis de riesgos")                %
@@ -653,12 +1505,6 @@
 	\section{Análisis de riesgos}
 
 	\subsection{Medidas de prevención y contingencia}
-
-	Se detallan los riesgos identificados (p.ej. dependencia de APIs externas,
-	calidad del OCR de las actas antiguas, coste o límite de peticiones a los LLM)
-	y cómo se mitigó cada uno. Por cada riesgo se especifica también la
-	probabilidad de que ocurra y el impacto que supondría, en una tabla con el
-	mismo formato para los dos.
 
 	% Tabla "ficha" de riesgo: misma estructura que la de paquete de trabajo pero
 	% con cabecera gris oscura (riesgo-header) en vez de un color por categoría.
@@ -692,68 +1538,87 @@
 	\end{table}
 
 	% ============================================================ %
+	% ANÁLISIS DE ALTERNATIVAS (antes src/alternativas.tex; se      %
+	% mantiene como capítulo propio, a diferencia de la memoria de  %
+	% Nahia, por decisión explícita del alumno/director; se sitúa   %
+	% tras la planificación, una vez fijado el marco del proyecto)  %
+	% ============================================================ %
+
+	\chapter{Análisis de alternativas}
+	\label{ch:alternativas}
+
+	\section{Modelos de lenguaje: local (Ollama) frente a API en la nube (Groq / Gemini)}
+
+	\subsection{Puntos positivos}
+	\subsection{Puntos negativos}
+	\subsection{Conclusión}
+
+	\section{Almacenamiento del grafo: rdflib/OWL-RL frente a una base de grafos dedicada (p.ej. GraphDB, Neo4j)}
+
+	\subsection{Puntos positivos}
+	\subsection{Puntos negativos}
+	\subsection{Conclusión}
+
+	\section{Almacén vectorial y recuperación: ChromaDB e híbrida (semántica + literal + temática) frente a solo semántica}
+
+	\subsection{Puntos positivos}
+	\subsection{Puntos negativos}
+	\subsection{Conclusión}
+
+	% ============================================================ %
 	% DESCRIPCIÓN DE LA SOLUCIÓN (antes src/solucion.tex)           %
 	% ============================================================ %
 
 	\chapter{Descripción de la solución propuesta}
 	\label{ch:solucion}
 
-	A continuación se describe en detalle el sistema desarrollado: su arquitectura,
-	el pipeline de datos, el grafo de conocimiento, los dos motores de recuperación,
-	la interfaz que los expone al usuario y las decisiones concretas de
-	implementación adoptadas.
+	El proceso de obtención y preparación del corpus sobre el que opera el
+	sistema se describe aparte, en el Capítulo~\ref{ch:corpus}.
 
 	\section{Arquitectura general del sistema}
 
-	Se presenta la visión general de los componentes del sistema y cómo se
-	conectan entre sí.
-
-	\section{Pipeline de procesamiento de datos}
-
-	Se describe el proceso completo desde el scraping de las actas hasta el
-	enriquecimiento de las proposiciones con un LLM mediante un esquema JSON
-	cerrado (ver Capítulo~\ref{ch:contexto}).
-
 	\section{Construcción del grafo de conocimiento}
 
-	Se describe la ontología OWL, el paso de JSON a triples RDF, el razonamiento
-	automático (\textit{roll-up} temático) y la validación SHACL del grafo.
-
 	\section{Sistema de recuperación de información}
-
-	Se describen los dos motores de recuperación implementados sobre el mismo
-	corpus.
 
 	\subsection{RAG vectorial}
 	\subsection{GraphRAG}
 
 	\section{Generación de respuestas}
 
-	Se explica cómo se narra la respuesta a partir de los datos recuperados, y
-	cómo se citan las fuentes (página y documento exactos) en ambos sistemas.
-
 	\section{Interfaz web del sistema}
-
-	Se describen los componentes de la interfaz Chainlit y el flujo de uso.
 
 	\section{Flujo completo del sistema}
 
 	\section{Configuración y decisiones de implementación}
 
-	Se documentan las decisiones concretas tomadas ya sobre la alternativa
-	elegida en cada caso (Capítulo~\ref{ch:alternativas}) --no la comparación
-	entre opciones, sino los parámetros y ajustes finales con los que corre el
-	sistema.
-
 	\subsection{Temperatura y parámetros de los LLM}
 
 	\subsection{Gestión de cuotas y memoria}
 
-	Se documentan los límites prácticos encontrados (cuota diaria de la API de
-	Groq, memoria VRAM disponible en local con Ollama) y cómo el sistema
-	degrada con gracia cuando se alcanzan.
-
 	\subsection{Construcción del \textit{prompt} para generación}
+
+	% ============================================================ %
+	% CORPUS Y PREPROCESADO DE DATOS (capítulo propio, equivalente  %
+	% al capítulo 5 "Entorno experimental" de la memoria de Nahia,  %
+	% que dedica un capítulo aparte a la fuente de datos y su        %
+	% preprocesado. Reúne la descripción del corpus de actas --antes %
+	% en "Estado del arte"-- y el pipeline que las convierte en      %
+	% proposiciones estructuradas --antes en "Solución"--)          %
+	% ============================================================ %
+
+	\chapter{Corpus y preprocesado de datos}
+	\label{ch:corpus}
+
+	\section{El corpus de actas del Pleno}
+
+	\section{Pipeline de preprocesado}
+
+	\subsection{Descarga automatizada de las actas}
+
+	\subsection{Extracción de proposiciones}
+
+	\subsection{Enriquecimiento con un LLM}
 
 	% ============================================================ %
 	% ANÁLISIS DE RESULTADOS (antes src/resultados.tex; reorganizado%
@@ -766,17 +1631,9 @@
 	\chapter{Análisis de resultados}
 	\label{ch:resultados}
 
-	A continuación se presenta la evaluación comparativa de los dos sistemas
-	desarrollados: RAG vectorial y GraphRAG.
-
 	\section{Objetivo de la evaluación}
 
-	Se explica qué se quiere medir al comparar ambos sistemas.
-
 	\section{Metodología}
-
-	Se describe la batería de preguntas de referencia y su verificación manual
-	contra las actas originales en PDF.
 
 	% Tabla de DATOS (no "ficha"): cabecera sombreada en gris (tabla-header), sin
 	% color por categoría. Mismo patrón para cualquier tabla de métricas/conteos
@@ -802,31 +1659,11 @@
 		\label{tab:categorias-preguntas}
 	\end{table}
 
-	Para tablas con más de un nivel de cabecera (p.ej. una métrica desglosada en
-	media y desviación típica para varios modelos a la vez) se puede usar
-	\texttt{multirow}/\texttt{multicolumn} sobre la misma base --ver el paquete
-	\texttt{multirow} ya cargado en el preámbulo-- cuando se tengan los datos
-	definitivos que mostrar.
-
 	\section{Análisis sobre la recuperación}
-
-	Se evalúa, por separado del contenido generado, si cada sistema recupera
-	los fragmentos/datos correctos para cada pregunta (precisión de las
-	fuentes citadas, cobertura del corpus).
 
 	\section{Análisis sobre la generación}
 
-	Se evalúa la fidelidad (\textit{faithfulness}) de la respuesta narrada
-	respecto a los datos realmente recuperados, y la calidad estructural de
-	la respuesta (formato, citación, ausencia de bloques duplicados o vacíos).
-
 	\section{Comparativa GraphRAG frente a RAG vectorial}
-
-	Se comparan ambos sistemas sobre el mismo conjunto de preguntas, señalando
-	en qué tipo de consultas destaca cada uno --agregaciones y razonamiento
-	multi-salto en GraphRAG frente a preguntas abiertas o de contexto narrativo
-	en el RAG vectorial-- con ejemplos concretos verificados contra el PDF
-	original.
 
 	\section{Configuración final y valoración global}
 
@@ -839,10 +1676,6 @@
 	\chapter{Conclusiones y trabajo futuro}
 	\label{ch:conclusiones}
 
-	A continuación se recogen las conclusiones del trabajo, el grado de
-	cumplimiento de los objetivos planteados, las contribuciones
-	científico-técnicas y las mejoras futuras identificadas.
-
 	\section{Conclusiones del trabajo}
 
 	\section{Cumplimiento de objetivos}
@@ -852,10 +1685,6 @@
 	\section{Contribuciones científico-técnicas}
 
 	\section{Trabajo futuro}
-
-	Se recogen el enlazado con Wikidata sobre entidades no personales, la
-	desambiguación por género de concejales homónimos, y otras mejoras apuntadas
-	durante el desarrollo.
 
 	% BIBLIOGRAFÍA:
 
