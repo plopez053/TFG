@@ -1715,8 +1715,10 @@
 		\caption{Coste de hardware (amortizado)}
 		\label{tab:coste-hardware}
 	\end{table}
-	\footnotetext{Precio y horas de uso estimados; especificaciones exactas
-	pendientes de confirmar.}
+	\footnotetext{Precio y horas de uso estimados. Especificaciones del
+	ordenador de sobremesa: AMD Ryzen 5 3600 (6 núcleos / 12 hilos), 16~GB de
+	RAM, GPU NVIDIA GeForce RTX 2060 con 6~GB de VRAM, Windows 10 Pro de
+	64 bits.}
 
 	\subsection{Costes en software}
 
@@ -2122,6 +2124,7 @@
 	dedicado pasaría a ser la opción preferible.
 
 	\section{Almacén vectorial y recuperación: ChromaDB e híbrida (semántica + literal + temática) frente a solo semántica}
+	\label{sec:alt-recuperacion}
 
 	El RAG vectorial puede limitarse a la búsqueda semántica clásica por
 	\textit{embeddings}, o combinarla con canales adicionales de recuperación
@@ -2239,41 +2242,252 @@
 
 	\section{Objetivo de la evaluación}
 
+	Este TFG incluye dos sistemas de naturaleza distinta, y esa diferencia
+	condiciona cómo se evalúa cada uno. El GraphRAG traduce la pregunta a
+	SPARQL y devuelve datos exactos y verificables (conteos, rankings,
+	ratios) sobre los que existe una única respuesta correcta calculable de
+	antemano. El RAG vectorial, en cambio, responde con una crónica narrativa
+	de contexto abierto para la que no hay una única redacción "correcta"
+	contra la que comparar carácter a carácter. El objetivo de este capítulo
+	es, por tanto, doble: verificar que el GraphRAG devuelve los datos
+	correctos frente a una verdad conocida, y valorar si las respuestas del
+	RAG vectorial son relevantes y están fundamentadas en las actas
+	recuperadas, sin inventar información no presente en ellas.
+
 	\section{Metodología}
 
-	% Tabla de DATOS (no "ficha"): cabecera sombreada en gris (tabla-header), sin
-	% color por categoría. Mismo patrón para cualquier tabla de métricas/conteos
-	% del resto del capítulo. [EJEMPLO ilustrativo -- sustituir por las categorías
-	% y cifras reales de la batería de referencia definitiva.]
-	\begin{table}[htbp]
-		\centering
-		\begin{tabular}{|l|c|c|}
-			\hline
-			\rowcolor{tabla-header}
-			\textbf{Categoría de pregunta} & \textbf{GraphRAG} & \textbf{Vectorial} \\
-			\hline
-			Conteo simple & 6 & -- \\
-			\hline
-			Ratio / comparación de grupos & 4 & -- \\
-			\hline
-			Ranking & 3 & -- \\
-			\hline
-			Consulta narrativa / contexto abierto & -- & 13 \\
-			\hline
-		\end{tabular}
-		\caption{Categorías de preguntas de la batería de referencia (ejemplo)}
-		\label{tab:categorias-preguntas}
-	\end{table}
+	\subsection{GraphRAG: precisión de ejecución}
+
+	La calidad de la generación de SPARQL se evaluó en dos fases. Primero,
+	un estudio comparativo entre 10 modelos de generación (Groq
+	\texttt{gpt-oss-120b} y \texttt{gpt-oss-20b}, Gemini, y las variantes
+	locales Gemma, Llama~3.2, Mistral, Qwen~2.5-7B, Qwen~2.5-Coder-7B,
+	Qwen~2.5-14B y Qwen3:8B) sobre una batería de 35 preguntas de referencia
+	con su consulta SPARQL de verdad (\textit{gold}) y el valor esperado del
+	resultado, clasificadas por tipo de razonamiento (conteo, ranking, ratio,
+	temporal, persona, voto nominal, entidad, coautoría). Este estudio, ya
+	descrito en la Sección~\ref{sec:estado-arte-sparql}, llevó a seleccionar
+	Qwen3:8B ejecutado en local como generador de SPARQL de producción.
+	Segundo, una suite de regresión continua (22 casos, archivo
+	\texttt{scripts/regression\_qa.py}) que no compara el texto narrado sino
+	las filas devueltas por el SPARQL generado contra valores \texttt{expect}
+	y \texttt{forbid} verificados manualmente contra las actas en PDF --es
+	decir, \textbf{precisión de ejecución} (\textit{execution accuracy}), el
+	estándar habitual en la literatura de traducción de lenguaje natural a
+	consultas formales (SQL o SPARQL)~\cite{giuliani2026-sparql-llm}: más
+	riguroso que un juez basado en LLM, porque compara contra un hecho
+	verificado, no contra la opinión de otro modelo.
+
+	Esta suite no es una fotografía tomada al final del proyecto: se ha
+	usado de forma continua durante todo el desarrollo para detectar
+	regresiones cada vez que cambiaba el grafo o el generador de SPARQL, y
+	varios de sus valores de referencia se establecieron verificando a mano
+	el resultado contra el texto original de las actas. Ese proceso destapó
+	fallos reales que una comparación automática contra el propio grafo
+	nunca habría detectado: por ejemplo, un patrón de resultado ("decae la
+	proposición") ausente en la expresión regular que clasifica el
+	desenlace de cada proposición, que hacía que 82 de 3\,422 proposiciones
+	del grafo tuvieran un resultado mal clasificado; verificado el fallo
+	contra el acta original, el arreglo redujo las discrepancias a 25.
+
+	\subsection{RAG vectorial: RAGAS}
+
+	Para el RAG vectorial no existe un único dato correcto que comparar, así
+	que se recurrió a RAGAS~\cite{ragas-library}, una librería de evaluación
+	de sistemas RAG que usa un LLM externo como juez (\textit{LLM-as-a-judge})
+	sobre cuatro métricas, todas en el rango $[0,1]$:
+
+	\begin{itemize}
+		\item \textbf{Context Relevance}: pertinencia temática de los
+		fragmentos recuperados para la pregunta.
+		\item \textbf{Faithfulness}: grado en que la respuesta generada se
+		sostiene en el contexto recuperado, sin añadir información que no
+		esté en él.
+		\item \textbf{Answer Relevancy}: relevancia de la respuesta para la
+		pregunta concreta que se hizo.
+		\item \textbf{Semantic/Cosine Similarity}: similitud semántica entre
+		la respuesta generada y una respuesta de referencia.
+	\end{itemize}
+
+	Se construyó una batería de 13 preguntas de referencia
+	(\texttt{scripts/regression\_qa.py}, mismas preguntas usadas para
+	verificar la recuperación), cada una con una respuesta de referencia
+	escrita y verificada manualmente contra el texto de las actas en PDF
+	--nunca generada a partir de lo que el propio sistema recuperase o
+	respondiera, para no viciar la evaluación con su propio sesgo. Como
+	juez se usó \texttt{gemini-3.1-pro-preview} (\texttt{gemini-2.5-pro},
+	un modelo anterior habitual para este tipo de evaluación, ya estaba
+	retirado para cuentas nuevas en el momento de esta evaluación) vía la
+	API de Google AI Studio; el
+	embedding usado en la métrica de similitud semántica es
+	\texttt{nomic-embed-text}, el mismo que usa el RAG vectorial en
+	producción.
+
+	De las 13 preguntas, 12 se evaluaron completas; la pregunta sobre la
+	empresa Tubacex se quedó sin evaluar al agotarse a mitad el crédito de
+	la API de Google, y no se repitió la prueba por el impacto marginal
+	esperado de un único dato adicional sobre la media de 12. Los resultados
+	completos, pregunta por pregunta, están en
+	\texttt{scripts/ragas\_results.csv}.
+
+	Una advertencia metodológica encontrada durante esta evaluación, por si
+	resulta útil para trabajo futuro con RAGAS: las métricas de contexto
+	deben construirse con el mismo texto que ve realmente el LLM generador
+	--incluyendo metadatos como la fecha o el resultado de la votación que
+	el sistema antepone a cada fragmento antes de generar la respuesta--, no
+	solo el texto bruto del fragmento recuperado. Un primer intento que
+	pasaba solo el texto bruto penalizaba Faithfulness artificialmente
+	(0,08 en un caso verificado a mano) porque el juez no encontraba en el
+	contexto una fecha que en realidad sí estaba disponible para el
+	generador, solo que como metadato, no como texto plano; al corregirlo,
+	la misma pregunta pasó a 0,81.
+
+	Conviene precisar qué relación hay entre las dos metodologías de este
+	capítulo, porque no es la de "lo mismo, con y sin herramienta
+	estandarizada". RAGAS mide \textit{consistencia}: si la respuesta es
+	coherente con el contexto que el propio sistema dice haber recuperado,
+	no si ese contexto --ni la respuesta-- es correcto de verdad; un sistema
+	puede obtener Faithfulness alta estando fundamentado en un contexto ya
+	erróneo o incompleto, porque RAGAS nunca compara contra la fuente
+	original. La verificación manual contra las actas en PDF y la precisión
+	de ejecución del GraphRAG comparan, en cambio, contra la
+	\textit{verdad del documento o del grafo}, un chequeo más exigente que
+	encontró fallos --como el de "decae" citado arriba-- que una métrica de
+	consistencia nunca habría detectado, porque no había ninguna
+	inconsistencia entre la respuesta y el contexto recuperado: el fallo
+	estaba antes, en el propio pipeline de extracción. RAGAS aporta lo que
+	la verificación manual no puede dar --cobertura rápida y repetible,
+	resumida en un número--, pero no la sustituye.
 
 	\section{Análisis sobre la recuperación}
 
+	Context Relevance obtiene la puntuación máxima en las 12 preguntas
+	evaluadas: media 1,00 con desviación típica 0,00. La recuperación
+	híbrida de tres canales (semántico, literal por palabra clave y temático
+	por la taxonomía SKOS del grafo, Sección~\ref{sec:alt-recuperacion}) más
+	el reordenamiento con Cohere trae, sin excepción, fragmentos
+	temáticamente pertinentes a la pregunta.
+
 	\section{Análisis sobre la generación}
+	\label{sec:analisis-generacion}
+
+	La Tabla~\ref{tab:ragas-resultados} recoge las cuatro métricas RAGAS
+	sobre las 12 preguntas evaluadas, en la configuración final del sistema.
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Métrica} & \textbf{Media $\pm$ desviación típica ($n=12$)} \\
+			\hline
+			Context Relevance & 1,00 $\pm$ 0,00 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Faithfulness & 0,74 $\pm$ 0,12 \\
+			\hline
+			Answer Relevancy & 0,74 $\pm$ 0,11 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Semantic/Cosine Similarity & 0,81 $\pm$ 0,04 \\
+			\hline
+		\end{tabular}
+		\caption{Métricas RAGAS del RAG vectorial en su configuración final}
+		\label{tab:ragas-resultados}
+	\end{table}
+
+	Ninguna de las cuatro métricas cae en zona de alarma (por debajo de
+	$\sim$0,5, que indicaría un problema sistémico de recuperación o de
+	generación). Context Relevance perfecta y una desviación típica baja en
+	las otras tres métricas apuntan a un sistema consistente: no solo
+	acierta de media, se mueve en una banda estrecha pregunta a pregunta,
+	en vez de alternar entre respuestas muy buenas y muy malas.
+
+	Dicho esto, Faithfulness no llega a 1,00, y el
+	análisis manual de las respuestas con puntuación más baja revela un
+	patrón de fallo real: cuando una respuesta
+	agrupa varias intervenciones sobre la misma proposición --el texto
+	original, una enmienda de otro grupo, una intervención de un concejal
+	distinto--, el modelo generador puede atribuir un argumento o una
+	petición al grupo equivocado dentro del mismo bloque. Un ejemplo
+	verificado: en la pregunta sobre la estabilización del empleo público
+	municipal, una frase atribuye a los Socialistas Vascos una petición que
+	en realidad forma parte de una enmienda presentada por otro grupo sobre
+	la misma proposición. Es un fallo real y acotado --de atribución dentro
+	de un bloque ya recuperado correctamente, no de invención de datos
+	nuevos--, del mismo tipo que los ya documentados en el desarrollo para la
+	narración del GraphRAG con modelos de tamaño similar: un límite de
+	comprensión del modelo generador ante contexto denso con varias voces,
+	no un fallo de recuperación.
 
 	\section{Comparativa GraphRAG frente a RAG vectorial}
 
+	Los dos sistemas se evaluaron con metodologías distintas a propósito, no
+	por omisión. Se valoró aplicar RAGAS también a la narración final del
+	GraphRAG --tratando las filas devueltas por el SPARQL como "contexto"--,
+	pero se descartó: el cuello de botella real del GraphRAG es la
+	generación de la consulta SPARQL, ya cubierta con precisión de ejecución
+	frente a una verdad conocida (Sección~\ref{sec:estado-arte-sparql}), no
+	la fidelidad de una narración que parte de datos ya correctos. Medir la
+	narración con un juez LLM no habría apuntado al factor que de verdad
+	limita a ese sistema.
+
+	En la práctica, cada sistema resuelve mejor un tipo de pregunta
+	distinto. El GraphRAG es la opción adecuada para preguntas analíticas
+	sobre el corpus completo --conteos, rankings, comparaciones entre
+	grupos o a lo largo de los años-- porque puede agregar sobre miles de
+	proposiciones con una única consulta y devolver un número exacto y
+	verificable. El RAG vectorial es la opción adecuada para preguntas
+	abiertas o narrativas sobre un tema o una sesión concreta --"qué se dijo
+	sobre..."-- porque puede citar y resumir el contenido real de las actas,
+	algo que el GraphRAG, al operar solo sobre los datos estructurados del
+	grafo, no puede hacer.
+
 	\section{Configuración final y valoración global}
 
+	La configuración final del RAG vectorial usa Groq \texttt{gpt-oss-120b}
+	como generador principal, con caída automática a Ollama
+	Qwen2.5-7B-Instruct local si la cuota de Groq se agota o el servicio no
+	responde; \texttt{nomic-embed-text} como modelo de embeddings; recuperación
+	híbrida de tres canales con reordenamiento Cohere
+	\texttt{rerank-multilingual-v3.0}. La del GraphRAG usa Qwen3:8B local
+	para generar el SPARQL y Groq (con el mismo respaldo local) para narrar
+	el resultado.
+
+	En conjunto, el sistema muestra una recuperación de contexto casi
+	perfecta y una fidelidad de generación sólida y consistente para el RAG
+	vectorial, con un patrón de fallo conocido y acotado (atribución cruzada
+	dentro de un bloque narrativo); y una precisión de ejecución verificada
+	frente a datos reales para el GraphRAG en las preguntas analíticas que
+	el vectorial no puede resolver bien. Ambos resultados son consistentes
+	con el diseño arquitectónico del Capítulo~\ref{ch:solucion}: la
+	recuperación híbrida y el reordenamiento existen específicamente para
+	sostener la fidelidad de la generación, y la separación en dos sistemas
+	existe específicamente para que cada tipo de pregunta se responda con
+	la herramienta adecuada.
+
 	\section{Limitaciones}
+
+	\begin{itemize}
+		\item El tamaño de la batería de referencia del RAG vectorial
+		($n=12$) es reducido; las medias son orientativas y sensibles a
+		preguntas individuales atípicas.
+
+		\item Una sola pasada de evaluación por sistema: no se ha repetido
+		la evaluación con RAGAS varias veces para medir la varianza propia
+		del juez LLM, una fuente de ruido conocida en la metodología
+		\textit{LLM-as-a-judge}.
+
+		\item El fallo de atribución cruzada dentro de un bloque narrativo
+		(Sección~\ref{sec:analisis-generacion}) está identificado y acotado,
+		pero no resuelto de forma garantizada: es un límite de comprensión
+		del modelo generador, mitigable reforzando el \textit{prompt} pero
+		no eliminable con certeza para modelos de este tamaño.
+
+		\item La pregunta 13 de la batería (Tubacex) quedó sin evaluar con
+		RAGAS por agotamiento del crédito de la API de Google durante la
+		evaluación.
+	\end{itemize}
 
 	% ============================================================ %
 	% CONCLUSIONES                                                  %
@@ -2427,6 +2641,12 @@
 		estudios de mercado y de la opinión pública}. Boletín Oficial del
 		Estado (BOE-A-2026-9024), 2026.
 		\url{https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-9024}
+
+		\bibitem{ragas-library}
+		Es, S., James, J., Espinosa-Anke, L., y Schockaert, S.
+		\textit{RAGAs: Automated Evaluation of Retrieval Augmented
+		Generation}. arXiv:2309.15217, 2023.
+		\url{https://arxiv.org/abs/2309.15217}
 	\end{thebibliography}
 
 	% ANEXOS:
