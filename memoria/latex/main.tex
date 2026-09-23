@@ -1,12 +1,10 @@
-% !TeX program = xelatex
-
-% ============================================================ %
-% PREAMBLE (antes preamble.tex, fusionado aquí)                %
-% ============================================================ %
+% preamble.tex — paquetes, colores, fuentes y la macro \portada.
+% Los capítulos están en src/; main.tex solo los enlaza con \input.
 
 % ------------------------------------------------------------ %
 % TIPO Y PAQUETES                                              %
 % ------------------------------------------------------------ %
+% Paquetes = imports: cada \usepackage añade una funcionalidad extra.
 
 \documentclass[11pt, a4paper]{report}
 \usepackage[spanish, es-tabla, activeacute]{babel}
@@ -31,7 +29,9 @@
 \usepackage{tabularx}
 \usepackage{multirow}
 \usetikzlibrary{positioning}
+\usepackage{pgfgantt}
 
+% Le pone nombre a un color para poder usarlo luego (p.ej. \color{ehu-blue}).
 \definecolor{eus-color}{gray}{0.4}
 \definecolor{eng-color}{gray}{0.5}
 \definecolor{ehu-blue}{RGB}{27,74,120}
@@ -52,6 +52,7 @@
 \definecolor{tabla-header}{gray}{0.85}           % gris claro, cabecera de tablas de datos
 \definecolor{fila-alterna}{gray}{0.93}           % gris muy claro, para alternar filas
 
+% Ajuste de espaciado en el índice de figuras/tablas. No tocar.
 \newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
 \addtocontents{lof}{\protect\noaddvspace}
 \addtocontents{lot}{\protect\noaddvspace}
@@ -59,6 +60,7 @@
 % ------------------------------------------------------------ %
 % NUMERACIÓN CONTINUA DE FIGURAS Y TABLAS                      %
 % ------------------------------------------------------------ %
+% Figuras/tablas numeradas 1, 2, 3... seguidas, sin reiniciar por capítulo.
 
 \counterwithout{figure}{chapter}
 \counterwithout{table}{chapter}
@@ -66,6 +68,7 @@
 % ------------------------------------------------------------ %
 % PARTICIÓN DE PALABRAS AL FINAL DE LÍNEA                      %
 % ------------------------------------------------------------ %
+% Ajuste cosmético del salto de línea. No tocar.
 
 \pretolerance=2000
 \tolerance=3000
@@ -73,6 +76,8 @@
 % ------------------------------------------------------------ %
 % FUENTES DEL DOCUMENTO                                        %
 % ------------------------------------------------------------ %
+% \setmainfont = fuente del texto normal. Cada \newfontfamily de abajo
+% define una fuente extra con su propio comando (p.ej. \calibrifont).
 
 % Tipografía Computer Modern Roman (vía CM-Unicode), la clásica de LaTeX,
 % en vez de la sans-serif corporativa EHUSans, para un aspecto más formal
@@ -134,6 +139,7 @@
 % ------------------------------------------------------------ %
 % ETIQUETAS EN LAS TABLAS Y FIGURAS							   %
 % ------------------------------------------------------------ %
+% Estilo del texto "Figura 3: ..." que va debajo de cada figura/tabla.
 
 \DeclareCaptionFont{ehu}{\fontsize{9}{10}\mdseries}
 \usepackage[font={ehu}, labelfont={bf}]{caption}
@@ -141,6 +147,7 @@
 % ------------------------------------------------------------ %
 % AÑADIR CUARTO NIVEL DE TÍTULO                                %
 % ------------------------------------------------------------ %
+% Permite numerar un nivel más de sección (\paragraph) si hace falta.
 
 \setcounter{secnumdepth}{4}
 \titleformat{\paragraph}
@@ -151,6 +158,7 @@
 % ------------------------------------------------------------ %
 % ELIMINAR CABECERA DE CAPÍTULOS                               %
 % ------------------------------------------------------------ %
+% Quita la palabra "Capítulo" del título, y define la cabecera/pie de página.
 
 \titleformat{\chapter}%
   {\normalfont\bfseries\Huge}{\thechapter.}{10pt}{}
@@ -171,6 +179,7 @@
 % ------------------------------------------------------------ %
 % TÍTULO DEL ÍNDICE                                            %
 % ------------------------------------------------------------ %
+% Renombra "Índice general" a solo "Índice", etc.
 
 \addto\captionsspanish{
 	\renewcommand{\contentsname}{Índice}
@@ -181,12 +190,15 @@
 % ------------------------------------------------------------ %
 % DIRECTORIO DE IMÁGENES                                       %
 % ------------------------------------------------------------ %
+% Dónde buscar las imágenes por defecto (\includegraphics{ODS16.png}).
 
 \graphicspath{{images/}}
 
 % ------------------------------------------------------------ %
 % PORTADA                                                      %
 % ------------------------------------------------------------ %
+% Coloca cada elemento a coordenadas fijas con tikz. Solo hace falta tocar
+% los datos de alumno/director/curso/fecha, más abajo.
 
 \newcommand{\portada}{
 	{\raggedleft\includegraphics[width=8cm]{corp/ehu}}
@@ -202,9 +214,13 @@
 	\begin{center}
 		\parbox{13cm}{\centering\LARGE{\calibrifont\bfseries\MakeUppercase{Conversión de actas del Ayuntamiento de Bilbao a Knowledge Graphs (RDF, OWL, SPARQL, SHACL) y vectorial mediante LLMs, enlazado con Wikidata y ofreciendo funcionalidad RAG. Interfaz web: visual, consultas, conversacional}}}
 	\end{center}
+	\vspace{0.3\baselineskip}
+	\begin{center}
+		\includegraphics[width=1.6cm]{ODS16.png}\hspace{0.6cm}\includegraphics[width=1.6cm]{ODS11.png}
+	\end{center}
 	\renewcommand{\baselinestretch}{1.25}
 	\begin{tikzpicture}[remember picture, overlay]
-		\node (C) at ([yshift=-6.95cm, xshift=9.7cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=64pt, align=left]{};
+		\node (C) at ([yshift=-9.15cm, xshift=9.7cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=64pt, align=left]{};
 		\node (D) [right=0.2cm of C.west, anchor=west, align=left]
 		{\small{\textbf{Alumno: }Lopez, Sanchez, Peio}\\
 			\small{\textbf{Director: }Egaña Aranguren, Mikel}
@@ -215,13 +231,13 @@
 	\end{tikzpicture}
 	\renewcommand{\baselinestretch}{1}
 	\begin{tikzpicture}[remember picture, overlay]
-		\node (E) at ([yshift=-9.4cm, xshift=8.5cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=27pt, align=left]{};
+		\node (E) at ([yshift=-10.65cm, xshift=8.5cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=27pt, align=left]{};
 		\node (F) [right=1.4cm of E.west, anchor=west]
 		{\small{\textbf{Curso: }2026-2027}};
 		\draw[line width=0.5pt] (E.south west) -- (E.south east);
 	\end{tikzpicture}
 	\begin{tikzpicture}[remember picture, overlay]
-		\node (G) at ([yshift=-11.6cm, xshift=13.4cm]current page.west) [inner sep=10pt, minimum width=7.93cm, minimum height=27pt, align=left]{};
+		\node (G) at ([yshift=-12.05cm, xshift=13.4cm]current page.west) [inner sep=10pt, minimum width=7.93cm, minimum height=27pt, align=left]{};
 		\node (H) [left=0.2cm of G.east, anchor=east]
 		{\small{\textbf{Fecha: }<XXXX, día, mes, año>}};
 		\draw[line width=0.5pt] (G.south west) -- (G.south east);
@@ -232,61 +248,107 @@
 % FIN DEL PREAMBLE                                              %
 % ============================================================ %
 
+% A partir de aquí empieza el contenido real del documento (todo lo de
+% arriba es configuración que no imprime nada por sí sola).
 \begin{document}
 
 	\portada
-	\thispagestyle{empty}
+	\thispagestyle{empty} % sin número de página en la portada
 	\setcounter{page}{0}
 	\pagestyle{tfg}
 
 	% ============================================================ %
-	% RESUMEN (antes src/abstract.tex)                              %
+	% RESUMEN                                                       %
 	% ============================================================ %
 
+	% \chapter* = sin numerar; por eso hay que añadirlo al índice a mano.
 	\chapter*{Resumen \normalfont{{\serifthick Laburpena} Abstract}}
 	\addcontentsline{toc}{chapter}{Resumen \normalfont{{\serifthick Laburpena} Abstract}}
 
 	\begin{itshape}
-	Este trabajo aborda la conversión de las actas del Pleno del Ayuntamiento de
-	Bilbao (2007--2026), publicadas en formato PDF, en dos sistemas de recuperación de
-	información consultables en lenguaje natural: un RAG vectorial y un sistema GraphRAG.
+	% \mdseries es necesario para que el párrafo de después no salga en negrita.
+	\normalfont\large\bfseries Resumen:\par\normalsize\mdseries\itshape
 
-	Las actas se obtienen mediante la descarga automatizada del portal de actas del
-	Ayuntamiento, y de cada una se extraen las proposiciones individuales del Pleno
-	junto con sus metadatos: fecha y sesión plenaria, grupo político o particular
-	proponente, tema, entidades mencionadas, resultado de la votación (agregado por
-	grupo y, cuando el acta lo recoge de forma explícita, nominal por concejal), y
-	página y documento de origen. A partir de estos datos se construye un grafo de
-	conocimiento RDF/OWL que modela proposiciones, grupos políticos, concejales y
-	temas; un modelo de lenguaje clasifica temáticamente cada proposición y extrae
-	las entidades que menciona, incorporando dicha información al grafo.
+	Este trabajo aborda la transformación de las actas del Pleno del Ayuntamiento de
+	Bilbao (2007--2026), publicadas en formato PDF, en dos sistemas complementarios de
+	recuperación de información consultables en lenguaje natural: un RAG vectorial y
+	un sistema GraphRAG. A partir de la descarga automatizada del portal municipal, se
+	extraen de forma estructurada las proposiciones individuales junto con sus
+	metadatos esenciales: fecha de la sesión, proponente, tema, entidades, página
+	exacta y el resultado de la votación --tanto agregado por grupo como nominal por
+	concejal cuando consta en el acta--. Esta información nutre un grafo de
+	conocimiento RDF/OWL que modela la actividad plenaria, combinando extracción
+	determinista para garantizar la fidelidad de los votos con modelos de lenguaje
+	para la clasificación temática y el reconocimiento de entidades.
 
-	Sobre este corpus de casi 3.900 proposiciones se implementan dos sistemas de
-	recuperación complementarios: un RAG vectorial, con búsqueda híbrida y
-	reordenación de resultados, y un sistema GraphRAG, que traduce la pregunta a una
-	consulta SPARQL, la ejecuta sobre el grafo mediante razonamiento automático para
-	responder preguntas de agregación, y genera la respuesta a partir de los datos
-	obtenidos.
+	Sobre este corpus de 3.422 proposiciones se implementan dos arquitecturas de
+	consulta: un RAG vectorial con búsqueda híbrida multicanal y reordenación
+	semántica (\textit{reranking}), y un sistema GraphRAG que traduce el lenguaje
+	natural a consultas SPARQL para resolver preguntas de agregación y conteo mediante
+	razonamiento automático. Ambos sistemas garantizan la trazabilidad citando la
+	página exacta del documento original y se integran en una interfaz conversacional
+	construida con Chainlit. El trabajo concluye con una evaluación comparativa
+	sistemática sobre un conjunto de preguntas de referencia contrastadas
+	exhaustivamente contra los documentos oficiales.
 
-	Ambos sistemas citan la página exacta del documento de origen de cada dato
-	mostrado, y se exponen mediante una interfaz web conversacional construida con
-	Chainlit. El trabajo incluye una evaluación comparativa sistemática de ambas
-	arquitecturas sobre un conjunto de preguntas de referencia con respuesta verificada
-	a mano contra las actas originales.
-
-	\textbf{Palabras Clave:} GraphRAG, RAG, LLM, grafo de conocimiento, SPARQL.
-
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\textcolor{eus-color}{{\serif [PENDIENTE]}}
-
-	\textcolor{eus-color}{{\serif \textbf{Gako-hitzak:}} GraphRAG, RAG, LLM, ezagutza-grafoa, SPARQL.}
+	\textbf{Palabras Clave:} GraphRAG, RAG vectorial, grafo de conocimiento, SPARQL,
+	LLM, datos abiertos municipales.
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	\textcolor{eng-color}{{\serif [PENDIENTE]}}
+	\bigskip
+	\normalfont\large\bfseries Laburpena:\par\normalsize\mdseries\itshape
 
-	\textcolor{eng-color}{{\serif \textbf{Keywords:}} GraphRAG, RAG, LLM, knowledge graph, SPARQL.}
+	Lan honek Bilboko Udalaren Osoko Bilkuraren aktak (2007--2026), PDF formatuan
+	argitaratuak, hizkuntza naturalean kontsultatu daitezkeen informazio-berreskurapeneko
+	bi sistema osagarritan --RAG bektorial bat eta GraphRAG sistema bat-- eraldatzeari
+	ekiten dio. Udalaren atarian modu automatizatuan deskargatutako aktetatik, egiturazko
+	moduan ateratzen dira proposamen indibidualak, beren funtsezko metadatuekin batera: bilkuraren data,
+	proposatzailea, gaia, entitateak, orrialde zehatza eta bozketaren emaitza --taldeka
+	metatuta zein, aktan hala jasotzen denean, zinegotziz zinegotzi--. Informazio horrek
+	RDF/OWL ezagutza-grafo bat elikatzen du, osoko bilkuraren jarduera modelatzen duena,
+	bozen zehaztasuna bermatzeko atzemate determinista eta gai-sailkapenerako eta
+	entitateen ezagutzarako hizkuntza-ereduak konbinatuz.
+
+	3.422 proposamenez osatutako corpus horren gainean, bi kontsulta-arkitektura
+	ezartzen dira: bilaketa hibrido anizkanaleko eta birsailkapen semantikoko
+	(\textit{reranking}) RAG bektorial bat, eta hizkuntza naturala SPARQL kontsultetara
+	itzultzen duen GraphRAG sistema bat, arrazoiketa automatikoaren bidez metaketa- eta
+	zenbaketa-galderak ebazteko. Bi sistemek jatorrizko dokumentuaren orrialde zehatza
+	aipatuz bermatzen dute trazabilitatea, eta Chainlit-ekin eraikitako elkarrizketa-interfaze
+	batean integratzen dira. Lana jatorrizko dokumentuen aurka zorrotz egiaztatutako
+	erreferentzia-galdera multzo baten gaineko ebaluazio konparatibo sistematiko batekin
+	amaitzen da.
+
+	\textbf{Gako-hitzak:} GraphRAG, RAG bektoriala, ezagutza-grafoa, SPARQL, LLM, udal datu irekiak.
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	\bigskip
+	\normalfont\large\bfseries Abstract:\par\normalsize\mdseries\itshape
+
+	This work addresses the transformation of the minutes of the Plenary Session of the
+	Bilbao City Council (2007--2026), published in PDF format, into two complementary
+	natural-language information retrieval systems: a vector RAG and a GraphRAG system.
+	From documents downloaded automatically from the municipal portal, individual
+	proposals are extracted in structured form together with their essential metadata:
+	session date, proposer, topic, entities, exact page, and the outcome of the vote
+	--both aggregated by political group and, when explicitly recorded in the minutes,
+	nominal by councillor--. This information feeds an RDF/OWL knowledge graph that
+	models plenary activity, combining deterministic extraction to guarantee the
+	fidelity of the votes with language models for topic classification and entity
+	recognition.
+
+	Two query architectures are implemented over this corpus of 3,422 proposals: a
+	vector RAG with multi-channel hybrid search and semantic reranking, and a GraphRAG
+	system that translates natural language into SPARQL queries to resolve aggregation
+	and counting questions through automated reasoning. Both systems guarantee
+	traceability by citing the exact page of the original document and are exposed
+	through a conversational web interface built with Chainlit. The work concludes with
+	a systematic comparative evaluation over a set of reference questions verified
+	exhaustively against the original documents.
+
+	\textbf{Keywords:} GraphRAG, vector RAG, knowledge graph, SPARQL, LLM, open municipal data.
 	\end{itshape}
 
 	\pagebreak
@@ -308,7 +370,7 @@
 	\cleardoublepage
 
 	% ============================================================ %
-	% LISTA DE ACRÓNIMOS (antes src/acronimos.tex)                  %
+	% LISTA DE ACRÓNIMOS                                            %
 	% ============================================================ %
 
 	\chapter*{Lista de acrónimos}
@@ -344,7 +406,7 @@
 	% ============================================================ %
 
 	% ============================================================ %
-	% INTRODUCCIÓN (antes src/intro.tex)                            %
+	% INTRODUCCIÓN                                                  %
 	% ============================================================ %
 
 	\chapter{Introducción}
@@ -356,7 +418,7 @@
 	que recoge de forma íntegra las proposiciones, el debate y el resultado de cada
 	votación, por lo que es el documento que utiliza este trabajo; cada acta puede
 	superar el centenar de páginas, y el corpus completo reúne cerca de veinte años de
-	actas y más de 3.900 proposiciones distintas.
+	actas y 3.422 proposiciones distintas.
 
 	Este capítulo presenta la motivación que ha llevado al desarrollo del proyecto,
 	los objetivos planteados, su relación con los Objetivos de Desarrollo Sostenible
@@ -388,8 +450,8 @@
 
 	\begin{description}
 		\item[Ciudadanía] Puede preguntar en lenguaje natural por el estado o el
-		resultado de una propuesta concreta --p.~ej. "¿qué se votó sobre el
-		polideportivo de mi barrio?"-- sin necesidad de conocer de antemano en
+		resultado de una propuesta concreta --p.~ej. ``¿qué se votó sobre el
+		polideportivo de mi barrio?''-- sin necesidad de conocer de antemano en
 		qué acta ni en qué página buscar, y obtener la cita exacta al documento
 		original como respaldo.
 
@@ -421,6 +483,7 @@
 	origen-- en lugar de con texto generado sin respaldo documental.
 
 	\subsection{Objetivos específicos}
+	\label{sec:objetivos-especificos}
 
 	Del objetivo general se derivan los siguientes objetivos específicos:
 
@@ -458,7 +521,7 @@
 	\subsection{Alcance del sistema desarrollado}
 
 	El sistema cubre el corpus completo de actas del Pleno publicadas por el
-	Ayuntamiento de Bilbao entre 2007 y 2026 (cerca de 3.900 proposiciones), con
+	Ayuntamiento de Bilbao entre 2007 y 2026 (3.422 proposiciones), con
 	extracción de metadatos, clasificación temática, dos sistemas de recuperación
 	de información independientes y una interfaz web conversacional común a ambos.
 
@@ -554,7 +617,7 @@
 	sistemas. La memoria cierra con las conclusiones y los anexos.
 
 	% ============================================================ %
-	% CONTEXTO (antes src/contexto.tex)                             %
+	% CONTEXTO                                                      %
 	% ============================================================ %
 
 	\chapter{Contexto}
@@ -571,8 +634,9 @@
 	La transparencia y el acceso a la información pública son, desde hace más de
 	una década, un objetivo explícito de la administración española. La Ley
 	19/2013, de 9 de diciembre, de transparencia, acceso a la información pública
-	y buen gobierno, obliga a las administraciones públicas a publicar de forma
-	activa la información relativa a su actividad institucional. En paralelo, el
+	y buen gobierno~\cite{ley-transparencia}, obliga a las administraciones públicas
+	a publicar de forma activa la información relativa a su actividad institucional.
+	En paralelo, el
 	movimiento de \textit{open government} promueve que esa información no solo
 	se publique, sino que se haga accesible y reutilizable, en vez de limitarse a
 	cumplir el mínimo legal de publicación.
@@ -583,7 +647,7 @@
 	formato pensado para la lectura secuencial y no para la consulta puntual ni
 	el análisis agregado. Cuando el volumen de documentos publicados crece --como
 	ocurre con casi veinte años de actas del Pleno de una ciudad como Bilbao--
-	esa distancia entre "publicado" y "accesible" se hace más evidente: la
+	esa distancia entre ``publicado'' y ``accesible'' se hace más evidente: la
 	información está disponible en sentido legal, pero encontrar un dato concreto
 	dentro de ella exige un esfuerzo de búsqueda manual que en la práctica limita
 	quién puede efectivamente usarla.
@@ -605,8 +669,9 @@
 	conversación con el usuario a partir de una instrucción (\textit{prompt}).
 
 	El interés generalizado por los LLM se intensificó a partir de noviembre de
-	2022, cuando OpenAI presentó ChatGPT, una interfaz conversacional que
-	popularizó el uso de estos modelos entre el público general. Desde entonces,
+	2022, cuando OpenAI presentó ChatGPT~\cite{openai2022-chatgpt}, una interfaz
+	conversacional que popularizó el uso de estos modelos entre el público
+	general. Desde entonces,
 	la oferta de LLM disponibles --tanto propietarios como de código abierto-- se
 	ha ampliado considerablemente, lo que permite hoy elegir entre modelos servidos
 	como API en la nube o modelos más pequeños ejecutables en local.
@@ -615,7 +680,8 @@
 	entrenamiento ni a documentos privados o muy específicos --como las actas de
 	un ayuntamiento concreto--, y tampoco garantiza que lo que genera sea correcto:
 	puede producir afirmaciones plausibles pero falsas, fenómeno conocido como
-	\textit{alucinación}, especialmente relevante en un contexto donde se maneja
+	\textit{alucinación}~\cite{ji2023-hallucination}, especialmente relevante en
+	un contexto donde se maneja
 	información institucional que debe ser verificable. A diferencia de un
 	escenario con documentación empresarial confidencial, en este trabajo las
 	actas del Pleno son de por sí públicas, por lo que la motivación para
@@ -630,8 +696,9 @@
 	\section{RAG}
 
 	La generación aumentada por recuperación, conocida como RAG por sus siglas en
-	inglés \textit{Retrieval-Augmented Generation}, es una técnica que combina un
-	LLM con un mecanismo de recuperación de información, con el objetivo de que
+	inglés \textit{Retrieval-Augmented Generation}~\cite{lewis2020-rag}, es una
+	técnica que combina un LLM con un mecanismo de recuperación de información,
+	con el objetivo de que
 	el modelo genere respuestas apoyándose en información obtenida de una base de
 	conocimiento externa en lugar de únicamente en lo aprendido durante su
 	entrenamiento.
@@ -655,13 +722,14 @@
 
 	La variante más directa de RAG se conoce como \textit{Naive RAG}, que sigue
 	exactamente el esquema de dos fases descrito arriba sin ningún refinamiento
-	adicional. Sobre esa base existen variantes más avanzadas: \textit{Advanced
-	RAG} introduce mejoras en las distintas fases del proceso --como la
+	adicional. Sobre esa base existen variantes más avanzadas~\cite{gao2023-rag-survey}:
+	\textit{Advanced RAG} introduce mejoras en las distintas fases del proceso --como la
 	reformulación de la consulta o la reordenación de los fragmentos
 	recuperados-- sin cambiar la arquitectura de fondo; y otras aproximaciones
 	sustituyen el almacén de fragmentos de texto por una base de conocimiento
-	estructurada, como un grafo de conocimiento, dando lugar a GraphRAG (véanse
-	las Secciones~\ref{sec:grafos} y~\ref{sec:graphrag}).
+	estructurada, como un grafo de conocimiento, dando lugar a
+	GraphRAG~\cite{edge2024-graphrag} (véanse las Secciones~\ref{sec:grafos}
+	y~\ref{sec:graphrag}).
 
 	En este trabajo se implementan dos sistemas de recuperación sobre el mismo
 	corpus, no uno solo: un RAG vectorial de tipo \textit{Advanced RAG} --con
@@ -673,18 +741,20 @@
 	\label{sec:grafos}
 
 	Un grafo de conocimiento representa la información como una red de entidades
-	(nodos) y relaciones entre ellas (aristas), en lugar de como texto libre. El
-	estándar utilizado en este trabajo es RDF (\textit{Resource Description
-	Framework}), que modela cada hecho como una tripleta \textit{sujeto-predicado-objeto}
-	(por ejemplo, \texttt{proposición~X --presentadaPor--> Grupo~PP}). Sobre RDF se
-	puede definir una ontología con OWL (\textit{Web Ontology Language}) --las clases y
-	relaciones válidas del dominio-- y consultar el grafo con el lenguaje SPARQL.
+	(nodos) y relaciones entre ellas (aristas), en lugar de como texto
+	libre~\cite{hogan2021-knowledge-graphs}. El estándar utilizado en este trabajo
+	es RDF (\textit{Resource Description Framework})~\cite{w3c-rdf11}, que modela
+	cada hecho como una tripleta \textit{sujeto-predicado-objeto} (por ejemplo,
+	\texttt{proposición~X --presentadaPor--> Grupo~PP}). Sobre RDF se puede
+	definir una ontología con OWL (\textit{Web Ontology Language})~\cite{w3c-owl2}
+	--las clases y relaciones válidas del dominio-- y consultar el grafo con el
+	lenguaje SPARQL~\cite{w3c-sparql11}.
 
 	Una ventaja de este modelo frente al texto libre es el razonamiento automático: un
 	motor de inferencia (\textit{reasoner}) puede derivar hechos nuevos que no están
 	escritos explícitamente pero se siguen de la ontología --por ejemplo, que una
-	proposición sobre "desahucios" trata también, por herencia temática, de
-	"vivienda"-- sin que haga falta repetir esa relación en cada dato.
+	proposición sobre ``desahucios'' trata también, por herencia temática, de
+	``vivienda''-- sin que haga falta repetir esa relación en cada dato.
 
 	\section{GraphRAG}
 	\label{sec:graphrag}
@@ -697,8 +767,8 @@
 	filas de datos exactos, que un segundo LLM convierte en una respuesta narrada.
 
 	Esto resulta especialmente adecuado para preguntas de agregación y razonamiento
-	multi-salto --"¿qué grupo ha presentado más proposiciones sobre vivienda?",
-	"¿cuántas se han aprobado por año?"-- que un sistema de recuperación de texto
+	multi-salto --``¿qué grupo ha presentado más proposiciones sobre vivienda?'',
+	``¿cuántas se han aprobado por año?''-- que un sistema de recuperación de texto
 	libre no puede responder con precisión, porque exigen contar y cruzar datos de
 	todo el corpus, no solo encontrar un pasaje parecido a la pregunta. Es, junto con
 	el RAG vectorial tradicional, uno de los dos sistemas comparados en este TFG.
@@ -725,7 +795,7 @@
 	El Ayuntamiento publica estas actas, junto con el resto de documentación de
 	cada sesión (orden del día, extractos, resumen), en su portal de actas del
 	Pleno, de acceso público. Es precisamente este archivo --de casi veinte años
-	y más de 3.900 proposiciones-- el que constituye el corpus documental de este
+	y 3.422 proposiciones-- el que constituye el corpus documental de este
 	trabajo; su descripción detallada, junto con el proceso que lo transforma en
 	datos estructurados, se recoge en el Capítulo~\ref{ch:corpus}.
 
@@ -743,11 +813,186 @@
 
 	\section{Requisitos del sistema}
 
+	A partir de los objetivos específicos fijados en la
+	Sección~\ref{sec:objetivos-especificos} se derivan los requisitos
+	funcionales y no funcionales que debe cumplir el sistema.
+
+	\subsection{Requisitos funcionales}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|l|X|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{ID} & \textbf{Descripción} \\
+			\hline
+			RF1 & Extraer de forma automatizada las proposiciones individuales de
+			cada acta en PDF, junto con fecha, grupo o particular proponente,
+			tema, entidades mencionadas, resultado de la votación y página de
+			origen. \\
+			\hline
+			\rowcolor{fila-alterna}
+			RF2 & Construir un grafo de conocimiento RDF/OWL que modele
+			proposiciones, grupos políticos, concejales y temas, con
+			razonamiento automático sobre relaciones temáticas jerárquicas
+			(\textit{roll-up} vía SKOS). \\
+			\hline
+			RF3 & Derivar el resultado de la votación y el voto nominal por
+			concejal mediante una capa determinista basada en el texto literal
+			del acta, que prevalezca sobre la clasificación del LLM cuando el
+			acta permite verificarla. \\
+			\hline
+			\rowcolor{fila-alterna}
+			RF4 & Implementar un sistema de RAG vectorial con recuperación
+			híbrida (semántica, literal y temática) y reordenación de
+			resultados. \\
+			\hline
+			RF5 & Implementar un sistema GraphRAG que traduzca la pregunta del
+			usuario a una consulta SPARQL, la ejecute sobre el grafo y narre la
+			respuesta a partir de los datos obtenidos. \\
+			\hline
+			\rowcolor{fila-alterna}
+			RF6 & Citar, para cada dato mostrado por cualquiera de los dos
+			sistemas, el documento y la página exacta del PDF de origen. \\
+			\hline
+			RF7 & Exponer ambos sistemas mediante una interfaz web
+			conversacional común. \\
+			\hline
+			\rowcolor{fila-alterna}
+			RF8 & Validar la integridad estructural del grafo de conocimiento
+			mediante restricciones SHACL, de forma independiente del código que
+			lo construye. \\
+			\hline
+			RF9 & Evaluar de forma comparativa ambos sistemas sobre un conjunto
+			de preguntas de referencia con respuesta verificada a mano contra
+			las actas originales. \\
+			\hline
+		\end{tabularx}
+		\caption{Requisitos funcionales del sistema}
+		\label{tab:requisitos-funcionales}
+	\end{table}
+
+	\subsection{Requisitos no funcionales}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|l|X|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{ID} & \textbf{Descripción} \\
+			\hline
+			RNF1 & \textbf{Trazabilidad.} Toda respuesta debe poder
+			contrastarse contra el documento original; no es aceptable una
+			respuesta sin fuente citable. \\
+			\hline
+			\rowcolor{fila-alterna}
+			RNF2 & \textbf{Precisión sobre cobertura.} Ante una pregunta que
+			el sistema no pueda responder con datos verificables, se prefiere
+			que lo indique explícitamente antes que generar una respuesta
+			plausible pero no respaldada por el corpus. \\
+			\hline
+			RNF3 & \textbf{Coste.} El sistema debe poder operar con modelos de
+			lenguaje locales (Ollama) o con niveles gratuitos de API en la
+			nube, sin depender de un presupuesto de inferencia elevado. \\
+			\hline
+			\rowcolor{fila-alterna}
+			RNF4 & \textbf{Idioma.} Las consultas y respuestas se producen en
+			castellano, aunque el corpus contiene fragmentos en euskera. \\
+			\hline
+			RNF5 & \textbf{Mantenibilidad.} La capa determinista y la capa
+			basada en LLM deben mantenerse separadas, de forma que un error
+			sistemático de clasificación pueda corregirse sin reenriquecer ni
+			reentrenar. \\
+			\hline
+		\end{tabularx}
+		\caption{Requisitos no funcionales del sistema}
+		\label{tab:requisitos-no-funcionales}
+	\end{table}
+
 	\section{Estado del arte de las tecnologías utilizadas}
 
+	Además de los conceptos generales de LLM, RAG y GraphRAG presentados en el
+	Capítulo~\ref{ch:contexto}, este trabajo se apoya en dos líneas de
+	investigación más específicas: la mejora de la recuperación en sistemas
+	RAG mediante reordenación de resultados, y la fiabilidad de la generación
+	de consultas formales (SPARQL o SQL) a partir de lenguaje natural con LLM
+	--el componente más crítico del sistema GraphRAG, porque un error aquí
+	produce una cifra incorrecta narrada como si fuera un hecho verificado, en
+	vez de un fallo visible.
+
+	\subsection{Recuperación híbrida y reordenación de resultados}
+
+	La combinación de varios canales de recuperación (semántico, léxico y,
+	en este caso, temático) con una reordenación posterior de los resultados
+	es una de las mejoras características de lo que la literatura denomina
+	\textit{Advanced RAG} frente al esquema \textit{Naive
+	RAG}~\cite{gao2023-rag-survey}. La reordenación mediante un modelo
+	\textit{cross-encoder} --que evalúa conjuntamente la pregunta y cada
+	fragmento candidato, en vez de compararlos por separado como hace la
+	búsqueda por \textit{embeddings}-- fue propuesta originalmente para
+	recuperación de pasajes con BERT~\cite{nogueira2019-bert-rerank} y hoy es
+	una técnica estándar para mejorar la precisión de los primeros resultados
+	devueltos por un motor de recuperación semántica. En este trabajo se aplica
+	mediante el servicio de reordenación de Cohere sobre los candidatos de los
+	tres canales de búsqueda (Capítulo~\ref{ch:solucion}).
+
+	\subsection{Fiabilidad de la generación de SPARQL con LLM}
+	\label{sec:estado-arte-sparql}
+
+	La traducción de lenguaje natural a consultas formales mediante LLM es un
+	área de investigación activa, tanto para SPARQL sobre grafos de
+	conocimiento como para SQL sobre bases de datos relacionales --problema
+	estructuralmente equivalente al que resuelve el sistema GraphRAG de este
+	trabajo. La literatura reciente converge en varios hallazgos que han
+	condicionado directamente las decisiones de diseño de este sistema
+	(desarrolladas con más detalle en los Capítulos~\ref{ch:alternativas}
+	y~\ref{ch:solucion}):
+
+	\begin{itemize}
+		\item \textbf{El \textit{zero-shot} puro es insuficiente.} Sin
+		ejemplos de referencia en el \textit{prompt}, un LLM genera consultas
+		SPARQL sintácticamente válidas mucho más a menudo que semánticamente
+		correctas; incluir ejemplos (\textit{few-shot}) mejora sustancialmente
+		la tasa de acierto~\cite{giuliani2026-sparql-llm}.
+
+		\item \textbf{La selección de ejemplos por similitud no es
+		automáticamente superior a alternativas más simples.} Un estudio sobre
+		un grafo de conocimiento de accidentes de aviación encontró que un
+		\textit{prompt} simple con ejemplos aleatorios podía igualar a
+		estrategias de selección por similitud
+		semántica~\cite{hernandez2025-aviation-sparql}, mientras que otros
+		trabajos en \textit{text-to-SQL} sí encuentran ventaja consistente en
+		la selección dinámica por \textit{embedding} sobre ejemplos
+		fijos~\cite{pourhabib2026-active-learning}; la ganancia depende en
+		buena medida de la capacidad del modelo base para aprovechar esa
+		selección.
+
+		\item \textbf{El tamaño del modelo tiene rendimientos decrecientes.}
+		En comparativas cruzadas de familias de modelos sobre generación de
+		consultas, la técnica de \textit{prompting} importa tanto o más que el
+		número de parámetros~\cite{beskorovainyi2026-onprem-textsql}, y
+		modelos pequeños bien afinados a la tarea pueden superar a modelos
+		varias veces mayores sin ese
+		afinamiento~\cite{sheng2025-slmsql}.
+
+		\item \textbf{Los sistemas basados en plantillas fijas siguen siendo
+		una alternativa con precedente} para preguntas dentro de un catálogo
+		conocido, a cambio de perder flexibilidad ante formulaciones no
+		previstas --el compromiso clásico entre cobertura y
+		fiabilidad~\cite{aneja2025-interpretable-kgqa}.
+	\end{itemize}
+
+	Estos hallazgos --en particular, la insuficiencia del \textit{zero-shot},
+	la utilidad limitada de la selección por similitud según el modelo, y los
+	rendimientos decrecientes del tamaño del modelo-- se contrastan con
+	resultados propios obtenidos sobre el grafo de este proyecto en el
+	Capítulo~\ref{ch:alternativas}, y motivan directamente la capa
+	determinista de corrección de consultas SPARQL descrita en el
+	Capítulo~\ref{ch:solucion}.
+
 	% ============================================================ %
-	% PLANIFICACIÓN (antes src/gantt.tex; ahora absorbe también     %
-	% src/presupuesto.tex y src/riesgos.tex, siguiendo la           %
+	% PLANIFICACIÓN (incluye evaluación económica y riesgos como    %
+	% secciones propias, no capítulos aparte, siguiendo la          %
 	% estructura de la memoria de Nahia, cuyo capítulo 3            %
 	% "Planificación" incluye evaluación económica y riesgos como   %
 	% secciones propias en vez de capítulos aparte. Se sitúa antes  %
@@ -1329,6 +1574,59 @@
 
 	\subsection{Diagrama de Gantt}
 
+	La Figura~\ref{fig:gantt} muestra la planificación temporal del proyecto,
+	desde el inicio de los primeros trabajos (22 de enero de 2026) hasta la
+	fecha límite de entrega de la memoria (15 de octubre de 2026), repartiendo
+	las 420 horas estimadas de la EDT (Sección~\ref{sec:descripcion-tareas})
+	en 38 semanas. Las tareas de gestión (1.1 y 1.2) y la documentación
+	técnica (5.2) se desarrollan de forma continua en paralelo al resto, en
+	vez de en un bloque cerrado.
+
+	\begin{figure}[htbp]
+		\centering
+		\resizebox{\linewidth}{!}{%
+		\begin{ganttchart}[
+			vgrid,
+			hgrid,
+			x unit=0.4cm,
+			y unit title=0.7cm,
+			y unit chart=0.6cm,
+			title height=1,
+			bar height=0.6,
+			bar label font=\small,
+			title label font=\small,
+			group label font=\small\bfseries,
+		]{1}{38}
+			\gantttitle{2026}{38} \\
+			\gantttitle{Ene}{2}
+			\gantttitle{Feb}{4}
+			\gantttitle{Mar}{4}
+			\gantttitle{Abr}{4}
+			\gantttitle{May}{5}
+			\gantttitle{Jun}{4}
+			\gantttitle{Jul}{4}
+			\gantttitle{Ago}{4}
+			\gantttitle{Sep}{4}
+			\gantttitle{Oct}{3} \\
+			\ganttbar[bar/.append style={fill=pkg-gestion}]{1.1 Reuniones con el director}{1}{38} \\
+			\ganttbar[bar/.append style={fill=pkg-gestion}]{1.2 Gestión del tiempo}{1}{38} \\
+			\ganttbar[bar/.append style={fill=pkg-investigacion}]{2.1 Estudio del estado del arte}{1}{3} \\
+			\ganttbar[bar/.append style={fill=pkg-investigacion}]{2.2 Análisis de alternativas}{4}{7} \\
+			\ganttbar[bar/.append style={fill=pkg-desarrollo}]{3.1 Extracción y preprocesado}{8}{9} \\
+			\ganttbar[bar/.append style={fill=pkg-desarrollo}]{3.2 RAG vectorial}{10}{14} \\
+			\ganttbar[bar/.append style={fill=pkg-desarrollo}]{3.3 GraphRAG}{10}{13} \\
+			\ganttbar[bar/.append style={fill=pkg-desarrollo}]{3.4 Interfaz web}{15}{16} \\
+			\ganttbar[bar/.append style={fill=pkg-evaluacion}]{4.1 Batería de preguntas}{17}{18} \\
+			\ganttbar[bar/.append style={fill=pkg-evaluacion}]{4.2 Evaluaciones y comparativa}{19}{22} \\
+			\ganttbar[bar/.append style={fill=pkg-evaluacion}]{4.3 Validación PDF/regresión}{23}{24} \\
+			\ganttbar[bar/.append style={fill=pkg-documentacion}]{5.1 Redacción de la memoria}{25}{36} \\
+			\ganttbar[bar/.append style={fill=pkg-documentacion}]{5.2 Documentación técnica}{17}{38}
+		\end{ganttchart}%
+		}
+		\caption{Diagrama de Gantt del proyecto (semanas desde el 22 de enero de 2026)}
+		\label{fig:gantt}
+	\end{figure}
+
 	\section{Metodología de desarrollo}
 
 	El desarrollo ha seguido un enfoque iterativo: cada componente se implementa,
@@ -1356,8 +1654,18 @@
 	\subsection{Costes por mano de obra}
 
 	El coste de mano de obra se calcula a partir del total de horas estimadas
-	en el diagrama EDT (Sección~\ref{sec:descripcion-tareas}), valoradas a una
-	tarifa de referencia de ingeniero junior/becario en prácticas.
+	en el diagrama EDT (Sección~\ref{sec:descripcion-tareas}), valoradas a la
+	tarifa de un ingeniero junior. En vez de una cifra de referencia
+	arbitraria, se toma el salario mínimo real fijado por convenio: el XIX
+	Convenio colectivo estatal de empresas de consultoría, tecnologías de la
+	información y estudios de mercado y de la opinión
+	pública~\cite{boe2025-convenio-consultoria} establece una jornada anual de
+	1.800 horas (art.~20), y su tabla salarial actualizada para
+	2026~\cite{boe2026-tablas-salariales} fija en 29.949,83 €/año el salario
+	de la categoría ``Titulado de grado superior'' --la que corresponde a un
+	Grado universitario de 240 créditos ECTS como el de este TFG, no la
+	categoría inferior ``Titulado de grado medio'' (antigua diplomatura de 3
+	años)--. Esto equivale a una tarifa de 16,64 €/h.
 
 	\begin{table}[htbp]
 		\centering
@@ -1369,9 +1677,9 @@
 			Horas totales estimadas & 420 h \\
 			\hline
 			\rowcolor{fila-alterna}
-			Tarifa/hora & 15 €/h \\
+			Tarifa/hora (29.949,83 €/año ``Titulado de grado superior'' $\div$ 1.800 h/año) & 16,64 €/h \\
 			\hline
-			\textbf{Coste de mano de obra} & \textbf{6.300 €} \\
+			\textbf{Coste de mano de obra} & \textbf{6.988,29 €} \\
 			\hline
 		\end{tabular}
 		\caption{Coste de mano de obra}
@@ -1476,7 +1784,7 @@
 			\rowcolor{tabla-header}
 			\textbf{Concepto} & \textbf{Coste} \\
 			\hline
-			Mano de obra & 6.300 € \\
+			Mano de obra & 6.988,29 € \\
 			\hline
 			\rowcolor{fila-alterna}
 			Hardware (amortizado) & 47 € \\
@@ -1486,7 +1794,7 @@
 			\rowcolor{fila-alterna}
 			Indirectos (electricidad) & 8 € \\
 			\hline
-			\textbf{Coste total} & \textbf{6.362 €} \\
+			\textbf{Coste total} & \textbf{7.050,29 €} \\
 			\hline
 		\end{tabular}
 		\caption{Coste total del proyecto}
@@ -1537,9 +1845,160 @@
 		\label{tab:riesgo-groq}
 	\end{table}
 
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{riesgo-header}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{2. Errores silenciosos en la generación de SPARQL}}} \\
+			\hline
+			Descripción & El LLM puede generar una consulta SPARQL sintácticamente
+			válida pero semánticamente incorrecta (patrón que cuenta de más, propiedad
+			inventada, filtro perdido...); el resultado es una cifra equivocada narrada
+			como si fuera un hecho verificado, sin ningún error visible que la delate. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Plan de prevención & Catálogo de anti-patrones detectados y sanitizados
+			automáticamente antes de ejecutar la consulta
+			(\texttt{decisiones\_tecnicas.md}, Sección~3.1), y validación manual
+			contra el PDF original --no solo contra la estructura de la respuesta--
+			en cada ronda de pruebas. \\
+			\hline
+			Plan de contingencia & Suite de regresión automática
+			(\texttt{scripts/regression\_qa.py}) que se relanza tras cualquier
+			cambio en la generación de SPARQL, para detectar si una corrección
+			nueva reintroduce un fallo ya solucionado. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Probabilidad & Alta (es, de hecho, el fallo más frecuente encontrado
+			durante el desarrollo). \\
+			\hline
+			Impacto & Alto: una cifra incorrecta sin error visible es el peor caso
+			posible para un sistema cuyo requisito central es la trazabilidad
+			(RNF1, Capítulo~\ref{ch:estadodelarte}). \\
+			\hline
+		\end{tabularx}
+		\caption{Riesgo: 2. Errores silenciosos en la generación de SPARQL}
+		\label{tab:riesgo-sparql}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{riesgo-header}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{3. Calidad variable del OCR en actas antiguas}}} \\
+			\hline
+			Descripción & Las actas más antiguas del corpus (proceden de PDF
+			escaneados o convertidos de forma menos cuidada) presentan errores de
+			OCR --espacios sueltos, mezcla de euskera y castellano en los mismos
+			nombres, cortes de palabra-- que dificultan la extracción de
+			proposiciones y la identificación de concejales. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Plan de prevención & Deduplicación de nombres de concejal mediante
+			plegado fonético de apellidos, solape de nombres de pila y un mapa
+			explícito de alias euskera/castellano (Sección~5.2 de
+			\texttt{decisiones\_tecnicas.md}). \\
+			\hline
+			Plan de contingencia & Cuando la resolución automática no alcanza
+			confianza suficiente, la entidad se deja sin resolver en vez de
+			asignarla de forma incorrecta --se prioriza no introducir un dato
+			falso sobre completar el 100\% de los casos. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Probabilidad & Media (concentrada en las actas más antiguas del
+			corpus). \\
+			\hline
+			Impacto & Medio: afecta a la cobertura del voto nominal y a la
+			atribución de partido de algunos concejales, no a la fiabilidad de
+			los datos que sí se resuelven. \\
+			\hline
+		\end{tabularx}
+		\caption{Riesgo: 3. Calidad variable del OCR en actas antiguas}
+		\label{tab:riesgo-ocr}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{riesgo-header}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{4. Plazo de entrega ajustado con un único desarrollador}}} \\
+			\hline
+			Descripción & El proyecto lo desarrolla una sola persona, con fecha
+			límite de entrega de la memoria el 15 de octubre de 2026
+			(Sección~\ref{sec:descripcion-tareas}); cualquier imprevisto --de
+			salud, técnico o de disponibilidad-- no tiene margen de reasignación
+			a otro miembro del equipo. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Plan de prevención & Seguimiento semanal del avance frente al
+			diagrama de Gantt (Figura~\ref{fig:gantt}), y priorización explícita
+			de los requisitos funcionales (Tabla~\ref{tab:requisitos-funcionales})
+			sobre mejoras no esenciales si el margen se estrecha. \\
+			\hline
+			Plan de contingencia & Recorte de alcance dentro de lo ya delimitado
+			en la Sección~\ref{sec:objetivos-especificos} --p.~ej. reducir el
+			tamaño de la batería de preguntas de referencia-- antes que sacrificar
+			la trazabilidad o la corrección de los datos mostrados. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Probabilidad & Media. \\
+			\hline
+			Impacto & Alto: sin margen de reasignación, un imprevisto afecta
+			directamente a la fecha de entrega. \\
+			\hline
+		\end{tabularx}
+		\caption{Riesgo: 4. Plazo de entrega ajustado con un único desarrollador}
+		\label{tab:riesgo-plazo}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
+			\hline
+			\rowcolor{riesgo-header}
+			\multicolumn{2}{|c|}{\textcolor{white}{\textbf{5. Nombres y grupos ambiguos o mal atribuidos en las actas}}} \\
+			\hline
+			Descripción & Las actas identifican a los concejales por apellido
+			suelto, y varios comparten apellido dentro del censo (p.~ej. tres
+			concejales distintos apellidados ``Gil'' en mandatos distintos); sin
+			desambiguar, el voto nominal puede atribuirse a la persona
+			equivocada. De forma similar, una palabra genérica puede
+			confundirse con el nombre de un grupo político (``ciudadanos'' en
+			minúscula generaba falsos positivos del partido Ciudadanos antes de
+			corregirse). \\
+			\hline
+			\rowcolor{fila-alterna}
+			Plan de prevención & Resolución de apellido por (apellido +
+			mandato) contra el censo de concejales de esa legislatura, en vez
+			de por apellido suelto; comparación exacta de grupo político contra
+			los alias canónicos del partido en vez de coincidencia de texto
+			libre. \\
+			\hline
+			Plan de contingencia & Cuando varios concejales del censo comparten
+			apellido y grupo en la misma fecha, se emite únicamente el voto
+			agregado por grupo (\texttt{bo:votoAFavorDe}) y se omite el voto
+			nominal de esa persona, en vez de asignarlo al primer candidato
+			activo y arriesgarse a acertar el grupo pero fallar la persona. \\
+			\hline
+			\rowcolor{fila-alterna}
+			Probabilidad & Media (concentrada en apellidos comunes con varios
+			concejales activos en mandatos distintos). \\
+			\hline
+			Impacto & Medio: afecta a la atribución de voto nominal a personas
+			concretas, no al recuento agregado por grupo, que es el dato que
+			más preguntas de agregación utilizan. \\
+			\hline
+		\end{tabularx}
+		\caption{Riesgo: 5. Nombres y grupos ambiguos o mal atribuidos en las actas}
+		\label{tab:riesgo-nombres}
+	\end{table}
+
 	% ============================================================ %
-	% ANÁLISIS DE ALTERNATIVAS (antes src/alternativas.tex; se      %
-	% mantiene como capítulo propio, a diferencia de la memoria de  %
+	% ANÁLISIS DE ALTERNATIVAS (se mantiene como capítulo propio,   %
+	% a diferencia de la memoria de                                 %
 	% Nahia, por decisión explícita del alumno/director; se sitúa   %
 	% tras la planificación, una vez fijado el marco del proyecto)  %
 	% ============================================================ %
@@ -1549,24 +2008,171 @@
 
 	\section{Modelos de lenguaje: local (Ollama) frente a API en la nube (Groq / Gemini)}
 
+	El sistema necesita LLM en dos contextos muy distintos: generación
+	\textbf{interactiva} (una respuesta por pregunta del usuario, en tiempo
+	real) y enriquecimiento \textbf{por lotes} (clasificar las 3.422
+	proposiciones del corpus una sola vez, sin supervisión). Se evaluaron tres
+	opciones para ambos: modelos locales servidos con Ollama, la API gratuita
+	de Groq, y la API de pago de Gemini.
+
 	\subsection{Puntos positivos}
+
+	\begin{itemize}
+		\item \textbf{Ollama (local):} sin coste por token ni límite de
+		cuota; los datos no salen de la máquina, relevante al tratarse de un
+		corpus público pero cuyo procesamiento no depende de un tercero.
+
+		\item \textbf{Groq:} nivel gratuito con inferencia muy rápida (\texttt{gpt-oss-120b}
+		sirve respuestas interactivas sin necesidad de GPU propia); se usa
+		como primera opción para la generación interactiva del RAG vectorial,
+		con caída automática a Ollama local si falla (Sección~2.1 de
+		\texttt{decisiones\_tecnicas.md}).
+
+		\item \textbf{Gemini:} coste bajo y predecible con el modelo
+		\texttt{gemini-3.5-flash-lite} (0,30~\$/1,50~\$ por millón de tokens
+		entrada/salida); el enriquecimiento completo del corpus
+		(\textasciitilde3.400 proposiciones) costó \textasciitilde5~€ medidos
+		en producción.
+	\end{itemize}
+
 	\subsection{Puntos negativos}
+
+	\begin{itemize}
+		\item \textbf{Ollama (local):} sin GPU dedicada, la generación es
+		inviable para procesos por lotes: \textasciitilde200~s por
+		proposición en un portátil de 6~GB de RAM habría supuesto más de
+		180 horas para el corpus completo. Requiere un equipo con GPU
+		reservado para esa tarea (Sección~\ref{sec:costes-hardware}).
+
+		\item \textbf{Groq:} el nivel gratuito limita a
+		\textasciitilde100-200k tokens/día, cuota asociada a la clave de API
+		--no se evita usando otra máquina--, insuficiente para enriquecer el
+		corpus completo de una sola vez.
+
+		\item \textbf{Gemini:} de pago desde el primer token; requiere
+		control activo del gasto (\texttt{--max-eur} en
+		\texttt{build\_graph.py}) y los modelos disponibles para una misma
+		clave de API cambian con el tiempo (\texttt{gemini-2.5-flash} y
+		\texttt{2.5-flash-lite} dejaron de estar disponibles durante el
+		desarrollo).
+	\end{itemize}
+
 	\subsection{Conclusión}
+
+	No se elige una única opción, sino una combinación según el contexto de
+	uso: \textbf{Groq} para la generación interactiva (rápida y gratuita,
+	con Ollama local como respaldo ante fallos de cuota), y \textbf{Gemini
+	Flash-Lite} para el enriquecimiento por lotes del corpus completo (coste
+	bajo y predecible, evita las \textasciitilde180 horas que habría
+	requerido Ollama sin GPU). Ollama local con GPU se reserva para el
+	estudio comparativo de modelos de generación de SPARQL
+	(Sección~\ref{sec:estado-arte-sparql}), donde repetir el mismo
+	experimento decenas de veces sobre el mismo modelo hace prohibitivo
+	cualquier coste por token.
 
 	\section{Almacenamiento del grafo: rdflib/OWL-RL frente a una base de grafos dedicada (p.ej. GraphDB, Neo4j)}
 
+	El grafo de conocimiento (\textasciitilde181.500 triples tras el
+	razonamiento OWL-RL) puede almacenarse y consultarse con una librería en
+	memoria (rdflib + owlrl) o con un motor de grafos dedicado desplegado
+	como servicio (GraphDB, Neo4j, Blazegraph...).
+
 	\subsection{Puntos positivos}
+
+	\begin{itemize}
+		\item \textbf{rdflib/OWL-RL:} no requiere levantar ni mantener un
+		servicio aparte --el grafo es un archivo (\texttt{bilbao\_reasoned.ttl})
+		que se carga en memoria al arrancar--, lo que simplifica el
+		despliegue y es coherente con el requisito de coste bajo (RNF3,
+		Capítulo~\ref{ch:estadodelarte}). El razonamiento OWL-RL se ejecuta
+		una vez, de forma \textit{offline}, al construir el grafo, no en
+		cada consulta.
+
+		\item \textbf{Base de grafos dedicada:} índices optimizados para
+		consultas SPARQL sobre grafos de gran tamaño, soporte nativo de
+		concurrencia entre usuarios, y herramientas de administración e
+		inspección visual del grafo.
+	\end{itemize}
+
 	\subsection{Puntos negativos}
+
+	\begin{itemize}
+		\item \textbf{rdflib/OWL-RL:} el grafo completo se carga en memoria
+		en cada arranque del proceso, y las consultas SPARQL complejas sobre
+		grafos grandes son más lentas que con un motor dedicado con índices
+		persistentes --a este volumen de triples, sin impacto perceptible en
+		la interfaz conversacional, pero es una limitación que no escala
+		indefinidamente.
+
+		\item \textbf{Base de grafos dedicada:} añade una pieza de
+		infraestructura más que instalar, configurar y mantener --y, en las
+		opciones no libres, un coste de licencia o de alojamiento-- para un
+		proyecto de un único desarrollador y un grafo que cabe cómodamente en
+		memoria.
+	\end{itemize}
+
 	\subsection{Conclusión}
+
+	Se descarta una base de grafos dedicada para esta entrega: el volumen del
+	grafo (\textasciitilde181.500 triples) no lo justifica, y rdflib/OWL-RL
+	cumple el requisito de trazabilidad y razonamiento automático (RF2,
+	RF8) sin coste de infraestructura adicional. Si el corpus creciera en
+	varios órdenes de magnitud, o si el sistema tuviera que atender consultas
+	concurrentes de múltiples usuarios con baja latencia, un motor de grafos
+	dedicado pasaría a ser la opción preferible.
 
 	\section{Almacén vectorial y recuperación: ChromaDB e híbrida (semántica + literal + temática) frente a solo semántica}
 
+	El RAG vectorial puede limitarse a la búsqueda semántica clásica por
+	\textit{embeddings}, o combinarla con canales adicionales de recuperación
+	sobre el mismo almacén (ChromaDB).
+
 	\subsection{Puntos positivos}
+
+	\begin{itemize}
+		\item \textbf{Solo semántica:} arquitectura más simple, un único
+		canal de recuperación y sin lógica adicional de fusión de resultados.
+
+		\item \textbf{Híbrida (semántica + literal + temática):} cada canal
+		cubre un fallo distinto de los otros dos. El canal literal recupera
+		menciones únicas de nombres propios que el \textit{embedding} no
+		acerca lo suficiente (p.~ej. una empresa citada una sola vez); el
+		canal temático recupera fragmentos relevantes para preguntas
+		generales sobre un tema amplio (``qué se ha hecho en movilidad'') que
+		no comparten vocabulario textual con los fragmentos relevantes,
+		porque mide coincidencia de \emph{clasificación} en vez de
+		coincidencia de \emph{texto} (Sección~1.1 de
+		\texttt{decisiones\_tecnicas.md}).
+	\end{itemize}
+
 	\subsection{Puntos negativos}
+
+	\begin{itemize}
+		\item \textbf{Solo semántica:} pierde precisión exactamente en los
+		dos casos que motivan los canales adicionales --menciones únicas y
+		preguntas temáticas amplias--, con el riesgo de devolver ``no hay
+		información'' cuando sí la hay en el corpus.
+
+		\item \textbf{Híbrida:} más candidatos que fusionar y reordenar por
+		pregunta (hasta tres canales, cada uno con sus propios candidatos),
+		lo que exige una etapa de reordenación (Cohere) para que el volumen
+		adicional de candidatos no degrade la relevancia de los primeros
+		resultados, y añade complejidad de implementación y de depuración
+		frente a un único canal.
+	\end{itemize}
+
 	\subsection{Conclusión}
 
+	Se adopta la recuperación híbrida sobre ChromaDB: el coste de
+	implementación adicional se compensa con una cobertura de preguntas que
+	la búsqueda semántica sola no alcanza, y es coherente con el requisito de
+	precisión sobre cobertura (RNF2, Tabla~\ref{tab:requisitos-no-funcionales}) --preferir
+	encontrar el dato correcto, aunque exija combinar varias estrategias de
+	búsqueda, a que el sistema responda que no dispone de información cuando
+	sí la tiene.
+
 	% ============================================================ %
-	% DESCRIPCIÓN DE LA SOLUCIÓN (antes src/solucion.tex)           %
+	% DESCRIPCIÓN DE LA SOLUCIÓN                                    %
 	% ============================================================ %
 
 	\chapter{Descripción de la solución propuesta}
@@ -1621,8 +2227,8 @@
 	\subsection{Enriquecimiento con un LLM}
 
 	% ============================================================ %
-	% ANÁLISIS DE RESULTADOS (antes src/resultados.tex; reorganizado%
-	% siguiendo la estructura de la memoria de Nahia --separación   %
+	% ANÁLISIS DE RESULTADOS (reorganizado siguiendo la estructura  %
+	% de la memoria de Nahia --separación                           %
 	% explícita entre calidad de la recuperación y de la generación-%
 	% y ampliado con la comparativa GraphRAG/vectorial, propia de   %
 	% este TFG al tener dos sistemas en vez de uno)                 %
@@ -1670,7 +2276,7 @@
 	\section{Limitaciones}
 
 	% ============================================================ %
-	% CONCLUSIONES (antes src/conclusiones.tex)                     %
+	% CONCLUSIONES                                                  %
 	% ============================================================ %
 
 	\chapter{Conclusiones y trabajo futuro}
@@ -1686,32 +2292,143 @@
 
 	\section{Trabajo futuro}
 
-	% BIBLIOGRAFÍA:
-
-	% ============================================================ %
-	% BIBLIOGRAFÍA (antes src/bibliografia.tex)                     %
-	% ============================================================ %
 
 	\cleardoublepage
 	\phantomsection
 	\addcontentsline{toc}{chapter}{Bibliografía}
-	\begin{thebibliography}{9}
-		\bibitem{ref-1}
-		Autores.
-		\textit{Título}.
-		Editorial, Año.
+	\begin{thebibliography}{99}
+		\bibitem{ley-transparencia}
+		\textit{Ley 19/2013, de 9 de diciembre, de transparencia, acceso a la
+		información pública y buen gobierno}. Boletín Oficial del Estado,
+		núm.~295, de 10 de diciembre de 2013 (BOE-A-2013-12887).
+		\url{https://www.boe.es/buscar/act.php?id=BOE-A-2013-12887}
 
-		\bibitem{ref-2}
-		Autores.
-		\textit{Título}.
-		Editorial, Año.
-		\url{https://www.example.com}
+		\bibitem{lewis2020-rag}
+		Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N.,
+		Küttler, H., Lewis, M., Yih, W., Rocktäschel, T., Riedel, S., y Kiela, D.
+		\textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}.
+		Advances in Neural Information Processing Systems (NeurIPS), vol.~33,
+		pp.~9459--9474, 2020.
+		\url{https://proceedings.neurips.cc/paper_files/paper/2020/file/6b493230205f780e1bc26945df7481e5-Paper.pdf}
+
+		\bibitem{edge2024-graphrag}
+		Edge, D., Trinh, H., Cheng, N., Bradley, J., Chao, A., Mody, A., Truitt,
+		S., y Larson, J.
+		\textit{From Local to Global: A Graph RAG Approach to Query-Focused
+		Summarization}. arXiv:2404.16130, 2024.
+		\url{https://arxiv.org/abs/2404.16130}
+
+		\bibitem{openai2022-chatgpt}
+		OpenAI.
+		\textit{Introducing ChatGPT}. 30 de noviembre de 2022.
+		\url{https://openai.com/index/chatgpt/}
+
+		\bibitem{ji2023-hallucination}
+		Ji, Z., Lee, N., Frieske, R., Yu, T., Su, D., Xu, Y., Ishii, E., Bang,
+		Y.~J., Madotto, A., y Fung, P.
+		\textit{Survey of Hallucination in Natural Language Generation}. ACM
+		Computing Surveys, vol.~55, núm.~12, art.~248, 2023.
+		\url{https://doi.org/10.1145/3571730}
+
+		\bibitem{hogan2021-knowledge-graphs}
+		Hogan, A., Blomqvist, E., Cochez, M., D\textquotesingle{}Amato, C., De Melo, G.,
+		Gutierrez, C., Kirrane, S., Labra Gayo, J.~E., Navigli, R., Neumaier, S.,
+		Ngonga Ngomo, A.~C., Polleres, A., Rashid, S.~M., Rula, A., Schmelzeisen,
+		L., Sequeda, J., Staab, S., y Zimmermann, A.
+		\textit{Knowledge Graphs}. ACM Computing Surveys, vol.~54, núm.~4,
+		art.~71, pp.~1--37, 2021.
+		\url{https://doi.org/10.1145/3447772}
+
+		\bibitem{w3c-rdf11}
+		W3C.
+		\textit{RDF 1.1 Concepts and Abstract Syntax}. W3C Recommendation, 25 de
+		febrero de 2014.
+		\url{https://www.w3.org/TR/rdf11-concepts/}
+
+		\bibitem{w3c-owl2}
+		Hitzler, P., Krötzsch, M., Parsia, B., Patel-Schneider, P.~F., y
+		Rudolph, S. (eds.)
+		\textit{OWL 2 Web Ontology Language Primer (Second Edition)}. W3C
+		Recommendation, 11 de diciembre de 2012.
+		\url{https://www.w3.org/TR/owl2-primer/}
+
+		\bibitem{w3c-sparql11}
+		W3C.
+		\textit{SPARQL 1.1 Query Language}. W3C Recommendation, 21 de marzo de
+		2013.
+		\url{https://www.w3.org/TR/sparql11-query/}
+
+		\bibitem{gao2023-rag-survey}
+		Gao, Y., Xiong, Y., Gao, X., Jia, K., Pan, J., Bi, Y., Dai, Y., Sun,
+		J., Wang, M., y Wang, H.
+		\textit{Retrieval-Augmented Generation for Large Language Models: A
+		Survey}. arXiv:2312.10997, 2023.
+		\url{https://arxiv.org/abs/2312.10997}
+
+		\bibitem{nogueira2019-bert-rerank}
+		Nogueira, R., y Cho, K.
+		\textit{Passage Re-ranking with BERT}. arXiv:1901.04085, 2019.
+		\url{https://arxiv.org/abs/1901.04085}
+
+		\bibitem{giuliani2026-sparql-llm}
+		Giuliani, A., Manca, M.~M., Piano, L., et al.
+		\textit{Are LLMs Adequate SPARQL Query Generators? Investigating
+		Zero-Shot NL-to-SPARQL Translation}. Neural Computing and
+		Applications, vol.~38, art.~33, 2026.
+		\url{https://link.springer.com/article/10.1007/s00521-025-11799-x}
+
+		\bibitem{hernandez2025-aviation-sparql}
+		Hernandez-Camero, I.~V., Garcia-Lopez, E., Garcia-Cabot, A., y
+		Caro-Alvaro, S.
+		\textit{Context-Aware Few-Shot Learning SPARQL Query Generation from
+		Natural Language on an Aviation Knowledge Graph}. Machine Learning
+		and Knowledge Extraction, vol.~7, núm.~2, art.~52, 2025.
+		\url{https://doi.org/10.3390/make7020052}
+
+		\bibitem{pourhabib2026-active-learning}
+		Pourhabib, A.
+		\textit{Robust Active Learning for Few-Shot Example Selection in
+		Text-to-SQL}. arXiv:2606.10125, 2026.
+		\url{https://arxiv.org/abs/2606.10125}
+
+		\bibitem{beskorovainyi2026-onprem-textsql}
+		Beskorovainyi, V.
+		\textit{How Far Do On-Prem Open LLMs Get on Text-to-SQL? A
+		Cross-Family Size x Technique Frontier on BIRD}. arXiv:2606.29733,
+		2026.
+		\url{https://arxiv.org/abs/2606.29733}
+
+		\bibitem{sheng2025-slmsql}
+		Sheng, L., y Xu, S.
+		\textit{SLM-SQL: An Exploration of Small Language Models for
+		Text-to-SQL}. arXiv:2507.22478, 2025.
+		\url{https://arxiv.org/abs/2507.22478}
+
+		\bibitem{aneja2025-interpretable-kgqa}
+		Aneja, K., Srivastava, M., Das, S., y Aneja, N.
+		\textit{Interpretable Question Answering with Knowledge Graphs}.
+		arXiv:2510.19181, 2025.
+		\url{https://arxiv.org/abs/2510.19181}
+
+		\bibitem{boe2025-convenio-consultoria}
+		Dirección General de Trabajo.
+		\textit{Resolución de 4 de abril de 2025 por la que se registra y
+		publica el XIX Convenio colectivo estatal de empresas de consultoría,
+		tecnologías de la información y estudios de mercado y de la opinión
+		pública}. Boletín Oficial del Estado (BOE-A-2025-7766), 2025.
+		\url{https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-7766}
+
+		\bibitem{boe2026-tablas-salariales}
+		Dirección General de Trabajo.
+		\textit{Resolución de 13 de abril de 2026 por la que se registra y
+		publica el Acta de la Comisión paritaria por la que se aprueba la
+		actualización de las tablas salariales del XIX Convenio colectivo
+		estatal de empresas de consultoría, tecnologías de la información y
+		estudios de mercado y de la opinión pública}. Boletín Oficial del
+		Estado (BOE-A-2026-9024), 2026.
+		\url{https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-9024}
 	\end{thebibliography}
 
 	% ANEXOS:
-
-	%	\include{src/normativa}
-	%	\include{src/planos}
-	%	\include{src/manuales}
 
 \end{document}
