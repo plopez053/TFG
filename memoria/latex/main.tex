@@ -1,14 +1,6 @@
-% preamble.tex — paquetes, colores, fuentes y la macro \portada.
-% Los capítulos están en src/; main.tex solo los enlaza con \input.
-
-% ------------------------------------------------------------ %
-% TIPO Y PAQUETES                                              %
-% ------------------------------------------------------------ %
-% Paquetes = imports: cada \usepackage añade una funcionalidad extra.
 
 \documentclass[11pt, a4paper]{report}
 \usepackage[spanish, es-tabla, activeacute]{babel}
-% \usepackage[utf8]{inputenc}
 \usepackage[pagestyles]{titlesec}
 \usepackage[hidelinks]{hyperref}
 \usepackage{graphicx}
@@ -31,60 +23,29 @@
 \usetikzlibrary{positioning}
 \usepackage{pgfgantt}
 
-% Le pone nombre a un color para poder usarlo luego (p.ej. \color{ehu-blue}).
 \definecolor{eus-color}{gray}{0.4}
 \definecolor{eng-color}{gray}{0.5}
 \definecolor{ehu-blue}{RGB}{27,74,120}
 
-% ------------------------------------------------------------ %
-% COLORES DE TABLAS (estilo "ficha" de paquetes de trabajo y   %
-% riesgos, y cabecera sombreada de tablas de datos --ver la    %
-% memoria de Nahia Iturregi como referencia de estilo)         %
-% ------------------------------------------------------------ %
+\definecolor{pkg-gestion}{RGB}{229,57,53}
+\definecolor{pkg-investigacion}{RGB}{156,39,176}
+\definecolor{pkg-desarrollo}{RGB}{67,160,71}
+\definecolor{pkg-evaluacion}{RGB}{30,136,229}
+\definecolor{pkg-documentacion}{RGB}{251,140,0}
+\definecolor{riesgo-header}{RGB}{66,66,66}
+\definecolor{tabla-header}{gray}{0.85}
+\definecolor{fila-alterna}{gray}{0.93}
 
-% Una por cada categoría de primer nivel del diagrama EDT (Sección 5.2).
-\definecolor{pkg-gestion}{RGB}{229,57,53}        % rojo
-\definecolor{pkg-investigacion}{RGB}{156,39,176} % morado
-\definecolor{pkg-desarrollo}{RGB}{67,160,71}     % verde
-\definecolor{pkg-evaluacion}{RGB}{30,136,229}    % azul
-\definecolor{pkg-documentacion}{RGB}{251,140,0}  % naranja
-\definecolor{riesgo-header}{RGB}{66,66,66}       % gris oscuro, cabecera de tablas de riesgo
-\definecolor{tabla-header}{gray}{0.85}           % gris claro, cabecera de tablas de datos
-\definecolor{fila-alterna}{gray}{0.93}           % gris muy claro, para alternar filas
-
-% Ajuste de espaciado en el índice de figuras/tablas. No tocar.
 \newcommand*{\noaddvspace}{\renewcommand*{\addvspace}[1]{}}
 \addtocontents{lof}{\protect\noaddvspace}
 \addtocontents{lot}{\protect\noaddvspace}
 
-% ------------------------------------------------------------ %
-% NUMERACIÓN CONTINUA DE FIGURAS Y TABLAS                      %
-% ------------------------------------------------------------ %
-% Figuras/tablas numeradas 1, 2, 3... seguidas, sin reiniciar por capítulo.
-
 \counterwithout{figure}{chapter}
 \counterwithout{table}{chapter}
-
-% ------------------------------------------------------------ %
-% PARTICIÓN DE PALABRAS AL FINAL DE LÍNEA                      %
-% ------------------------------------------------------------ %
-% Ajuste cosmético del salto de línea. No tocar.
 
 \pretolerance=2000
 \tolerance=3000
 
-% ------------------------------------------------------------ %
-% FUENTES DEL DOCUMENTO                                        %
-% ------------------------------------------------------------ %
-% \setmainfont = fuente del texto normal. Cada \newfontfamily de abajo
-% define una fuente extra con su propio comando (p.ej. \calibrifont).
-
-% Tipografía Computer Modern Roman (vía CM-Unicode), la clásica de LaTeX,
-% en vez de la sans-serif corporativa EHUSans, para un aspecto más formal
-% y en línea con el de otras memorias de TFG (p.ej. la de Oiher).
-% Ruta relativa a fonts/ (los .otf de CM-Unicode van empaquetados con la
-% memoria) para que compile igual en cualquier equipo sin depender de una
-% instalación concreta de MiKTeX/TeX Live.
 \setmainfont[
 	Path          = fonts/,
 	Ligatures     = TeX,
@@ -125,9 +86,6 @@
  UprightFont   = EHUSerif-Black.otf
  ]{EHUSerif}
 
-% Calibri es propietaria (Microsoft) y no está disponible en Linux; se usa
-% Carlito, clon libre métricamente compatible, empaquetado en fonts/ para que
-% la portada se vea igual en cualquier equipo sin instalar la fuente.
 \newfontfamily{\calibrifont}[
 	Path          = fonts/,
 	UprightFont   = Carlito-Regular.ttf,
@@ -136,29 +94,14 @@
 	BoldItalicFont= Carlito-BoldItalic.ttf
 ]{Carlito}
 
-% ------------------------------------------------------------ %
-% ETIQUETAS EN LAS TABLAS Y FIGURAS							   %
-% ------------------------------------------------------------ %
-% Estilo del texto "Figura 3: ..." que va debajo de cada figura/tabla.
-
 \DeclareCaptionFont{ehu}{\fontsize{9}{10}\mdseries}
 \usepackage[font={ehu}, labelfont={bf}]{caption}
-
-% ------------------------------------------------------------ %
-% AÑADIR CUARTO NIVEL DE TÍTULO                                %
-% ------------------------------------------------------------ %
-% Permite numerar un nivel más de sección (\paragraph) si hace falta.
 
 \setcounter{secnumdepth}{4}
 \titleformat{\paragraph}
 {\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
 \titlespacing*{\paragraph}
 {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
-
-% ------------------------------------------------------------ %
-% ELIMINAR CABECERA DE CAPÍTULOS                               %
-% ------------------------------------------------------------ %
-% Quita la palabra "Capítulo" del título, y define la cabecera/pie de página.
 
 \titleformat{\chapter}%
   {\normalfont\bfseries\Huge}{\thechapter.}{10pt}{}
@@ -169,17 +112,8 @@
   \setfoot{UPV/EHU}{}{\thepage}
 }
 
-% ------------------------------------------------------------ %
-% MÁRGENES Y DISTANCIA ENTRE PÁRRAFOS						   %
-% ------------------------------------------------------------ %
-
 \geometry{top=2.5cm,left=3cm,right=3cm,bottom=2.5cm}
 \setlength{\parskip}{8pt}
-
-% ------------------------------------------------------------ %
-% TÍTULO DEL ÍNDICE                                            %
-% ------------------------------------------------------------ %
-% Renombra "Índice general" a solo "Índice", etc.
 
 \addto\captionsspanish{
 	\renewcommand{\contentsname}{Índice}
@@ -187,18 +121,7 @@
 	\renewcommand{\listfigurename}{Lista de figuras}
 }
 
-% ------------------------------------------------------------ %
-% DIRECTORIO DE IMÁGENES                                       %
-% ------------------------------------------------------------ %
-% Dónde buscar las imágenes por defecto (\includegraphics{ODS16.png}).
-
 \graphicspath{{images/}}
-
-% ------------------------------------------------------------ %
-% PORTADA                                                      %
-% ------------------------------------------------------------ %
-% Coloca cada elemento a coordenadas fijas con tikz. Solo hace falta tocar
-% los datos de alumno/director/curso/fecha, más abajo.
 
 \newcommand{\portada}{
 	{\raggedleft\includegraphics[width=8cm]{corp/ehu}}
@@ -224,8 +147,6 @@
 		\node (D) [right=0.2cm of C.west, anchor=west, align=left]
 		{\small{\textbf{Alumno: }Lopez, Sanchez, Peio}\\
 			\small{\textbf{Director: }Egaña Aranguren, Mikel}
-			% Comentar la siguiente línea si sólo hay una dirección del TFG.
-			%\\\small{\textbf{Director/Directora (2): }<apellido 1, apellido 2, nombre>}
 			};
 		\draw[line width=0.5pt] (C.south west) -- (C.south east);
 	\end{tikzpicture}
@@ -244,29 +165,17 @@
 	\end{tikzpicture}
 }
 
-% ============================================================ %
-% FIN DEL PREAMBLE                                              %
-% ============================================================ %
-
-% A partir de aquí empieza el contenido real del documento (todo lo de
-% arriba es configuración que no imprime nada por sí sola).
 \begin{document}
 
 	\portada
-	\thispagestyle{empty} % sin número de página en la portada
+	\thispagestyle{empty}
 	\setcounter{page}{0}
 	\pagestyle{tfg}
 
-	% ============================================================ %
-	% RESUMEN                                                       %
-	% ============================================================ %
-
-	% \chapter* = sin numerar; por eso hay que añadirlo al índice a mano.
 	\chapter*{Resumen \normalfont{{\serifthick Laburpena} Abstract}}
 	\addcontentsline{toc}{chapter}{Resumen \normalfont{{\serifthick Laburpena} Abstract}}
 
 	\begin{itshape}
-	% \mdseries es necesario para que el párrafo de después no salga en negrita.
 	\normalfont\large\bfseries Resumen:\par\normalsize\mdseries\itshape
 
 	Este trabajo aborda la transformación de las actas del Pleno del Ayuntamiento de
@@ -294,8 +203,6 @@
 	\textbf{Palabras Clave:} GraphRAG, RAG vectorial, grafo de conocimiento, SPARQL,
 	LLM, datos abiertos municipales.
 
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 	\bigskip
 	\normalfont\large\bfseries Laburpena:\par\normalsize\mdseries\itshape
 
@@ -321,8 +228,6 @@
 	amaitzen da.
 
 	\textbf{Gako-hitzak:} GraphRAG, RAG bektoriala, ezagutza-grafoa, SPARQL, LLM, udal datu irekiak.
-
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 	\bigskip
 	\normalfont\large\bfseries Abstract:\par\normalsize\mdseries\itshape
@@ -356,22 +261,17 @@
 	\setcounter{tocdepth}{1}
 	\tableofcontents
 
-	% ÍNDICES:
 	\cleardoublepage
 	\phantomsection
 	\addcontentsline{toc}{chapter}{\listfigurename}
-	\listoffigures % Lista de figuras
+	\listoffigures
 
 	\cleardoublepage
 	\phantomsection
 	\addcontentsline{toc}{chapter}{\listtablename}
-	\listoftables % Lista de tablas
+	\listoftables
 
 	\cleardoublepage
-
-	% ============================================================ %
-	% LISTA DE ACRÓNIMOS                                            %
-	% ============================================================ %
 
 	\chapter*{Lista de acrónimos}
 	\addcontentsline{toc}{chapter}{Lista de acrónimos}
@@ -387,27 +287,18 @@
 		\item [SHACL] Shapes Constraint Language
 		\item [LOD] Linked Open Data
 		\item [API] Application Programming Interface
+		\item [SQL] Structured Query Language
+		\item [GPU] Graphics Processing Unit
+		\item [VRAM] Video Random Access Memory
+		\item [ODS] Objetivos de Desarrollo Sostenible
+		\item [EDT] Estructura de Desglose del Trabajo
 		\item [PDF] Portable Document Format
 		\item [OCR] Optical Character Recognition
 		\item [TFG] Trabajo Fin de Grado
 	\end{description}
 
-	% MEMORIA:
-	% ============================================================ %
-	% Estructura general de este documento, adaptada de la de la   %
-	% memoria de Nahia Iturregi (TFG_Nahia_Iturregi.pdf) a petición %
-	% del director. Diferencias explícitas con Nahia: se mantienen  %
-	% "Estado del arte" y "Análisis de alternativas" como capítulos %
-	% propios (Nahia los integra en Contexto/decisiones de          %
-	% implementación); el capítulo "Corpus y preprocesado de datos" %
-	% se corresponde con su capítulo 5 "Entorno experimental"; y no %
-	% hay capítulo de evaluación de usuarios porque este TFG no      %
-	% incluye una evaluación con usuarios reales.                   %
-	% ============================================================ %
-
-	% ============================================================ %
-	% INTRODUCCIÓN                                                  %
-	% ============================================================ %
+	\chapter*{Empleo de Inteligencia Artificial (IA)}
+	\addcontentsline{toc}{chapter}{Empleo de Inteligencia Artificial (IA)}
 
 	\chapter{Introducción}
 	\label{ch:introduccion}
@@ -616,10 +507,6 @@
 	Capítulo~\ref{ch:resultados} presenta la evaluación comparativa de ambos
 	sistemas. La memoria cierra con las conclusiones y los anexos.
 
-	% ============================================================ %
-	% CONTEXTO                                                      %
-	% ============================================================ %
-
 	\chapter{Contexto}
 	\label{ch:contexto}
 
@@ -799,12 +686,6 @@
 	trabajo; su descripción detallada, junto con el proceso que lo transforma en
 	datos estructurados, se recoge en el Capítulo~\ref{ch:corpus}.
 
-	% ============================================================ %
-	% ESTADO DEL ARTE (se mantiene como capítulo propio, a         %
-	% diferencia de la memoria de Nahia, por decisión explícita    %
-	% del alumno/director)                                         %
-	% ============================================================ %
-
 	\chapter{Descripción de requerimientos y análisis del estado del arte}
 	\label{ch:estadodelarte}
 
@@ -943,7 +824,7 @@
 	área de investigación activa, tanto para SPARQL sobre grafos de
 	conocimiento como para SQL sobre bases de datos relacionales --problema
 	estructuralmente equivalente al que resuelve el sistema GraphRAG de este
-	trabajo. La literatura reciente converge en varios hallazgos que han
+	trabajo. La literatura converge en varios hallazgos que han
 	condicionado directamente las decisiones de diseño de este sistema
 	(desarrolladas con más detalle en los Capítulos~\ref{ch:alternativas}
 	y~\ref{ch:solucion}):
@@ -960,26 +841,29 @@
 		un grafo de conocimiento de accidentes de aviación encontró que un
 		\textit{prompt} simple con ejemplos aleatorios podía igualar a
 		estrategias de selección por similitud
-		semántica~\cite{hernandez2025-aviation-sparql}, mientras que otros
-		trabajos en \textit{text-to-SQL} sí encuentran ventaja consistente en
-		la selección dinámica por \textit{embedding} sobre ejemplos
-		fijos~\cite{pourhabib2026-active-learning}; la ganancia depende en
+		semántica~\cite{hernandez2025-aviation-sparql}, mientras que en
+		\textit{text-to-SQL} la evaluación comparativa de Gao et al.\ sí
+		encuentra que elegir los ejemplos por similitud supera a elegirlos
+		al azar en todos los modelos probados~\cite{gao2024-dailsql}; la
+		ganancia depende en
 		buena medida de la capacidad del modelo base para aprovechar esa
 		selección.
 
 		\item \textbf{El tamaño del modelo tiene rendimientos decrecientes.}
-		En comparativas cruzadas de familias de modelos sobre generación de
-		consultas, la técnica de \textit{prompting} importa tanto o más que el
-		número de parámetros~\cite{beskorovainyi2026-onprem-textsql}, y
-		modelos pequeños bien afinados a la tarea pueden superar a modelos
-		varias veces mayores sin ese
-		afinamiento~\cite{sheng2025-slmsql}.
+		En la generación de consultas, la técnica de \textit{prompting}
+		importa tanto o más que el número de parámetros: en la evaluación
+		comparativa de Gao et al., un modelo anterior con ejemplos bien
+		elegidos supera a GPT-4 sin ejemplos~\cite{gao2024-dailsql}. Además,
+		modelos pequeños (de 1\,000 a 15\,000 millones de parámetros)
+		afinados a la tarea pueden superar a modelos mucho mayores sin ese
+		afinamiento~\cite{li2024-codes}.
 
 		\item \textbf{Los sistemas basados en plantillas fijas siguen siendo
 		una alternativa con precedente} para preguntas dentro de un catálogo
 		conocido, a cambio de perder flexibilidad ante formulaciones no
-		previstas --el compromiso clásico entre cobertura y
-		fiabilidad~\cite{aneja2025-interpretable-kgqa}.
+		previstas --el compromiso clásico entre cobertura y fiabilidad,
+		presente desde los primeros sistemas de pregunta-respuesta sobre
+		RDF~\cite{unger2012-template-qa}.
 	\end{itemize}
 
 	Estos hallazgos --en particular, la insuficiencia del \textit{zero-shot},
@@ -990,16 +874,6 @@
 	determinista de corrección de consultas SPARQL descrita en el
 	Capítulo~\ref{ch:solucion}.
 
-	% ============================================================ %
-	% PLANIFICACIÓN (incluye evaluación económica y riesgos como    %
-	% secciones propias, no capítulos aparte, siguiendo la          %
-	% estructura de la memoria de Nahia, cuyo capítulo 3            %
-	% "Planificación" incluye evaluación económica y riesgos como   %
-	% secciones propias en vez de capítulos aparte. Se sitúa antes  %
-	% de "Análisis de alternativas", como en Nahia, que planifica   %
-	% justo tras el contexto)                                       %
-	% ============================================================ %
-
 	\chapter{Planificación del proyecto}
 	\label{ch:planificacion}
 
@@ -1009,11 +883,6 @@
 	del proyecto, con los cinco paquetes de trabajo de primer nivel y sus
 	subpaquetes, que se detallan en la Sección~\ref{sec:descripcion-tareas}.
 
-	% Diagrama EDT: un nodo raíz, 5 categorías de primer nivel (un color por
-	% categoría, mismo criterio que las tablas "ficha" de paquete de trabajo) y
-	% sus subpaquetes en vertical debajo de cada una. Envuelto en \resizebox
-	% para que quepa siempre en el ancho de página sin ajustar coordenadas a
-	% mano si se añade o quita algún subpaquete.
 	\begin{figure}[htbp]
 		\centering
 		\resizebox{\linewidth}{!}{%
@@ -1073,10 +942,6 @@
 
 	\subsection{Gestión del proyecto}
 
-	% Tabla "ficha" de paquete de trabajo: cabecera de color a ancho completo con
-	% \multicolumn, filas alternas con \rowcolor{fila-alterna} para que se lean
-	% mejor las descripciones largas. Cambia el color (\rowcolor{pkg-...}) según
-	% la categoría de primer nivel a la que pertenezca cada paquete.
 	\begin{table}[htbp]
 		\centering
 		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
@@ -1642,11 +1507,7 @@
 	proposiciones distintas dentro de un mismo bloque bien formado. Este
 	proceso, con sus hallazgos y las correcciones aplicadas en cada ronda, queda
 	documentado en \texttt{decisiones\_tecnicas.md}, que sirve además de base
-	directa para la Sección~\ref{ch:solucion} de esta memoria.
-
-	% ------------------------------------------------------------ %
-	% (antes capítulo aparte "Descripción del presupuesto")        %
-	% ------------------------------------------------------------ %
+	directa para el Capítulo~\ref{ch:solucion} de esta memoria.
 
 	\section{Evaluación económica}
 	\label{sec:costes-hardware}
@@ -1693,7 +1554,7 @@
 	reuniones), y un ordenador de sobremesa, usado únicamente para el cómputo
 	sin supervisión que no requiere intervención activa --el enriquecimiento
 	LLM local del corpus completo y el estudio de comparación de modelos para la
-	generación de SPARQL (Sección~\ref{sec:graphrag})--. Ambos equipos se
+	generación de SPARQL (Sección~\ref{sec:estado-arte-sparql})--. Ambos equipos se
 	amortizan de forma proporcional a las horas dedicadas al proyecto sobre una
 	vida útil estimada de 4 años (\textasciitilde7.000 horas de uso).
 
@@ -1808,16 +1669,10 @@
 	especializado ni servicios de pago más allá de una única pasada puntual de
 	enriquecimiento del corpus.
 
-	% ------------------------------------------------------------ %
-	% (antes capítulo aparte "Análisis de riesgos")                %
-	% ------------------------------------------------------------ %
-
 	\section{Análisis de riesgos}
 
 	\subsection{Medidas de prevención y contingencia}
 
-	% Tabla "ficha" de riesgo: misma estructura que la de paquete de trabajo pero
-	% con cabecera gris oscura (riesgo-header) en vez de un color por categoría.
 	\begin{table}[htbp]
 		\centering
 		\begin{tabularx}{\linewidth}{|>{\bfseries}l|X|}
@@ -1998,13 +1853,6 @@
 		\label{tab:riesgo-nombres}
 	\end{table}
 
-	% ============================================================ %
-	% ANÁLISIS DE ALTERNATIVAS (se mantiene como capítulo propio,   %
-	% a diferencia de la memoria de                                 %
-	% Nahia, por decisión explícita del alumno/director; se sitúa   %
-	% tras la planificación, una vez fijado el marco del proyecto)  %
-	% ============================================================ %
-
 	\chapter{Análisis de alternativas}
 	\label{ch:alternativas}
 
@@ -2070,11 +1918,17 @@
 	estudio comparativo de modelos de generación de SPARQL
 	(Sección~\ref{sec:estado-arte-sparql}), donde repetir el mismo
 	experimento decenas de veces sobre el mismo modelo hace prohibitivo
-	cualquier coste por token.
+	cualquier coste por token. Que un modelo abierto ejecutado en local
+	sea candidato razonable para generar consultas no es una apuesta a
+	ciegas: la literatura sobre \textit{text-to-SQL} muestra que modelos
+	abiertos de tamaño moderado resultan competitivos en esta tarea,
+	sobre todo cuando se combinan con buenas técnicas de
+	\textit{prompting} o se afinan a la
+	tarea~\cite{gao2024-dailsql,li2024-codes}.
 
 	\section{Almacenamiento del grafo: rdflib/OWL-RL frente a una base de grafos dedicada (p.ej. GraphDB, Neo4j)}
 
-	El grafo de conocimiento (\textasciitilde181.500 triples tras el
+	El grafo de conocimiento (\textasciitilde247.500 triples tras el
 	razonamiento OWL-RL) puede almacenarse y consultarse con una librería en
 	memoria (rdflib + owlrl) o con un motor de grafos dedicado desplegado
 	como servicio (GraphDB, Neo4j, Blazegraph...).
@@ -2116,7 +1970,7 @@
 	\subsection{Conclusión}
 
 	Se descarta una base de grafos dedicada para esta entrega: el volumen del
-	grafo (\textasciitilde181.500 triples) no lo justifica, y rdflib/OWL-RL
+	grafo (\textasciitilde247.500 triples) no lo justifica, y rdflib/OWL-RL
 	cumple el requisito de trazabilidad y razonamiento automático (RF2,
 	RF8) sin coste de infraestructura adicional. Si el corpus creciera en
 	varios órdenes de magnitud, o si el sistema tuviera que atender consultas
@@ -2158,7 +2012,8 @@
 
 		\item \textbf{Híbrida:} más candidatos que fusionar y reordenar por
 		pregunta (hasta tres canales, cada uno con sus propios candidatos),
-		lo que exige una etapa de reordenación (Cohere) para que el volumen
+		lo que exige una etapa de reordenación con un modelo
+		\textit{cross-encoder}~\cite{nogueira2019-bert-rerank} (Cohere) para que el volumen
 		adicional de candidatos no degrade la relevancia de los primeros
 		resultados, y añade complejidad de implementación y de depuración
 		frente a un único canal.
@@ -2173,10 +2028,6 @@
 	encontrar el dato correcto, aunque exija combinar varias estrategias de
 	búsqueda, a que el sistema responda que no dispone de información cuando
 	sí la tiene.
-
-	% ============================================================ %
-	% DESCRIPCIÓN DE LA SOLUCIÓN                                    %
-	% ============================================================ %
 
 	\chapter{Descripción de la solución propuesta}
 	\label{ch:solucion}
@@ -2207,15 +2058,6 @@
 
 	\subsection{Construcción del \textit{prompt} para generación}
 
-	% ============================================================ %
-	% CORPUS Y PREPROCESADO DE DATOS (capítulo propio, equivalente  %
-	% al capítulo 5 "Entorno experimental" de la memoria de Nahia,  %
-	% que dedica un capítulo aparte a la fuente de datos y su        %
-	% preprocesado. Reúne la descripción del corpus de actas --antes %
-	% en "Estado del arte"-- y el pipeline que las convierte en      %
-	% proposiciones estructuradas --antes en "Solución"--)          %
-	% ============================================================ %
-
 	\chapter{Corpus y preprocesado de datos}
 	\label{ch:corpus}
 
@@ -2228,14 +2070,6 @@
 	\subsection{Extracción de proposiciones}
 
 	\subsection{Enriquecimiento con un LLM}
-
-	% ============================================================ %
-	% ANÁLISIS DE RESULTADOS (reorganizado siguiendo la estructura  %
-	% de la memoria de Nahia --separación                           %
-	% explícita entre calidad de la recuperación y de la generación-%
-	% y ampliado con la comparativa GraphRAG/vectorial, propia de   %
-	% este TFG al tener dos sistemas en vez de uno)                 %
-	% ============================================================ %
 
 	\chapter{Análisis de resultados}
 	\label{ch:resultados}
@@ -2274,7 +2108,7 @@
 	y \texttt{forbid} verificados manualmente contra las actas en PDF --es
 	decir, \textbf{precisión de ejecución} (\textit{execution accuracy}), el
 	estándar habitual en la literatura de traducción de lenguaje natural a
-	consultas formales (SQL o SPARQL)~\cite{giuliani2026-sparql-llm}: más
+	consultas formales (SQL o SPARQL)~\cite{giuliani2026-sparql-llm,gao2024-dailsql}: más
 	riguroso que un juez basado en LLM, porque compara contra un hecho
 	verificado, no contra la opinión de otro modelo.
 
@@ -2294,7 +2128,8 @@
 
 	Para el RAG vectorial no existe un único dato correcto que comparar, así
 	que se recurrió a RAGAS~\cite{ragas-library}, una librería de evaluación
-	de sistemas RAG que usa un LLM externo como juez (\textit{LLM-as-a-judge})
+	de sistemas RAG que usa un LLM externo como juez
+	(\textit{LLM-as-a-judge}~\cite{zheng2023-llm-judge})
 	sobre cuatro métricas, todas en el rango $[0,1]$:
 
 	\begin{itemize}
@@ -2309,26 +2144,55 @@
 		la respuesta generada y una respuesta de referencia.
 	\end{itemize}
 
-	Se construyó una batería de 13 preguntas de referencia
-	(\texttt{scripts/regression\_qa.py}, mismas preguntas usadas para
-	verificar la recuperación), cada una con una respuesta de referencia
-	escrita y verificada manualmente contra el texto de las actas en PDF
-	--nunca generada a partir de lo que el propio sistema recuperase o
-	respondiera, para no viciar la evaluación con su propio sesgo. Como
-	juez se usó \texttt{gemini-3.1-pro-preview} (\texttt{gemini-2.5-pro},
-	un modelo anterior habitual para este tipo de evaluación, ya estaba
-	retirado para cuentas nuevas en el momento de esta evaluación) vía la
-	API de Google AI Studio; el
-	embedding usado en la métrica de similitud semántica es
-	\texttt{nomic-embed-text}, el mismo que usa el RAG vectorial en
-	producción.
+	Las tres primeras corresponden a las tres puntuaciones de calidad
+	--relevancia del contexto, fidelidad de la respuesta y relevancia de
+	la respuesta-- que la revisión de Gao et al.\ identifica como núcleo
+	de la evaluación de sistemas RAG, y que cubren por separado las dos
+	partes del sistema: la recuperación y la generación. La misma revisión
+	recoge RAGAS entre las herramientas automáticas que calculan estas
+	puntuaciones con un LLM~\cite{gao2023-rag-survey}.
 
-	De las 13 preguntas, 12 se evaluaron completas; la pregunta sobre la
-	empresa Tubacex se quedó sin evaluar al agotarse a mitad el crédito de
-	la API de Google, y no se repitió la prueba por el impacto marginal
-	esperado de un único dato adicional sobre la media de 12. Los resultados
-	completos, pregunta por pregunta, están en
-	\texttt{scripts/ragas\_results.csv}.
+	Se construyó una batería de 50 preguntas de referencia. Las 13 primeras
+	son las mismas que usa la suite de regresión para verificar la
+	recuperación (\texttt{scripts/regression\_qa.py}); las 37 restantes se
+	eligieron a partir de los títulos de proposiciones reales del corpus,
+	escogiendo a propósito temas con pocas proposiciones dedicadas (el Tour
+	de Francia, la pobreza energética, los patinetes eléctricos, el Teatro
+	Arriaga, el sector del taxi...), de modo que la respuesta de referencia
+	pudiera verificarse \textit{completa} y no solo en parte. La batería
+	mezcla preguntas temáticas generales, preguntas acotadas a un grupo
+	político y preguntas sobre un pleno concreto por su fecha. Cada pregunta
+	tiene una respuesta de referencia escrita y verificada manualmente
+	contra el texto de las actas en PDF --nunca generada a partir de lo que
+	el propio sistema recuperase o respondiera, para no viciar la
+	evaluación con su propio sesgo.
+
+	Como juez se usó \texttt{gemini-2.5-pro} a través de Vertex AI (Google
+	Cloud). Antes se probó un juez local (Qwen3:8B), que se descartó por
+	ser notablemente más indulgente: en una misma respuesta que atribuía
+	mal una petición a un grupo, Qwen3 dio una Faithfulness de 1,00 y
+	Gemini detectó el error y la bajó a 0,69. Es coherente con lo que
+	observan Zheng et al.: la fiabilidad de un juez LLM depende de la
+	capacidad del modelo que hace de juez, y un juez fuerte (GPT-4 en su
+	estudio) alcanza con evaluadores humanos un nivel de acuerdo (en torno
+	al 85\,\%) comparable al que hay entre las propias personas (en torno
+	al 81\,\%)~\cite{zheng2023-llm-judge}. El embedding usado en las
+	métricas que lo necesitan es \texttt{nomic-embed-text}, el mismo que
+	usa el RAG vectorial en producción, para no mezclar dos nociones
+	distintas de similitud semántica en la misma evaluación.
+
+	Las respuestas evaluadas se generaron en el equipo de sobremesa del
+	proyecto (GPU NVIDIA RTX 2060 de 6~GB) con el generador local, Ollama
+	Qwen2.5-7B-Instruct, y no con Groq \texttt{gpt-oss-120b}. El sistema
+	admite los dos generadores: Groq, gratuito a través de su API, permite
+	usarlo en un portátil sin GPU, mientras que en un equipo con GPU puede
+	funcionar íntegramente en local. El local es el escenario más exigente
+	para la generación, por tratarse de un modelo mucho más pequeño, y el
+	efecto de cambiar de generador se midió aparte con un experimento
+	controlado (Sección~\ref{sec:analisis-generacion}). El resto del
+	\textit{pipeline} --recuperación híbrida y reordenamiento con Cohere--
+	es el mismo en ambos casos. Los resultados completos, pregunta por
+	pregunta, están en \texttt{scripts/ragas\_results.csv}.
 
 	Una advertencia metodológica encontrada durante esta evaluación, por si
 	resulta útil para trabajo futuro con RAGAS: las métricas de contexto
@@ -2359,66 +2223,262 @@
 	la verificación manual no puede dar --cobertura rápida y repetible,
 	resumida en un número--, pero no la sustituye.
 
-	\section{Análisis sobre la recuperación}
-
-	Context Relevance obtiene la puntuación máxima en las 12 preguntas
-	evaluadas: media 1,00 con desviación típica 0,00. La recuperación
-	híbrida de tres canales (semántico, literal por palabra clave y temático
-	por la taxonomía SKOS del grafo, Sección~\ref{sec:alt-recuperacion}) más
-	el reordenamiento con Cohere trae, sin excepción, fragmentos
-	temáticamente pertinentes a la pregunta.
-
-	\section{Análisis sobre la generación}
-	\label{sec:analisis-generacion}
+	\section{Resultados globales}
 
 	La Tabla~\ref{tab:ragas-resultados} recoge las cuatro métricas RAGAS
-	sobre las 12 preguntas evaluadas, en la configuración final del sistema.
+	sobre las 50 preguntas, en la configuración final del sistema. Las 50
+	se evaluaron completas, sin ningún fallo del juez.
 
 	\begin{table}[htbp]
 		\centering
 		\begin{tabular}{|l|c|}
 			\hline
 			\rowcolor{tabla-header}
-			\textbf{Métrica} & \textbf{Media $\pm$ desviación típica ($n=12$)} \\
+			\textbf{Métrica} & \textbf{Media $\pm$ desviación típica ($n=50$)} \\
 			\hline
-			Context Relevance & 1,00 $\pm$ 0,00 \\
-			\hline
-			\rowcolor{fila-alterna}
-			Faithfulness & 0,74 $\pm$ 0,12 \\
-			\hline
-			Answer Relevancy & 0,74 $\pm$ 0,11 \\
+			Context Relevance & 0,99 $\pm$ 0,05 \\
 			\hline
 			\rowcolor{fila-alterna}
-			Semantic/Cosine Similarity & 0,81 $\pm$ 0,04 \\
+			Faithfulness & 0,76 $\pm$ 0,15 \\
+			\hline
+			Answer Relevancy & 0,65 $\pm$ 0,08 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Semantic/Cosine Similarity & 0,82 $\pm$ 0,04 \\
 			\hline
 		\end{tabular}
-		\caption{Métricas RAGAS del RAG vectorial en su configuración final}
+		\caption{Métricas RAGAS del RAG vectorial en su configuración final (generador local Qwen2.5-7B)}
 		\label{tab:ragas-resultados}
 	\end{table}
 
 	Ninguna de las cuatro métricas cae en zona de alarma (por debajo de
 	$\sim$0,5, que indicaría un problema sistémico de recuperación o de
-	generación). Context Relevance perfecta y una desviación típica baja en
-	las otras tres métricas apuntan a un sistema consistente: no solo
-	acierta de media, se mueve en una banda estrecha pregunta a pregunta,
-	en vez de alternar entre respuestas muy buenas y muy malas.
+	generación), y ninguna pregunta obtiene un 0 en Context Relevance ni en
+	Answer Relevancy. La lectura de la tabla es distinta según la métrica:
+	las que dependen sobre todo de la recuperación (Context Relevance) están
+	prácticamente en el máximo, mientras que las que dependen de cómo
+	redacta el generador (Faithfulness y, en menor medida, Answer
+	Relevancy) son las que tienen margen de mejora. Las dos secciones
+	siguientes analizan cada parte por separado.
 
-	Dicho esto, Faithfulness no llega a 1,00, y el
-	análisis manual de las respuestas con puntuación más baja revela un
-	patrón de fallo real: cuando una respuesta
-	agrupa varias intervenciones sobre la misma proposición --el texto
-	original, una enmienda de otro grupo, una intervención de un concejal
-	distinto--, el modelo generador puede atribuir un argumento o una
-	petición al grupo equivocado dentro del mismo bloque. Un ejemplo
-	verificado: en la pregunta sobre la estabilización del empleo público
-	municipal, una frase atribuye a los Socialistas Vascos una petición que
-	en realidad forma parte de una enmienda presentada por otro grupo sobre
-	la misma proposición. Es un fallo real y acotado --de atribución dentro
-	de un bloque ya recuperado correctamente, no de invención de datos
-	nuevos--, del mismo tipo que los ya documentados en el desarrollo para la
-	narración del GraphRAG con modelos de tamaño similar: un límite de
-	comprensión del modelo generador ante contexto denso con varias voces,
-	no un fallo de recuperación.
+	\section{Análisis sobre la recuperación}
+	\label{sec:analisis-recuperacion}
+
+	Context Relevance obtiene una media de 0,99 con desviación típica 0,05:
+	solo 2 de las 50 preguntas bajan de la puntuación máxima (ambas con
+	0,75). La recuperación híbrida de tres canales (semántico, literal por
+	palabra clave y temático por la taxonomía SKOS del grafo,
+	Sección~\ref{sec:alt-recuperacion}) más el reordenamiento con Cohere
+	trae fragmentos temáticamente pertinentes a la pregunta de forma
+	consistente.
+
+	Este resultado no es el de la primera pasada de la evaluación, y la
+	diferencia es uno de los hallazgos más útiles del capítulo. En una
+	primera pasada, Context Relevance era de 0,95 con una desviación típica
+	de 0,21: la media era alta, pero la hundían dos preguntas con un 0
+	absoluto --``¿Qué se ha debatido sobre los patinetes eléctricos y los
+	vehículos de movilidad personal?'' y ``¿Qué iniciativas ha habido en
+	defensa de los derechos del colectivo LGTBI?''--, en las que el sistema
+	recuperaba contexto de otro tema (taxis y accesibilidad en la primera,
+	violencia de género en la segunda) y respondía sobre él. Analizando
+	estos dos casos se encontró que no fallaban los embeddings, sino la
+	forma en que el canal literal elegía qué palabras buscar: se quedaba con
+	las tres palabras más largas de la pregunta, de al menos seis letras.
+	Ese criterio fallaba de tres maneras:
+
+	\begin{itemize}
+		\item \textbf{Siglas y palabras cortas descartadas.} ``LGTBI'' (cinco
+		letras) nunca llegaba a buscarse, pese a aparecer en 283 fragmentos
+		de 31 plenos distintos; en su lugar se buscaban ``iniciativas'',
+		``colectivo'' y ``derechos'', presentes en miles de fragmentos sin
+		relación con la pregunta. En la batería, 21 de las 50 preguntas
+		perdían alguna palabra con contenido por este motivo (OPE, taxi,
+		Gaza, tala, Tour...).
+		\item \textbf{Empates resueltos al azar.} ``patinetes'',
+		``vehículos'' y ``movilidad'' tienen nueve letras; cuál de ellas
+		entraba entre las tres elegidas dependía del orden interno de
+		Python, que cambia en cada arranque del proceso. Se comprobó
+		ejecutando la misma búsqueda en tres arranques: en uno ``patinetes''
+		quedó fuera (0 fragmentos relevantes) y en los otros dos entró (7).
+		La misma pregunta podía, por tanto, funcionar o no según el
+		arranque.
+		\item \textbf{Palabras del enunciado ocupando puestos.} Términos
+		como ``debatido'' (entre las tres elegidas en 12 de las 50
+		preguntas), ``iniciativas'' o ``medidas'' describen la pregunta, no
+		el tema, y traían fragmentos al azar.
+	\end{itemize}
+
+	La longitud era un sustituto pobre de lo que realmente interesa: lo
+	distintiva que es una palabra. La corrección pasó a elegir las tres
+	palabras \textit{más raras} en el corpus --contando en cuántos
+	fragmentos aparece cada candidata y descartando las que no aparecen
+	nunca--, con desempate determinista; a admitir palabras de cuatro o más
+	letras y siglas en mayúsculas; y a excluir una lista de palabras propias
+	del enunciado. La búsqueda literal pasó además a usar una expresión
+	regular por palabra que ignora mayúsculas y tildes, cubre singular y
+	plural y exige palabra completa (sin esto último, ``tala'' coincide
+	dentro de ``instalación'': más de 500 coincidencias frente a 72
+	reales). Como efecto colateral, el canal literal se volvió más rápido,
+	de unos 6~s a entre 0,7 y 2,6~s por pregunta, porque sustituye una
+	veintena de búsquedas (una por cada variante de escritura) por una sola
+	consulta por palabra. La suite de regresión del RAG vectorial siguió
+	pasando completa (13 de 13) tras el cambio.
+
+	La Tabla~\ref{tab:ragas-antes-despues} compara las dos pasadas, con las
+	mismas 50 preguntas, el mismo generador y el mismo juez.
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Métrica ($n=50$)} & \textbf{Antes de la corrección} & \textbf{Después} \\
+			\hline
+			Context Relevance & 0,95 $\pm$ 0,21 & 0,99 $\pm$ 0,05 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Faithfulness & 0,76 $\pm$ 0,19 & 0,76 $\pm$ 0,15 \\
+			\hline
+			Answer Relevancy & 0,62 $\pm$ 0,15 & 0,65 $\pm$ 0,08 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Semantic/Cosine Similarity & 0,82 $\pm$ 0,03 & 0,82 $\pm$ 0,04 \\
+			\hline
+		\end{tabular}
+		\caption{Métricas RAGAS antes y después de corregir la selección de palabras clave del canal literal}
+		\label{tab:ragas-antes-despues}
+	\end{table}
+
+	La mejora se concentra donde se esperaba. Context Relevance y Answer
+	Relevancy suben y, sobre todo, su desviación típica cae de forma
+	marcada (de 0,21 a 0,05 en Context Relevance): desaparecen los fallos
+	totales. La pregunta sobre el colectivo
+	LGTBI pasa de 0 a 1 en Context Relevance y de 0 a 0,63 en Answer
+	Relevancy; la de los patinetes, de 0 a 1 y de 0 a 0,59. Faithfulness,
+	en cambio, no se mueve, lo cual es coherente: mide cómo redacta el
+	generador a partir del contexto, y el generador no cambió. La lección
+	metodológica es que la evaluación sobre una batería amplia encontró un
+	fallo que la regresión dirigida no veía: los 13 casos de la suite
+	pasaban todos con el criterio antiguo, porque ninguno dependía de una
+	sigla ni de un empate.
+
+	\section{Análisis sobre la generación}
+	\label{sec:analisis-generacion}
+
+	Faithfulness es la métrica más baja de las cuatro (0,76), y la
+	pregunta obvia es si el problema está en la recuperación o en el
+	generador. Para responderla se analizaron primero, afirmación por
+	afirmación, las respuestas con menor puntuación: RAGAS descompone cada
+	respuesta en afirmaciones sueltas y el juez indica, para cada una, si
+	se sostiene en el contexto y por qué. Contrastando esos veredictos con
+	el contexto recuperado, la mayoría de las afirmaciones marcadas como no
+	fieles resultaron ser errores reales del generador, no fallos de
+	medición, y se agrupan en tres patrones:
+
+	\begin{itemize}
+		\item \textbf{Leer ``decae'' como ``aprobada''.} Es el más
+		sistemático. En las actas es muy habitual el resultado ``se aprueba
+		la enmienda del Equipo de Gobierno, por lo que decae la
+		proposición'': la proposición original \textit{no} se aprueba, sino
+		que la sustituye la enmienda. El generador se queda con ``se
+		aprueba'' y presenta la proposición como aprobada, con los votos de
+		la enmienda.
+		\item \textbf{Mezclar información entre bloques.} Con varias
+		proposiciones en el contexto, el generador atribuye a un pleno el
+		título, el grupo o los votos de otro.
+		\item \textbf{Inventar datos no presentes.} Por ejemplo, un orador
+		(``el Sr. García'') que no aparece en ningún fragmento, o
+		conclusiones genéricas que no se desprenden del contexto.
+	\end{itemize}
+
+	En la clasificación de Ji et al., los dos primeros son alucinaciones
+	\textit{intrínsecas} --la respuesta contradice el contexto del que
+	parte-- y el tercero es una alucinación \textit{extrínseca} --añade
+	información que el contexto no permite ni confirmar ni
+	desmentir~\cite{ji2023-hallucination}. Los tres son errores de comprensión de un contexto ya recuperado
+	correctamente, del mismo tipo que los documentados durante el
+	desarrollo para la narración del GraphRAG con modelos de tamaño
+	similar, y apuntan al generador y no a la recuperación. Para
+	comprobarlo de forma directa se diseñó un experimento controlado: sobre
+	un subconjunto de 22 preguntas --las 17 con Faithfulness inferior a
+	0,70 y 5 de control que ya habían obtenido una puntuación alta-- se
+	tomó \textit{exactamente el mismo contexto} que había recibido el
+	generador local y se volvió a redactar la respuesta con Groq
+	\texttt{gpt-oss-120b}, con el mismo \textit{prompt} y el mismo
+	post-procesado. La única variable que cambia es el modelo que redacta.
+	Las dos versiones se puntuaron con el mismo juez y en la misma pasada.
+	Las preguntas de control se incluyeron para descartar que una mejora
+	en las peores se debiera solo a la variabilidad del juez (una segunda
+	medición de un valor extremo tiende a acercarse a la media aunque nada
+	haya cambiado). Este experimento se hizo antes de la corrección de la
+	recuperación descrita en la Sección~\ref{sec:analisis-recuperacion},
+	con los contextos de la primera pasada; como compara generadores con el
+	contexto fijo, esa diferencia no afecta a su conclusión.
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{|l|c|c|c|}
+			\hline
+			\rowcolor{tabla-header}
+			\textbf{Preguntas} & \textbf{Métrica} & \textbf{Qwen2.5-7B} & \textbf{gpt-oss-120b} \\
+			\hline
+			Peores ($n=17$) & Faithfulness & 0,62 $\pm$ 0,16 & 0,79 $\pm$ 0,14 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Control ($n=5$) & Faithfulness & 0,70 $\pm$ 0,36 & 0,99 $\pm$ 0,03 \\
+			\hline
+			Todas ($n=22$) & Faithfulness & 0,64 $\pm$ 0,22 & 0,84 $\pm$ 0,14 \\
+			\hline
+			\rowcolor{fila-alterna}
+			Todas ($n=22$) & Answer Rel. & 0,62 $\pm$ 0,09 & 0,64 $\pm$ 0,10 \\
+			\hline
+			Todas ($n=22$) & Sem. Sim. & 0,81 $\pm$ 0,03 & 0,82 $\pm$ 0,03 \\
+			\hline
+		\end{tabular}
+		\caption{Experimento controlado: mismo contexto recuperado, distinto generador}
+		\label{tab:ragas-generador}
+	\end{table}
+
+	La Tabla~\ref{tab:ragas-generador} confirma la hipótesis. Con el mismo
+	contexto, \texttt{gpt-oss-120b} obtiene mayor Faithfulness en 20 de las
+	22 preguntas, empata en una y queda por debajo solo en una; una prueba
+	de signos sobre esos resultados descarta que la diferencia sea casual
+	($p < 0{,}001$). La mejora aparece tanto en las preguntas peor
+	puntuadas como en las de control, lo que descarta que sea un simple
+	efecto de volver a medir. En la práctica, Groq redacta correctamente
+	el caso típico del patrón ``decae'': ``Aceptada la enmienda de
+	modificación del Equipo de Gobierno, por lo que decae la
+	proposición''. Answer Relevancy y Semantic Similarity apenas cambian,
+	lo que también es coherente: dependen sobre todo de qué se recuperó, y
+	eso era idéntico en las dos condiciones.
+
+	La conclusión es que la Faithfulness de 0,76 de la
+	Tabla~\ref{tab:ragas-resultados} corresponde al generador local, el
+	escenario más exigente, y que con el generador de Groq el mismo sistema
+	es sensiblemente más fiel al contexto que recupera. Es, además, una
+	conclusión útil para decidir cómo desplegar el sistema: el generador es
+	el componente que más condiciona la fidelidad de las respuestas, por
+	encima de la recuperación.
+
+	La generación local mostró durante la evaluación un segundo fallo, más
+	grave. En la pregunta sobre el pleno del 26-01-2023, con un contexto de
+	varias proposiciones parecidas del mismo día, Qwen2.5-7B entró en un
+	bucle de repetición --un fallo conocido de los modelos de lenguaje con
+	decodificación determinista, como la que se usa aquí con temperatura
+	0~\cite{holtzman2020-degeneration}--: empezó a enumerar los puntos del orden del día y,
+	a partir del quinto, repitió el mismo bloque una y otra vez. Como el
+	generador local no tenía un límite de longitud de salida, siguió
+	generando durante 50 minutos (más de 52\,000 \textit{tokens}, frente a
+	los $\sim$1\,700 de la respuesta legítima más larga de la batería), y
+	el proceso parecía colgado. El registro del servidor de Ollama permitió
+	ver que no lo estaba. Se corrigió fijando un límite de 4\,096
+	\textit{tokens} de salida, como ya tenían el generador de Groq y el del
+	GraphRAG. Con el límite, la respuesta termina en unos 4 minutos y el
+	post-procesado elimina los bloques repetidos, pero sigue siendo una
+	respuesta deficiente (Faithfulness 0,50): el límite impide que el
+	fallo bloquee la aplicación, pero no evita que el modelo pequeño entre
+	en bucle. Se ha mantenido así en la evaluación, porque es exactamente
+	lo que obtendría un usuario con el generador local.
 
 	\section{Comparativa GraphRAG frente a RAG vectorial}
 
@@ -2437,7 +2497,13 @@
 	sobre el corpus completo --conteos, rankings, comparaciones entre
 	grupos o a lo largo de los años-- porque puede agregar sobre miles de
 	proposiciones con una única consulta y devolver un número exacto y
-	verificable. El RAG vectorial es la opción adecuada para preguntas
+	verificable. Es la misma limitación de la recuperación vectorial que
+	motiva el trabajo de Edge et al.: recuperar fragmentos sueltos no
+	permite responder preguntas globales dirigidas al corpus
+	completo~\cite{edge2024-graphrag}. Su propuesta la resuelve con
+	resúmenes de comunidades del grafo generados por un LLM, mientras que
+	este trabajo lo hace con consultas SPARQL sobre datos estructurados,
+	pero el diagnóstico de partida es el mismo. El RAG vectorial es la opción adecuada para preguntas
 	abiertas o narrativas sobre un tema o una sesión concreta --"qué se dijo
 	sobre..."-- porque puede citar y resumir el contenido real de las actas,
 	algo que el GraphRAG, al operar solo sobre los datos estructurados del
@@ -2448,18 +2514,23 @@
 	La configuración final del RAG vectorial usa Groq \texttt{gpt-oss-120b}
 	como generador principal, con caída automática a Ollama
 	Qwen2.5-7B-Instruct local si la cuota de Groq se agota o el servicio no
-	responde; \texttt{nomic-embed-text} como modelo de embeddings; recuperación
-	híbrida de tres canales con reordenamiento Cohere
+	responde, y con un límite de 4\,096 \textit{tokens} de salida para el
+	generador local; \texttt{nomic-embed-text} como modelo de embeddings;
+	recuperación híbrida de tres canales, con selección de palabras clave
+	por rareza en el canal literal, y reordenamiento Cohere
 	\texttt{rerank-multilingual-v3.0}. La del GraphRAG usa Qwen3:8B local
 	para generar el SPARQL y Groq (con el mismo respaldo local) para narrar
 	el resultado.
 
-	En conjunto, el sistema muestra una recuperación de contexto casi
-	perfecta y una fidelidad de generación sólida y consistente para el RAG
-	vectorial, con un patrón de fallo conocido y acotado (atribución cruzada
-	dentro de un bloque narrativo); y una precisión de ejecución verificada
-	frente a datos reales para el GraphRAG en las preguntas analíticas que
-	el vectorial no puede resolver bien. Ambos resultados son consistentes
+	En conjunto, el RAG vectorial muestra una recuperación de contexto
+	prácticamente completa (Context Relevance 0,99 sobre 50 preguntas) y
+	una fidelidad de generación que depende sobre todo del generador: 0,76
+	con el modelo local de 7B y en torno a 0,84 con \texttt{gpt-oss-120b}
+	en el experimento controlado, con patrones de fallo identificados
+	(lectura errónea de ``decae'', mezcla entre bloques). El GraphRAG, por
+	su parte, muestra una precisión de ejecución verificada frente a datos
+	reales en las preguntas analíticas que el vectorial no puede resolver
+	bien. Ambos resultados son consistentes
 	con el diseño arquitectónico del Capítulo~\ref{ch:solucion}: la
 	recuperación híbrida y el reordenamiento existen específicamente para
 	sostener la fidelidad de la generación, y la separación en dos sistemas
@@ -2469,29 +2540,44 @@
 	\section{Limitaciones}
 
 	\begin{itemize}
-		\item El tamaño de la batería de referencia del RAG vectorial
-		($n=12$) es reducido; las medias son orientativas y sensibles a
-		preguntas individuales atípicas.
+		\item \textbf{Variabilidad del juez.} Un juez basado en un LLM no es
+		determinista, una fuente de ruido conocida de esta
+		metodología~\cite{gu2024-llm-judge-survey}. Se midió al volver a
+		puntuar las mismas 22 respuestas del generador local en el
+		experimento controlado (la única diferencia con la primera
+		puntuación era la eliminación del listado de fuentes que se añade al
+		final de la respuesta): la Faithfulness de una misma pregunta cambió
+		de media 0,16 entre las dos pasadas, y hasta 1,00 en un caso
+		extremo. El cambio medio, en cambio, fue prácticamente nulo (+0,003):
+		el ruido se compensa al promediar. Por eso los resultados se dan
+		siempre como media y desviación típica sobre toda la batería, y la
+		puntuación de una pregunta aislada no debe interpretarse por sí
+		sola. Por el mismo motivo, en el experimento controlado las dos
+		condiciones se puntuaron en la misma pasada.
 
-		\item Una sola pasada de evaluación por sistema: no se ha repetido
-		la evaluación con RAGAS varias veces para medir la varianza propia
-		del juez LLM, una fuente de ruido conocida en la metodología
-		\textit{LLM-as-a-judge}.
+		\item \textbf{Evaluación principal con el generador local.} Las
+		métricas de la Tabla~\ref{tab:ragas-resultados} corresponden a
+		Qwen2.5-7B. Con \texttt{gpt-oss-120b} solo se midió el subconjunto
+		de 22 preguntas del experimento controlado, y sobre los contextos
+		anteriores a la corrección de la recuperación: la cuota gratuita
+		diaria de Groq no permite redactar las 50 preguntas en una sola
+		jornada.
 
-		\item El fallo de atribución cruzada dentro de un bloque narrativo
-		(Sección~\ref{sec:analisis-generacion}) está identificado y acotado,
-		pero no resuelto de forma garantizada: es un límite de comprensión
-		del modelo generador, mitigable reforzando el \textit{prompt} pero
-		no eliminable con certeza para modelos de este tamaño.
+		\item \textbf{Fallos del generador local no eliminables.} Los
+		patrones de la Sección~\ref{sec:analisis-generacion} y el bucle de
+		repetición son límites de un modelo de 7B. El límite de salida
+		impide que bloquee la aplicación, y el cambio de generador
+		reduce mucho los patrones de error, pero no se ha resuelto ninguno
+		de los dos de forma garantizada con el modelo local.
 
-		\item La pregunta 13 de la batería (Tubacex) quedó sin evaluar con
-		RAGAS por agotamiento del crédito de la API de Google durante la
-		evaluación.
+		\item \textbf{Batería de referencia.} Las 50 preguntas son
+		suficientes para que las medias sean estables frente al ruido del
+		juez, pero no cubren todos los tipos de consulta posibles, y la
+		elección de temas con pocas proposiciones --necesaria para verificar
+		las respuestas de referencia completas-- deja fuera los temas más
+		amplios del corpus, en los que la respuesta de referencia no puede
+		ser exhaustiva.
 	\end{itemize}
-
-	% ============================================================ %
-	% CONCLUSIONES                                                  %
-	% ============================================================ %
 
 	\chapter{Conclusiones y trabajo futuro}
 	\label{ch:conclusiones}
@@ -2505,7 +2591,6 @@
 	\section{Contribuciones científico-técnicas}
 
 	\section{Trabajo futuro}
-
 
 	\cleardoublepage
 	\phantomsection
@@ -2599,30 +2684,28 @@
 		and Knowledge Extraction, vol.~7, núm.~2, art.~52, 2025.
 		\url{https://doi.org/10.3390/make7020052}
 
-		\bibitem{pourhabib2026-active-learning}
-		Pourhabib, A.
-		\textit{Robust Active Learning for Few-Shot Example Selection in
-		Text-to-SQL}. arXiv:2606.10125, 2026.
-		\url{https://arxiv.org/abs/2606.10125}
+		\bibitem{gao2024-dailsql}
+		Gao, D., Wang, H., Li, Y., Sun, X., Qian, Y., Ding, B., y Zhou, J.
+		\textit{Text-to-SQL Empowered by Large Language Models: A Benchmark
+		Evaluation}. Proceedings of the VLDB Endowment (PVLDB), vol.~17,
+		núm.~5, pp.~1132--1145, 2024.
+		\url{https://doi.org/10.14778/3641204.3641221}
 
-		\bibitem{beskorovainyi2026-onprem-textsql}
-		Beskorovainyi, V.
-		\textit{How Far Do On-Prem Open LLMs Get on Text-to-SQL? A
-		Cross-Family Size x Technique Frontier on BIRD}. arXiv:2606.29733,
-		2026.
-		\url{https://arxiv.org/abs/2606.29733}
+		\bibitem{li2024-codes}
+		Li, H., Zhang, J., Liu, H., Fan, J., Zhang, X., Zhu, J., Wei, R.,
+		Pan, H., Li, C., y Chen, H.
+		\textit{CodeS: Towards Building Open-source Language Models for
+		Text-to-SQL}. Proceedings of the ACM on Management of Data (SIGMOD
+		2024), vol.~2, núm.~3, pp.~1--28, 2024.
+		\url{https://doi.org/10.1145/3654930}
 
-		\bibitem{sheng2025-slmsql}
-		Sheng, L., y Xu, S.
-		\textit{SLM-SQL: An Exploration of Small Language Models for
-		Text-to-SQL}. arXiv:2507.22478, 2025.
-		\url{https://arxiv.org/abs/2507.22478}
-
-		\bibitem{aneja2025-interpretable-kgqa}
-		Aneja, K., Srivastava, M., Das, S., y Aneja, N.
-		\textit{Interpretable Question Answering with Knowledge Graphs}.
-		arXiv:2510.19181, 2025.
-		\url{https://arxiv.org/abs/2510.19181}
+		\bibitem{unger2012-template-qa}
+		Unger, C., Bühmann, L., Lehmann, J., Ngonga Ngomo, A.-C., Gerber, D.,
+		y Cimiano, P.
+		\textit{Template-based Question Answering over RDF Data}. En
+		\textit{Proceedings of the 21st International Conference on World
+		Wide Web} (WWW 2012), pp.~639--648, 2012.
+		\url{https://doi.org/10.1145/2187836.2187923}
 
 		\bibitem{boe2025-convenio-consultoria}
 		Dirección General de Trabajo.
@@ -2645,10 +2728,32 @@
 		\bibitem{ragas-library}
 		Es, S., James, J., Espinosa-Anke, L., y Schockaert, S.
 		\textit{RAGAs: Automated Evaluation of Retrieval Augmented
-		Generation}. arXiv:2309.15217, 2023.
-		\url{https://arxiv.org/abs/2309.15217}
-	\end{thebibliography}
+		Generation}. En \textit{Proceedings of the 18th Conference of the
+		European Chapter of the Association for Computational Linguistics:
+		System Demonstrations} (EACL 2024), pp.~150--158, 2024.
+		\url{https://aclanthology.org/2024.eacl-demo.16/}
 
-	% ANEXOS:
+		\bibitem{zheng2023-llm-judge}
+		Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y.,
+		Lin, Z., Li, Z., Li, D., Xing, E.~P., Zhang, H., Gonzalez, J.~E., y
+		Stoica, I.
+		\textit{Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena}. En
+		\textit{Advances in Neural Information Processing Systems 36}
+		(NeurIPS 2023), Datasets and Benchmarks Track, 2023.
+		\url{https://arxiv.org/abs/2306.05685}
+
+		\bibitem{gu2024-llm-judge-survey}
+		Gu, J., Jiang, X., Shi, Z., Tan, H., Zhai, X., Xu, C., Li, W., Shen,
+		Y., Ma, S., Liu, H., et al.
+		\textit{A Survey on LLM-as-a-Judge}. arXiv:2411.15594, 2024.
+		\url{https://arxiv.org/abs/2411.15594}
+
+		\bibitem{holtzman2020-degeneration}
+		Holtzman, A., Buys, J., Du, L., Forbes, M., y Choi, Y.
+		\textit{The Curious Case of Neural Text Degeneration}. En
+		\textit{International Conference on Learning Representations} (ICLR
+		2020), 2020.
+		\url{https://arxiv.org/abs/1904.09751}
+	\end{thebibliography}
 
 \end{document}
