@@ -1,16 +1,22 @@
+"""
+Interfaz Chainlit del chatbot de las actas del Pleno de Bilbao.
+
+  1. Arranque: parche de sniffio, ruta /acta para servir los PDF y precarga de los motores
+  2. Configuración del chat: perfiles, preguntas de ejemplo e inicio de sesión
+  3. Respuesta a cada mensaje, según el perfil: RAG vectorial o GraphRAG
+"""
 import sys
 import os
 import asyncio
 import re
-import glob
-import urllib.parse
-from collections import defaultdict
 
-# Fix Python 3.14 + sniffio incompatibility: current_task() returns None in some
-# ASGI contexts even though a loop is running, causing anyio.NoEventLoopError.
+# Python 3.14 + sniffio: current_task() devuelve None en algunos contextos ASGI
+# aunque haya un bucle en marcha, y anyio lanza NoEventLoopError
 import sniffio as _sniffio
 from sniffio import AsyncLibraryNotFoundError as _AsyncLibraryNotFoundError
 _orig_detect = _sniffio.current_async_library
+
+
 def _patched_detect():
     try:
         return _orig_detect()
@@ -20,29 +26,34 @@ def _patched_detect():
             return "asyncio"
         except RuntimeError:
             raise _AsyncLibraryNotFoundError("unknown async library, or not in async context")
+
+
 _sniffio.current_async_library = _patched_detect
 
-# Agregar la raíz del proyecto al PYTHONPATH para poder importar backend.rag
+# raíz del proyecto en el path para importar comun/, vectorial/ y grafo/
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import chainlit as cl
-from chainlit.server import app as _fastapi_app
-from fastapi import HTTPException
-from fastapi.responses import FileResponse
-from backend.rag import (
-    get_rag, DATA_PATH, strip_accents,
-    resolve_pdf_path, _palabras_clave, _STOP_PROCEDIMENTAL, build_sources_data,
-    dedup_answer_blocks, strip_empty_blocks, find_date_mentions, find_item_anchors,
-    match_source_by_title, replace_votos_line,
-)
-from graphrag.graphrag.graph_rag_sparql import graph_answer as _graph_answer, _load_graph as _load_rdf_graph
+import chainlit as cl  # noqa: E402
+from chainlit.server import app as _fastapi_app  # noqa: E402
+from fastapi import HTTPException  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
+from comun.rutas import DATA_PATH  # noqa: E402
+from vectorial.generacion import componer_respuesta  # noqa: E402
+from vectorial.pipeline import get_rag  # noqa: E402
+from grafo.consulta.recursos import _load_graph as _load_rdf_graph  # noqa: E402
+from grafo.consulta.respuesta import graph_answer as _graph_answer  # noqa: E402
 
-# ---------------------------------------------------------------------------
-# Ruta propia para servir los PDF de las actas directamente desde actas/.
-# Permite enlazarlos con un hipervínculo normal (abre en pestaña del navegador y
-# salta a la página con #page=N), evitando el panel lateral de Chainlit que se
-# abría solo. Se sanea el nombre para impedir path traversal (../).
-# ---------------------------------------------------------------------------
+PERFIL_VECTORIAL = "RAG Vectorial"
+PERFIL_GRAPHRAG = "GraphRAG (SPARQL)"
+
+
+# =============================================================================
+# 1. Arranque
+# =============================================================================
+
+# Sirve los PDF de las actas para enlazarlos con un hipervínculo normal (se
+# abren en otra pestaña y saltan a la página con #page=N). El nombre se sanea
+# para impedir path traversal (../).
 @_fastapi_app.get("/acta/{year}/{filename}")
 async def servir_acta(year: str, filename: str):
     filename = os.path.basename(filename)
@@ -54,16 +65,11 @@ async def servir_acta(year: str, filename: str):
     return FileResponse(path, media_type="application/pdf")
 
 
-# Chainlit registra un catch-all que sirve la SPA para CUALQUIER ruta. Como se
-# registró antes que la nuestra, interceptaba /acta/... y devolvía la app en vez
-# del PDF. Movemos nuestra ruta al principio para que tenga prioridad.
+# Chainlit registra antes una ruta comodín que sirve la aplicación para
+# cualquier URL; se pone /acta la primera para que tenga prioridad.
 _ruta_acta = _fastapi_app.router.routes.pop()
 _fastapi_app.router.routes.insert(0, _ruta_acta)
 
-
-# ---------------------------------------------------------------------------
-# Pre-carga de ambos motores al importar el módulo
-# ---------------------------------------------------------------------------
 print("[*] Pre-cargando el motor RAG vectorial...")
 _rag = get_rag()
 print("[+] Motor RAG vectorial listo.")
@@ -73,22 +79,22 @@ _load_rdf_graph()
 print("[+] Grafo RDF listo.")
 
 
+# =============================================================================
+# 2. Configuración del chat
+# =============================================================================
 
-# ---------------------------------------------------------------------------
-# Perfiles de chat: RAG Vectorial vs GraphRAG
-# ---------------------------------------------------------------------------
 @cl.set_chat_profiles
 async def set_chat_profiles():
     return [
         cl.ChatProfile(
-            name="RAG Vectorial",
+            name=PERFIL_VECTORIAL,
             markdown_description=(
                 "Busca en el texto de las actas.\n\n"
                 "Mejor para preguntas abiertas: qué se debatió, propuestas y argumentos."
             ),
         ),
         cl.ChatProfile(
-            name="GraphRAG (SPARQL)",
+            name=PERFIL_GRAPHRAG,
             markdown_description=(
                 "Consulta el grafo de proposiciones.\n\n"
                 "Mejor para números: cuántas proposiciones, rankings por grupo, tema o año."
@@ -97,129 +103,10 @@ async def set_chat_profiles():
     ]
 
 
-# --- Helpers del modo GraphRAG ---
-
-# ruta del PDF del acta de una fecha 'DD-MM-YYYY', o "" si no se encuentra
-def _find_pdf_by_date(fecha: str) -> str:
-    parts = fecha.split("-")
-    if len(parts) != 3:
-        return ""
-    year = parts[-1]
-    patron = os.path.join(DATA_PATH, year, f"{fecha}_*.pdf")
-    matches = glob.glob(patron)
-    return matches[0] if matches else ""
-
-
-# genera los links de fuentes de una respuesta GraphRAG.
-# Prioridad 1: si las filas traen la URI de una proposición individual
-# (preguntas de LISTADO: "qué proposiciones...", "lista las..."), se cita la
-# página EXACTA del PDF vía graph_sources() — bo:fecha/bo:pagina/bo:fuentePdf
-# tienen 100% de cobertura en las 3422 proposiciones, misma precisión que las
-# citas del RAG vectorial. Prioridad 2 (respaldo): filas con solo una fecha
-# suelta, sin URI de proposición — se enlaza al PDF sin página concreta.
-# Si ninguna de las dos aplica (agregado puro: COUNT/GROUP BY sin referencia a
-# ninguna proposición concreta), no hay nada que citar POR DISEÑO, no por
-# fallo — se explica en vez de dejarlo en silencio (ver
-# memoria/decisiones_tecnicas.md 2.10).
-def _fuentes_graphrag(rows: list) -> str:
-    from graphrag.graphrag.graph_rag_sparql import graph_sources
-
-    citas = graph_sources(rows)
-    if citas:
-        links = []
-        for c in citas:
-            pdf_rel = c["pdf"].replace("\\", "/")
-            year_dir = os.path.basename(os.path.dirname(pdf_rel))
-            fname = os.path.basename(pdf_rel)
-            pagina = c.get("pagina", "")
-            anchor = f"#page={pagina}" if pagina else ""
-            url = f"/acta/{year_dir}/{urllib.parse.quote(fname)}{anchor}"
-
-            label = f"Ver PDF — Acta {c['fecha']}"
-            if pagina:
-                label += f" (Pág. {pagina})"
-            titulo = c.get("titulo", "")
-            if titulo:
-                short = titulo[:70] + "..." if len(titulo) > 70 else titulo
-                label += f" | {short}"
-            links.append(f"- [{label}]({url})")
-        return "\n\n---\n**Proposiciones del grafo citadas:**\n" + "\n".join(links)
-
-    DATE_KEYS = ("fecha", "fechaProp", "fechaPleno", "date")
-    TITLE_KEYS = ("titulo", "tituloProp", "tituloTopic", "label")
-
-    vistas: set = set()
-    links = []
-
-    for row in rows[:50]:
-        fecha = next((row[k] for k in DATE_KEYS if k in row and re.match(r"\d{2}-\d{2}-\d{4}", row[k])), None)
-        if not fecha or fecha in vistas:
-            continue
-        vistas.add(fecha)
-
-        pdf = _find_pdf_by_date(fecha)
-        if not pdf:
-            continue
-
-        year_dir = os.path.basename(os.path.dirname(pdf))
-        fname = os.path.basename(pdf)
-        url = f"/acta/{year_dir}/{urllib.parse.quote(fname)}"
-
-        titulo = next((row[k] for k in TITLE_KEYS if k in row and row[k]), "")
-        label = f"Ver PDF — Acta {fecha}"
-        if titulo:
-            short = titulo[:70] + "..." if len(titulo) > 70 else titulo
-            label += f" | {short}"
-
-        links.append(f"- [{label}]({url})")
-
-    if links:
-        return "\n\n---\n**Actas del grafo consultadas:**\n" + "\n".join(links)
-
-    return ("\n\n---\n*Esta cifra se calcula directamente sobre el grafo "
-            "estructurado del Pleno (proposiciones, grupos y temas ya "
-            "extraídos de las actas); al ser un resultado agregado, no "
-            "corresponde a un documento concreto que enlazar.*")
-
-
-# genera la SPARQL, la ejecuta y devuelve la respuesta narrada + fuentes (modo GraphRAG)
-async def handle_graphrag(question: str):
-    async with cl.Step(name="Generando consulta SPARQL") as step:
-        try:
-            result = await asyncio.to_thread(_graph_answer, question, False)
-            sparql_txt = result["sparql"]
-            rows = result["rows"]
-            n = len(rows)
-            step.output = f"**{n} fila{'s' if n != 1 else ''} devuelta{'s' if n != 1 else ''}**"
-        except Exception as exc:
-            step.output = f"Error al ejecutar SPARQL: {exc}"
-            await cl.Message(
-                content=f"No se pudo generar una consulta válida para esta pregunta.\n\n*Error: {exc}*"
-            ).send()
-            return
-
-    # Panel lateral con la consulta SPARQL exacta
-    sparql_element = cl.Text(
-        name="Consulta SPARQL generada",
-        content=f"```sparql\n{sparql_txt}\n```\n*{n} filas devueltas*",
-        display="side",
-    )
-
-    # Fuentes: PDFs enlazables extraídos de las fechas en las filas SPARQL
-    answer = result.get("answer", "(sin respuesta)")
-    fuentes = await asyncio.to_thread(_fuentes_graphrag, rows)
-    answer += fuentes
-
-    await cl.Message(content=answer, elements=[sparql_element]).send()
-
-
-# ---------------------------------------------------------------------------
-# Preguntas de ejemplo que aparecen al abrir el chat (Starters)
-# Diferenciadas por perfil: RAG Vectorial vs GraphRAG (SPARQL)
-# ---------------------------------------------------------------------------
+# preguntas de ejemplo al abrir el chat, distintas para cada perfil
 @cl.set_starters
 async def set_starters(chat_profile: str):
-    if chat_profile == "GraphRAG (SPARQL)":
+    if chat_profile == PERFIL_GRAPHRAG:
         return [
             cl.Starter(
                 label="Ranking por grupo político",
@@ -238,8 +125,6 @@ async def set_starters(chat_profile: str):
                 message="¿Cuántas proposiciones presentó EH Bildu en 2023 y cuántas se aprobaron?",
             ),
         ]
-    # RAG Vectorial: preguntas abiertas que aprovechan la búsqueda semántica y
-    # el resumen cronológico de debates con argumentos y contexto textual.
     return [
         cl.Starter(
             label="Turismo e impacto en la ciudad",
@@ -260,182 +145,72 @@ async def set_starters(chat_profile: str):
     ]
 
 
-# ---------------------------------------------------------------------------
-# Inicio de sesión: guarda el motor según el perfil elegido
-# ---------------------------------------------------------------------------
 @cl.on_chat_start
 async def on_chat_start():
     profile = cl.user_session.get("chat_profile")
     cl.user_session.set("rag", _rag)
-    cl.user_session.set("mode", "graphrag" if profile == "GraphRAG (SPARQL)" else "vectorial")
+    modo = "graphrag" if profile == PERFIL_GRAPHRAG else "vectorial"
+    cl.user_session.set("mode", modo)
 
 
-# ---------------------------------------------------------------------------
-# Respuesta a cada mensaje del usuario
-# ---------------------------------------------------------------------------
+# =============================================================================
+# 3. Respuesta a cada mensaje
+# =============================================================================
+
 @cl.on_message
 async def on_message(message: cl.Message):
     question = message.content.strip()
     if not question:
         return
-
     if cl.user_session.get("mode") == "graphrag":
-        await handle_graphrag(question)
-        return
+        await responder_graphrag(question)
+    else:
+        await responder_vectorial(question, cl.user_session.get("rag"))
 
-    rag = cl.user_session.get("rag")
 
-    # Fase 1: Recuperación (embeddings + expansión de topics) en hilo separado
+# RAG vectorial: recuperación -> LLM -> fuentes bajo cada bloque
+async def responder_vectorial(question: str, rag):
     async with cl.Step(name="Buscando en las actas") as step:
         ctx = await asyncio.to_thread(rag.retrieve_context, question)
         step.output = "Búsqueda completada."
 
-    formatted_context = ctx["context"]
-    is_multi_session = ctx["is_multi_session"]
-    retrieved_docs = ctx["docs"]
-
-    if not formatted_context.strip():
+    if not ctx["context"].strip():
         await cl.Message(
             content="Lo siento, no he encontrado información relevante en las actas para esta pregunta. Prueba a reformularla."
         ).send()
         return
 
-    # Prompt canónico compartido con la CLI (backend/rag.py → build_answer_prompt).
-    # La lógica multi-sesión / sesión única y las reglas del cronista
-    # se gestionan allí: aquí solo delegamos y obtenemos los mensajes listos.
-    prompt_value = rag.build_answer_prompt(ctx)
-
-    # Fase 2: Generación + fuentes en UN SOLO mensaje. Las fuentes son hipervínculos
-    # normales a la ruta /acta/... (abren el PDF en una pestaña del navegador en la
-    # página correcta), en lugar de elementos cl.Pdf "side" que se abrían solos.
     async with cl.Step(name="Redactando la crónica"):
-        respuesta = await rag.ainvoke_llm(prompt_value)
+        respuesta = await rag.ainvoke_llm(rag.build_answer_prompt(ctx))
         answer_text = respuesta.content if hasattr(respuesta, "content") else str(respuesta)
-        # Eliminar eco del prompt (PREGUNTA:/RESPUESTA: que el LLM a veces repite al final)
-        answer_text = re.sub(r'\n+PREGUNTA\s*:.*', '', answer_text, flags=re.DOTALL | re.IGNORECASE)
-        # ANTES de insertar fuentes: la inserción depende de posiciones en el texto.
-        answer_text = strip_empty_blocks(dedup_answer_blocks(answer_text))
 
-    # Insertar enlace de fuente debajo del bloque de cada pleno en la respuesta.
-    if retrieved_docs:
-        async with cl.Step(name="Localizando fuentes en los PDFs"):
-            sources_data = await asyncio.to_thread(build_sources_data, retrieved_docs, answer_text)
+    async with cl.Step(name="Localizando fuentes en los PDFs"):
+        answer = await asyncio.to_thread(componer_respuesta, answer_text, ctx)
 
-        if sources_data:
-            concl = re.search(r'\n\s*(?:CONCLUSI[ÓO]N|En conclusi|En resumen)', answer_text, re.I)
-            concl_pos = concl.start() if concl else len(answer_text)
+    await cl.Message(content=answer).send()
 
-            item_anchors = find_item_anchors(answer_text, concl_pos)
-            asignaciones = []  # (start, fin, mejor) -- start hace falta para corregir Votos
-            usadas = []
 
-            if not is_multi_session and len(item_anchors) >= 2:
-                # Sesión única con VARIAS propuestas: todas comparten la misma
-                # fecha, así que anclar por fecha (como abajo) solo distinguiría
-                # UN tramo y mandaría el resto al final sin marcar. Anclar por
-                # el texto de "Título:" de cada bloque sí distingue cada
-                # propuesta — se exige >=1 palabra compartida con el ASUNTO
-                # real del documento para no asignar una fuente al azar.
-                for start, fin, titulo in item_anchors:
-                    candidatos = [s for s in sources_data if id(s) not in usadas]
-                    if not candidatos:
-                        break
-                    mejor = match_source_by_title(titulo, candidatos)
-                    if mejor is None:
-                        continue  # sin señal fiable: mejor dejarla para el lote final que forzar un enlace erróneo
-                    asignaciones.append((start, fin, mejor))
-                    usadas.append(id(mejor))
-            else:
-                fechas = {s["date"] for s in sources_data}
-                bloques = []
-                for date in fechas:
-                    for pos in find_date_mentions(date, answer_text[:concl_pos]):
-                        bloques.append([pos, date])
-                bloques.sort()
+# GraphRAG: el LLM genera una consulta SPARQL, se ejecuta sobre el grafo y se narra
+async def responder_graphrag(question: str):
+    async with cl.Step(name="Generando consulta SPARQL") as step:
+        try:
+            result = await asyncio.to_thread(_graph_answer, question, False)
+            sparql_txt = result["sparql"]
+            rows = result["rows"]
+            n = len(rows)
+            step.output = f"**{n} fila{'s' if n != 1 else ''} devuelta{'s' if n != 1 else ''}**"
+        except Exception as exc:
+            step.output = f"Error al ejecutar SPARQL: {exc}"
+            await cl.Message(
+                content=f"No se pudo generar una consulta válida para esta pregunta.\n\n*Error: {exc}*"
+            ).send()
+            return
 
-                src_por_fecha = defaultdict(list)
-                for s in sources_data:
-                    src_por_fecha[s["date"]].append(s)
+    # la consulta SPARQL exacta, en el panel lateral
+    sparql_element = cl.Text(
+        name="Consulta SPARQL generada",
+        content=f"```sparql\n{sparql_txt}\n```\n*{n} filas devueltas*",
+        display="side",
+    )
+    await cl.Message(content=result.get("answer", "(sin respuesta)"), elements=[sparql_element]).send()
 
-                for idx, (start, date) in enumerate(bloques):
-                    candidatos = [s for s in src_por_fecha[date] if id(s) not in usadas]
-                    if not candidatos:
-                        continue
-                    fin = bloques[idx + 1][0] if idx + 1 < len(bloques) else concl_pos
-                    cabecera = answer_text[start:start + 120]
-                    cab_words = _palabras_clave(cabecera)
-                    mejor = max(candidatos, key=lambda s: len(cab_words & _palabras_clave(s["topic"])))
-                    if len(cab_words & _palabras_clave(mejor["topic"])) == 0:
-                        mejor = candidatos[0]
-                    asignaciones.append((start, fin, mejor))
-                    usadas.append(id(mejor))
-
-            # Corrección de la línea "Votos:" de cada bloque con el vote_result
-            # REAL de la fuente ya emparejada (metadata determinista, no lo que
-            # escribió el LLM — con muchas propuestas parecidas en el mismo
-            # contexto, el modelo local mezcla cifras de voto entre ellas; ni
-            # la regla del prompt ni un ejemplo concreto lo eliminan de forma
-            # fiable, ver memoria/decisiones_tecnicas.md 2.9) Y la inserción
-            # del enlace de fuente se hacen AQUÍ JUNTAS, en una única pasada
-            # por bloque, en orden DESCENDENTE de posición (Ronda 42,
-            # 2026-09-17 — antes eran dos pasadas separadas: se corregían
-            # todas las líneas de Votos primero y LUEGO, en una pasada aparte,
-            # se insertaban las fuentes reusando las posiciones `fin`
-            # ANTERIORES al cambio de longitud del propio bloque — si el
-            # `vote_result` real medía distinto que el texto original del LLM
-            # -algo que iba a pasar CASI SIEMPRE-, el enlace de fuente se
-            # insertaba en una posición desplazada, partiendo la línea de
-            # Votos por la mitad. Verificado en vivo con un caso real que
-            # decayó: "- Votos: decae la proposición...(Votos" + [FUENTE] +
-            # "emitidos: 29 | ...)" partido en dos. Al fusionar ambas
-            # correcciones en la misma pasada por bloque, la posición `fin` de
-            # CADA bloque se usa siempre sobre el texto ORIGINAL sin editar
-            # (los bloques a la derecha, ya editados en esta misma pasada
-            # descendente, no afectan a los índices de los bloques a la
-            # izquierda, que es justo la garantía que da procesar de derecha a
-            # izquierda) — ya no hace falta releer el bloque tras editarlo.
-            for start, fin, s in sorted(asignaciones, key=lambda x: x[0], reverse=True):
-                content = answer_text[start:fin]
-                vote_gt = s.get("vote_result")
-                if vote_gt:
-                    content = replace_votos_line(content, vote_gt)
-                f = len(content)
-                while f > 0 and content[f - 1] in "*#\n\r \t[":
-                    f -= 1
-                linea = f"\n\n📄 *Fuente:* [{s['pdf_name']}]({s['url']})\n"
-                if vote_gt:
-                    linea += f"*Resultado:* {vote_gt}\n"
-                content = content[:f] + linea + content[f:]
-                answer_text = answer_text[:start] + content + answer_text[fin:]
-
-            no_ubicadas = [s for s in sources_data if id(s) not in usadas]
-            if no_ubicadas:
-                if not is_multi_session:
-                    # Sesión única: la fuente va al final limpiamente
-                    for s in no_ubicadas:
-                        linea_extra = f"\n\n📄 *Fuente:* [{s['pdf_name']}]({s['url']})\n"
-                        if s.get("vote_result"):
-                            linea_extra += f"*Resultado:* {s['vote_result']}\n"
-                        answer_text += linea_extra
-                else:
-                    answer_text += "\n\n**Otras fuentes:**\n"
-                    for s in no_ubicadas:
-                        linea_extra = f"* [{s['pdf_name']}]({s['url']})"
-                        if s.get("vote_result"):
-                            linea_extra += f" — *{s['vote_result']}*"
-                        answer_text += linea_extra + "\n"
-
-        # Red de seguridad: garantiza que SIEMPRE aparezcan fuentes si hay docs.
-        # Cubre cualquier camino en que la inserción anterior no añadiera ninguna
-        # (p.ej. el filtro de relevancia dejó sources_data vacío o el emparejado falló).
-        if "📄" not in answer_text and "Otras fuentes" not in answer_text:
-            fallback = sources_data or build_sources_data(retrieved_docs)
-            if fallback:
-                answer_text += "\n\n**Fuentes:**\n"
-                for s in fallback:
-                    linea = f"* [{s['pdf_name']}]({s['url']})"
-                    if s.get("vote_result"):
-                        linea += f" — *{s['vote_result']}*"
-                    answer_text += linea + "\n"
-
-    await cl.Message(content=answer_text).send()

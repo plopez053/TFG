@@ -2,11 +2,11 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import re
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
-# Ruta de salida para los archivos descargados
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT_DIR = os.path.join(BASE_DIR, "actas")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from comun.rutas import DATA_PATH as OUTPUT_DIR  # noqa: E402  (carpeta de salida de los PDF)
 # Patrón para limpiar caracteres de los nombres de archivos
 RE_LIMPIAR_NOMBRE = re.compile(r'[\\/*?:"<>|]')
 
@@ -70,7 +70,7 @@ def descargar_pdf(session, url_post, payload_base, opcion):
                             if resp_pdf.status_code == 200:
                                 with open(ruta_guardado, "wb") as f:
                                     f.write(resp_pdf.content)
-                                print(f"Guardado")
+                                print("Guardado")
                                 descargas_count += 1
                             else:
                                 print(f"Error HTTP {resp_pdf.status_code}")

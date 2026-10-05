@@ -1,0 +1,274 @@
+@prefix bo:   <http://bilbao.tfg/ontology#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontología del dominio: Plenos del Ayuntamiento de Bilbao
+# TBox: clases, jerarquías, propiedades y axiomas para el razonador OWL-RL.
+#################################################################
+
+bo: a owl:Ontology ;
+    rdfs:label "Ontología de los Plenos del Ayuntamiento de Bilbao"@es ;
+    rdfs:comment "Modela proposiciones, grupos, plenos, temas (SKOS) y entidades para GraphRAG."@es .
+
+### --------------------------------------------------------------
+### CLASES
+### --------------------------------------------------------------
+bo:PuntoOrdenDia a owl:Class ; rdfs:label "Punto del orden del día"@es ;
+    rdfs:comment "Cualquier punto de un acta: proposiciones y también preguntas, daciones de cuenta, trámites (aprobación del acta, urgencia), debate del estado de la ciudad y entradas de la memoria de iniciativas vecinales, que no son proposiciones."@es .
+bo:Proposicion a owl:Class ; rdfs:subClassOf bo:PuntoOrdenDia ; rdfs:label "Proposición"@es ;
+    rdfs:comment "Punto que se propone y se vota (de un grupo, del gobierno o vecinal). Las propiedades de los puntos tienen dominio bo:PuntoOrdenDia para que el razonador no convierta en proposición una pregunta o una dación de cuenta."@es .
+bo:Pleno       a owl:Class ; rdfs:label "Pleno (sesión)"@es .
+bo:Grupo       a owl:Class ; rdfs:label "Grupo municipal"@es .
+bo:Resultado   a owl:Class ; rdfs:label "Resultado de votación"@es .
+bo:Tema        a owl:Class ; rdfs:label "Tema"@es ;
+    rdfs:comment "Tema tratado; los individuos son skos:Concept en una taxonomía."@es .
+
+bo:Entidad     a owl:Class ; rdfs:label "Entidad mencionada"@es .
+bo:Persona      a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Persona"@es .
+bo:Lugar        a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Lugar"@es .
+bo:Organizacion a owl:Class ; rdfs:subClassOf bo:Entidad ; rdfs:label "Organización"@es .
+
+bo:Concejal a owl:Class ; rdfs:subClassOf bo:Persona ; rdfs:label "Concejal/a"@es ;
+    rdfs:comment "Miembro de la corporación municipal. Al ser subclase de Persona, las consultas por bo:menciona + bo:Persona lo siguen recogiendo."@es .
+bo:PersonalTecnico a owl:Class ; rdfs:subClassOf bo:Persona ; rdfs:label "Personal técnico del Pleno"@es ;
+    rdfs:comment "Secretario General, Interventor... Asisten a todos los plenos pero NO son cargos electos: no votan, no proponen, no debaten políticamente."@es .
+bo:Enmienda a owl:Class ; rdfs:label "Enmienda a una proposición"@es .
+
+### --------------------------------------------------------------
+### PROPIEDADES DE OBJETO (con dominio/rango)
+### --------------------------------------------------------------
+bo:presentadaPor a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Grupo ;
+    rdfs:label "presentada por"@es .
+
+# Distinta de bo:presentadaPor: cubre las proposiciones que NO presenta un
+# grupo político sino un particular, una asociación vecinal, una AMPA o una
+# comunidad de propietarios (mecanismo de "proposición ciudadana" del ROM).
+bo:presentadaPorParticular a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Entidad ;
+    rdfs:label "presentada por (particular/asociación)"@es .
+
+bo:enPleno a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Pleno ;
+    rdfs:label "en pleno"@es .
+
+bo:tieneResultado a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Resultado ;
+    rdfs:label "tiene resultado"@es .
+
+bo:menciona a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Entidad ;
+    rdfs:label "menciona"@es .
+
+bo:nombradoEnDebate a owl:DatatypeProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "nombrado en el debate"@es ;
+    rdfs:comment "Nombre propio que aparece en el texto del debate del punto (en castellano, normalizado sin tildes ni mayúsculas), con la palabra común que lo precede si la hay: 'mercado del ensanche', 'plaza zabalburu'. Lo añade construccion/nombres_debate.py."@es .
+
+bo:trataSobre a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Tema ;
+    rdfs:label "trata sobre"@es .
+
+### --- concejales ---
+bo:perteneceA a owl:ObjectProperty ;
+    rdfs:domain bo:Concejal ; rdfs:range bo:Grupo ;
+    rdfs:label "pertenece al grupo"@es .
+bo:esAlcalde a owl:DatatypeProperty ;
+    rdfs:domain bo:Concejal ; rdfs:range xsd:boolean ;
+    rdfs:label "ha sido alcalde/sa"@es .
+bo:cargoTecnico a owl:DatatypeProperty ;
+    rdfs:domain bo:PersonalTecnico ; rdfs:range xsd:string ;
+    rdfs:label "cargo (Secretario General / Interventor...)"@es .
+bo:intervino a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Concejal ;
+    rdfs:label "intervino en el debate"@es .
+bo:proponePersona a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Concejal ;
+    rdfs:label "proponente (persona que firma)"@es .
+
+### --- voto por grupo (propiedades directas Proposición -> Grupo) ---
+bo:votoAFavorDe a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Grupo ;
+    rdfs:label "votó a favor el grupo"@es .
+bo:votoEnContraDe a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Grupo ;
+    rdfs:label "votó en contra el grupo"@es .
+bo:seAbstuvo a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Grupo ;
+    rdfs:label "se abstuvo el grupo"@es .
+
+### --- voto NOMINAL (por concejal) — capa determinista, parseado del acta ---
+bo:concejalVotoAFavor a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Concejal ;
+    rdfs:label "votó a favor el concejal"@es .
+bo:concejalVotoEnContra a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Concejal ;
+    rdfs:label "votó en contra el concejal"@es .
+bo:concejalVotoAbstencion a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Concejal ;
+    rdfs:label "se abstuvo el concejal"@es .
+bo:votoFuente a owl:DatatypeProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "procedencia del voto (acta | llm | acta_nominal)"@es ;
+    rdfs:comment "acta_nominal: voto por grupo deducido de la votación nominal del texto del acta (enriquecer.py)."@es .
+bo:resultadoFuente a owl:DatatypeProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "procedencia del resultado (acta | llm | votoTexto | recuento | acta_verificada)"@es ;
+    rdfs:comment "votoTexto / recuento: recuperado en enriquecer.py de la frase de la votación o de un recuento completo de un punto sin enmiendas; acta_verificada: corregido a mano leyendo el acta."@es .
+
+### --- enmiendas ---
+bo:tieneEnmienda a owl:ObjectProperty ;
+    rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Enmienda ;
+    rdfs:label "tiene enmienda"@es .
+bo:enmiendaPor a owl:ObjectProperty ;
+    rdfs:domain bo:Enmienda ; rdfs:range bo:Grupo ;
+    rdfs:label "enmienda presentada por"@es .
+
+### --------------------------------------------------------------
+### RAZONAMIENTO: roll-up temático
+### "vivienda social" ⊑ "vivienda" ⇒ una pregunta por "vivienda"
+### agrega automáticamente las proposiciones de sus subtemas.
+### Se materializa con OWL-RL (TransitiveProperty + propertyChainAxiom).
+### --------------------------------------------------------------
+# broaderT = cierre transitivo de skos:broader
+bo:broaderT a owl:ObjectProperty, owl:TransitiveProperty ;
+    rdfs:label "tema más amplio (transitivo)"@es .
+skos:broader rdfs:subPropertyOf bo:broaderT .
+
+# trataTemaAmplio = trataSobre seguido de (0..n) saltos broaderT
+bo:trataTemaAmplio a owl:ObjectProperty ;
+    rdfs:label "trata sobre (incluye temas más amplios)"@es ;
+    owl:propertyChainAxiom ( bo:trataSobre bo:broaderT ) .
+bo:trataSobre rdfs:subPropertyOf bo:trataTemaAmplio .
+
+### --------------------------------------------------------------
+### PROPIEDADES DE DATOS
+### --------------------------------------------------------------
+bo:fecha        a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string .
+bo:anio         a owl:DatatypeProperty ; rdfs:range xsd:integer ;
+    rdfs:comment "Sin rdfs:domain a propósito: se usa en Proposicion Y en Pleno; un domain haría que el razonador infiriera que cada Pleno es una Proposicion."@es .
+bo:tituloTopic  a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string .
+bo:resumen      a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "resumen de la parte dispositiva"@es .
+bo:pagina       a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:integer .
+bo:fuentePdf    a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string .
+bo:votosFavor   a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:integer .
+bo:votosContra  a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:integer .
+bo:votoTexto    a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string .
+bo:fechaISO     a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:date ;
+    rdfs:label "fecha (xsd:date) para ordenar y filtrar por rangos"@es .
+bo:mes          a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:integer .
+bo:copiaEuskera a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "id de la copia en euskera del mismo punto (quitada del grafo)"@es .
+bo:tipoPunto    a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "qué es el punto del orden del día"@es ;
+    rdfs:comment "proposicion_grupo | propuesta_gobierno | proposicion_ciudadana (vecinal: la presenta una asociación o un particular, ver bo:presentadaPorParticular) | enmienda_articulado | declaracion_institucional | otro; y los que NO son proposiciones: pregunta | dacion_cuenta | tramite (aprobación del acta, urgencia, toma de posesión...) | debate_estado_ciudad | informe_iniciativa (entrada de la memoria anual de la Comisión de Sugerencias y Reclamaciones sobre una iniciativa vecinal ya debatida: no es un debate)."@es .
+bo:votacionRegistrada a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:label "de qué votación son el recuento y el voto por grupo guardados"@es ;
+    rdfs:comment "proposicion | enmienda (el recuento es el de una enmienda al punto, no el del punto)."@es .
+### --- votaciones (todas las de cada punto, no solo una) ---
+bo:Votacion a owl:Class ; rdfs:label "Votación"@es ;
+    rdfs:comment "Cada 'Se somete a votación ... En su virtud, ...' de un punto: de una enmienda, del punto o por puntos."@es .
+bo:tieneVotacion a owl:ObjectProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Votacion .
+bo:ordenVotacion a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:integer .
+bo:objetoVotacion a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:string ;
+    rdfs:comment "enmienda | punto | por_puntos | otro"@es .
+bo:decision a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:string ;
+    rdfs:comment "Lo que dice el acta tras 'En su virtud,'."@es .
+bo:esDecisiva a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:boolean ;
+    rdfs:comment "La última votación del punto, la que decide su suerte."@es .
+bo:votosEmitidosVotacion a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:integer .
+bo:votosFavorVotacion    a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:integer .
+bo:votosContraVotacion   a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:integer .
+bo:abstencionesVotacion  a owl:DatatypeProperty ; rdfs:domain bo:Votacion ; rdfs:range xsd:integer .
+bo:grupoVotaAFavor   a owl:ObjectProperty ; rdfs:domain bo:Votacion ; rdfs:range bo:Grupo .
+bo:grupoVotaEnContra a owl:ObjectProperty ; rdfs:domain bo:Votacion ; rdfs:range bo:Grupo .
+bo:grupoSeAbstiene   a owl:ObjectProperty ; rdfs:domain bo:Votacion ; rdfs:range bo:Grupo .
+
+### --- barrios y distritos ---
+bo:Barrio   a owl:Class ; rdfs:label "Barrio de Bilbao"@es .
+bo:Distrito a owl:Class ; rdfs:label "Distrito de Bilbao (8 oficiales)"@es .
+bo:enBarrio a owl:ObjectProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Barrio ;
+    rdfs:comment "Barrio que nombra el título, el resumen o las entidades del punto."@es .
+bo:barrioEnDistrito a owl:ObjectProperty ; rdfs:domain bo:Barrio ; rdfs:range bo:Distrito .
+bo:enDistrito a owl:ObjectProperty ; rdfs:range bo:Distrito ;
+    owl:propertyChainAxiom ( bo:enBarrio bo:barrioEnDistrito ) .
+
+### --- importes, beneficiarios y fecha de presentación ---
+bo:importe a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:decimal ;
+    rdfs:comment "Euros que figuran en el título del punto (subvención, crédito, contrato); el de 'por importe de' si lo hay."@es .
+bo:beneficiario a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:comment "Quién recibe el importe ('a favor de ...', 'subvención nominativa a ...')."@es .
+bo:fechaPresentacion a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:date ;
+    rdfs:comment "Fecha en que se presentó una iniciativa vecinal (puede ser muy anterior al pleno)."@es .
+bo:origenExtraccion a owl:DatatypeProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range xsd:string ;
+    rdfs:comment "segmentar: punto recuperado del texto completo del acta (extraer_extra.py), que el indexador original no separó."@es .
+bo:enriquecido  a owl:DatatypeProperty ; rdfs:range xsd:boolean ;
+    rdfs:comment "Marca de que el grafo ha pasado por enriquecer.py."@es .
+
+### --- plenos (uno por acta) y legislaturas ---
+# Propiedades propias del Pleno: bo:fechaISO, bo:fuentePdf... tienen domain
+# bo:Proposicion y el razonador deduciría que cada pleno es una proposición.
+bo:fechaSesion  a owl:DatatypeProperty ; rdfs:domain bo:Pleno ; rdfs:range xsd:date .
+bo:mesSesion    a owl:DatatypeProperty ; rdfs:domain bo:Pleno ; rdfs:range xsd:integer .
+bo:tipoSesion   a owl:DatatypeProperty ; rdfs:domain bo:Pleno ; rdfs:range xsd:string ;
+    rdfs:comment "ordinaria | extraordinaria"@es .
+bo:actaPdf      a owl:DatatypeProperty ; rdfs:domain bo:Pleno ; rdfs:range xsd:string .
+bo:Legislatura  a owl:Class ; rdfs:label "Legislatura (mandato de la corporación)"@es ;
+    rdfs:comment "De un pleno de constitución de la corporación al siguiente."@es .
+bo:inicioLegislatura a owl:DatatypeProperty ; rdfs:domain bo:Legislatura ; rdfs:range xsd:date .
+bo:finLegislatura    a owl:DatatypeProperty ; rdfs:domain bo:Legislatura ; rdfs:range xsd:date ;
+    rdfs:comment "Fecha del pleno de constitución de la corporación siguiente (excluida)."@es .
+# en el pleno y en sus proposiciones: el razonador lo propaga por bo:enPleno
+bo:enLegislatura a owl:ObjectProperty ; rdfs:range bo:Legislatura ;
+    rdfs:label "en la legislatura"@es ;
+    owl:propertyChainAxiom ( bo:enPleno bo:enLegislatura ) .
+bo:resumenEnmienda a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string .
+bo:tipoEnmienda    a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string .
+bo:resultadoEnmienda a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string ;
+    rdfs:label "resultado de la enmienda"@es ;
+    rdfs:comment "aceptada_por_proponente | aprobada_en_votacion | rechazada_en_votacion | sin_votar"@es .
+bo:votosFavorEnmienda  a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:integer .
+bo:votosContraEnmienda a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:integer .
+
+### --------------------------------------------------------------
+### INDIVIDUOS FIJOS: resultados de votación
+### --------------------------------------------------------------
+bo:Aprobada           a bo:Resultado ; skos:prefLabel "aprobada"@es .
+bo:Rechazada          a bo:Resultado ; skos:prefLabel "rechazada"@es .
+bo:Decae              a bo:Resultado ; skos:prefLabel "decae"@es .
+bo:Retirada           a bo:Resultado ; skos:prefLabel "retirada"@es .
+bo:AprobadaConEnmienda a bo:Resultado ; skos:prefLabel "aprobada con enmienda"@es .
+bo:SinResultado       a bo:Resultado ; skos:prefLabel "sin resultado"@es .
+
+### --------------------------------------------------------------
+### INTERVENCIONES: lo que dice cada orador en cada punto
+### --------------------------------------------------------------
+bo:Intervencion a owl:Class ; rdfs:label "Intervención de un orador en un punto"@es ;
+    rdfs:comment "Texto seguido de un orador entre dos marcadores del acta (SR./SRA. APELLIDO:). Guarda un resumen de lo que dice y su postura ante el punto; el texto completo está en el acta (página del punto)."@es .
+bo:intervencionEn a owl:ObjectProperty ; rdfs:domain bo:Intervencion ; rdfs:range bo:PuntoOrdenDia ;
+    owl:inverseOf bo:tieneIntervencion ; rdfs:label "intervención en el punto"@es .
+bo:tieneIntervencion a owl:ObjectProperty ; rdfs:domain bo:PuntoOrdenDia ; rdfs:range bo:Intervencion .
+bo:orador a owl:ObjectProperty ; rdfs:domain bo:Intervencion ; rdfs:range bo:Concejal ;
+    rdfs:comment "Concejal que habla, si el apellido del acta se resuelve a uno solo en esa fecha."@es .
+bo:oradorEtiqueta a owl:DatatypeProperty ; rdfs:domain bo:Intervencion ; rdfs:range xsd:string ;
+    rdfs:comment "Orador tal como aparece en el acta (por ejemplo 'SRA. RUIZ BUJEDO')."@es .
+bo:rolOrador a owl:DatatypeProperty ; rdfs:domain bo:Intervencion ; rdfs:range xsd:string ;
+    rdfs:comment "'alcalde' o 'secretario' cuando habla el cargo y no un concejal concreto."@es .
+bo:grupoOrador a owl:ObjectProperty ; rdfs:domain bo:Intervencion ; rdfs:range bo:Grupo ;
+    rdfs:comment "Grupo del orador en esa fecha; el alcalde figura con su grupo (EAJ-PNV)."@es .
+bo:ordenIntervencion a owl:DatatypeProperty ; rdfs:domain bo:Intervencion ; rdfs:range xsd:integer ;
+    rdfs:comment "Posición de la intervención dentro del punto."@es .
+bo:resumenIntervencion a owl:DatatypeProperty ; rdfs:domain bo:Intervencion ; rdfs:range xsd:string ;
+    rdfs:comment "Una o dos frases con lo que defiende, pide, critica o informa el orador (Gemini, a partir del acta)."@es .
+bo:posturaIntervencion a owl:DatatypeProperty ; rdfs:domain bo:Intervencion ; rdfs:range xsd:string ;
+    rdfs:comment "a_favor | en_contra | abstencion | neutra: postura del orador ante la propuesta del punto."@es .
+bo:longitudIntervencion a owl:DatatypeProperty ; rdfs:domain bo:Intervencion ; rdfs:range xsd:integer ;
+    rdfs:comment "Caracteres del texto de la intervención en el acta."@es .
+
+bo:autorFuente a owl:DatatypeProperty ; rdfs:domain bo:Enmienda ; rdfs:range xsd:string ;
+    rdfs:comment "Procedencia del grupo autor de la enmienda cuando se asignó leyendo el acta (acta_verificada)."@es .

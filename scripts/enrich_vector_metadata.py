@@ -2,28 +2,24 @@ import os
 import sys
 import argparse
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(HERE)
-GRAPHRAG_DIR = os.path.join(BASE_DIR, "graphrag", "graphrag")
-
-sys.path.insert(0, os.path.join(BASE_DIR, "backend"))
-sys.path.insert(0, GRAPHRAG_DIR)
-sys.path.insert(0, os.path.join(GRAPHRAG_DIR, "construccion"))  # build_rdf.py vive aqui
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rdflib.namespace import SKOS  # noqa: E402
 from langchain_chroma import Chroma  # noqa: E402
 
-from rag import RAGPipeline, CHROMA_PATH, strip_accents  # noqa: E402
-from build_rdf import (  # noqa: E402
+from comun.grupos import extrae_grupo, canon_grupo, prop_id  # noqa: E402
+from comun.rutas import CHROMA_PATH, dato_grafo  # noqa: E402
+from vectorial.recuperacion import strip_accents  # noqa: E402
+from grafo.construccion.build_rdf import (  # noqa: E402
     ONTOLOGY, THEMES, Graph,
     resultado_cruzado, normaliza_resultado, parse_votos,
     find_canonical, canon_theme_map, norm_label,
 )
-from grupos import extrae_grupo, canon_grupo, prop_id  # noqa: E402
-from jsonl_utils import load_jsonl, iter_jsonl  # noqa: E402
+from grafo.construccion.texto_actas import load_jsonl, iter_jsonl  # noqa: E402
+from vectorial.pipeline import RAGPipeline  # noqa: E402
 
-ENRICHED = os.path.join(GRAPHRAG_DIR, "proposals_enriched.jsonl")
-PROPOSALS = os.path.join(GRAPHRAG_DIR, "proposals.jsonl")
+ENRICHED = dato_grafo("proposals_enriched.jsonl")
+PROPOSALS = dato_grafo("proposals.jsonl")
 PREFIX_LEN = 80
 BATCH = 300
 
@@ -81,11 +77,11 @@ def build_derived_map():
         meta["resultado"] = res
 
         # El campo vote_result ORIGINAL de cada chunk (calculado por
-        # backend/rag.py::_process_single_pdf en la indexación de ChromaDB)
+        # vectorial/indexado.py::_process_single_pdf en la indexación de ChromaDB)
         # se queda desactualizado si `_process_single_pdf` se corrige más
         # tarde (Ronda 42, 2026-09-17: fix de "decae") sin re-indexar de cero
         # (operación de horas, no la hace este script). `build_sources_data`/
-        # `replace_votos_line` (backend/rag.py, usados por frontend/app.py)
+        # `replace_votos_line` (vectorial/generacion.py)
         # leen justo esta clave como texto "de verdad" para sustituir la
         # línea de Votos del LLM -- si se queda obsoleta, el fix de "decae"
         # nunca llega a la respuesta real del RAG vectorial aunque el campo

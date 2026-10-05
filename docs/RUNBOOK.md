@@ -8,24 +8,26 @@ el "por qué" de las decisiones está aquí y en `../memoria/decisiones_tecnicas
 
 - Python 3.11, `pip install -r requirements.txt`
 - Ollama en `localhost:11434` con los modelos: `nomic-embed-text` (embeddings),
-  `qwen2.5:7b` (SPARQL de GraphRAG y narración de respaldo).
-- `.env` con `GROQ_API_KEY`, `COHERE_API_KEY` y, para el enriquecimiento con
-  Gemini, `GOOGLE_API_KEY`.
+  `bge-m3` (reordenación local y plantillas), `qwen3:8b` (SPARQL de GraphRAG) y
+  `qwen2.5:7b` (narración de respaldo).
+- `.env` con `GROQ_API_KEY`, `COHERE_API_KEY` y, para Gemini en Vertex AI,
+  `GOOGLE_CLOUD_PROJECT` y `GOOGLE_APPLICATION_CREDENTIALS`.
 - Los PDF de las actas en `actas/<año>/*.pdf` (fuera del repo).
 
 ## Pipeline completo
 
 ```
 actas/*.pdf
-  │  extract_proposals.py        (Fase 1: segmentación determinista)
+  │  grafo.construccion.extraer proposiciones  (Fase 1: segmentación determinista)
   ▼
 proposals.jsonl
-  │  build_graph.py --enrich     (Fase 2: enriquecimiento LLM por proposición)
+  │  grafo.construccion.build_graph --enrich  (Fase 2: enriquecimiento LLM por proposición)
   ▼
-proposals_enriched.jsonl
-  │  build_rdf.py                (Fase 3: RDF + razonador OWL-RL)
+proposals_enriched.jsonl  (+ puntos recuperados, votaciones e intervenciones:
+  │                        ver grafo/construccion/README.md)
+  │  grafo.construccion.build_rdf             (Fase 3: RDF + enriquecimiento + razonador OWL-RL)
   ▼
-bilbao_reasoned.ttl             ← lo consulta GraphRAG
+datos/grafo/bilbao_reasoned.ttl   ← lo consulta GraphRAG
 
 actas/*.pdf
   │  scripts/full_rebuild.py     (embeddings + metadata básica)
@@ -34,12 +36,15 @@ chroma_db/
   │  scripts/enrich_vector_metadata.py   (tema_principal, banderas tf_<tema>, grupo_proponente)
   ▼
 chroma_db/  (enriquecido)        ← lo consulta el RAG vectorial
+  │  scripts/indexar_proposiciones.py    (un resumen por proposición, canal de proposiciones)
+  ▼
+chroma_db_proposiciones/
 ```
 
 ## Fase 2 — enriquecimiento (`build_graph.py --enrich`)
 
 ```
-python graphrag/graphrag/build_graph.py --enrich --model gemini --rpm 8 --max-eur 12
+python -m grafo.construccion.build_graph --enrich --model gemini --rpm 8 --max-eur 12
 ```
 
 ### Elección de modelo (`--model`)
@@ -50,11 +55,11 @@ python graphrag/graphrag/build_graph.py --enrich --model gemini --rpm 8 --max-eu
 | `gemini-3.5-flash` | — | ~5x más caro; solo si el lite se queda corto |
 | `gemini-flash-latest` | — | intermedio |
 | `groq` | `openai/gpt-oss-120b` | gratis pero el free tier limita mucho (200k tok/día) |
-| un modelo de Ollama | — | local, gratis, más lento y menos preciso (ver `../graphrag/graphrag/ESTUDIO_SPARQL_LOCAL.md`) |
+| un modelo de Ollama | — | local, gratis, más lento y menos preciso (ver `desarrollo/ESTUDIO_SPARQL_LOCAL.md`) |
 
 `gemini-2.5-flash` y `2.5-flash-lite` **ya no están disponibles para claves
 nuevas** (404). Si Google descomisiona `3.5-flash-lite`, actualizar
-`GEMINI_ALIAS` y `PRECIO_USD_POR_M` en `build_graph.py`.
+`GEMINI_ALIAS` y `PRECIO_USD_POR_M` en `grafo/construccion/build_graph.py`.
 
 ### Ritmo y coste
 
@@ -81,7 +86,7 @@ nuevas** (404). Si Google descomisiona `3.5-flash-lite`, actualizar
 ## Fase 3 — grafo RDF (`build_rdf.py`)
 
 ```
-python graphrag/graphrag/build_rdf.py
+python -m grafo.construccion.build_rdf
 ```
 
 Combina `proposals_enriched.jsonl` + `concejales.jsonl` + `personal_tecnico.jsonl`
@@ -89,7 +94,7 @@ Combina `proposals_enriched.jsonl` + `concejales.jsonl` + `personal_tecnico.json
 `bilbao_reasoned.ttl` con las inferencias materializadas (roll-up temático, tipos
 de entidad).
 
-`concejales.jsonl` se genera con `extract_concejales.py` a partir de las 4 actas
+`concejales.jsonl` se genera con `python -m grafo.construccion.extraer concejales` a partir de las 4 actas
 de sesión constitutiva (ver `../memoria/decisiones_tecnicas.md` §5).
 
 ## Base vectorial
@@ -106,5 +111,5 @@ búsqueda temática ignora las actas nuevas.
 ## Verificación
 
 ```
-python scripts/regression_qa.py                # ~35 casos, GraphRAG + vectorial
+python evaluacion/regresion.py                 # 35 casos, GraphRAG + vectorial
 ```

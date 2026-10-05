@@ -6,6 +6,7 @@ __pycache__/
 
 # Entornos virtuales
 .venv/
+.venv-ragas/
 venv/
 env/
 
@@ -19,12 +20,17 @@ Thumbs.db
 
 # API keys — nunca subir al repo
 .env
+gen-lang-client-*.json
 
 # Datos pesados — no caben en GitHub (transferir por USB/nube)
 chroma_db/
+chroma_db_proposiciones/
 chroma_db.rar
 chroma_db.bak*/
 actas/
+
+# Copias, logs y código retirado (solo local)
+_archivo/
 
 # Chainlit: archivos subidos por usuarios en el chat (caché temporal)
 .files/
@@ -39,36 +45,29 @@ frontend/.files/
 debug_context.txt
 frontend/debug_context.txt
 
-# Resultados de comparaciones (opcionales, regenerables)
-compare_output*.txt
-compare_nar*.txt
-compare_q*.txt
-graphrag/graphrag/compare_output*.txt
-graphrag/graphrag/compare_final*.txt
 
 # Notas de trabajo / informes locales (regenerables, no forman parte del proyecto)
-code_review_findings.txt
-pruebas_16_preguntas.txt
-revision_codigo_y_ontologia.txt
+docs/desarrollo/code_review_findings.txt
+docs/desarrollo/pruebas_16_preguntas.txt
+docs/desarrollo/revision_codigo_y_ontologia.txt
 
-# Datos intermedios pesados del pipeline (regenerables con extract_proposals.py +
-# build_graph.py --enrich; se transfieren por nube junto con chroma_db/actas)
-graphrag/graphrag/proposals.jsonl
+# Datos intermedios pesados del pipeline (regenerables con grafo.construccion;
+# se transfieren por nube junto con chroma_db/actas) y cachés del grafo
+datos/grafo/proposals.jsonl
+datos/grafo/cache/
 
 # Chainlit: traducciones i18n por defecto (las regenera Chainlit al arrancar)
 .chainlit/translations/
 frontend/.chainlit/translations/
 
-# Estudio de generación de SPARQL (carpeta propia en la raíz, no forma parte de
-# ningún sistema): resultados y logs, el código sí se versiona
-estudio_sparql/study_*.jsonl
-estudio_sparql/phase1_*.json
-estudio_sparql/_realvocab.json
-estudio_sparql/_bank_embeds.json
+# Estudio de generación de SPARQL: resultados y cachés, el código sí se versiona
+evaluacion/estudio_sparql/study_*.jsonl
+evaluacion/estudio_sparql/phase1_*.json
+evaluacion/estudio_sparql/_realvocab.json
+evaluacion/estudio_sparql/_bank_embeds.json
 
 # Baterías crudas / borradores de trabajo (los informes finales sí se versionan)
-graphrag/graphrag/bateria_comparativa_cruda_*.md
+docs/desarrollo/bateria_comparativa_cruda_*.md
 
-# Memoria de referencia de otra persona (solo consulta local, no es contenido propio)
-TFG_OiherRodríguezLuengo.pdf
-TFG_Nahia_Iturregi.pdf
+# Memorias de referencia de otras personas (solo consulta local, no es contenido propio)
+docs/referencias/

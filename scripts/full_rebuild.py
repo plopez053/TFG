@@ -7,7 +7,8 @@ import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.rag import RAGPipeline, DATA_PATH, CHROMA_PATH
+from comun.rutas import CHROMA_PATH, DATA_PATH
+from vectorial.pipeline import RAGPipeline
 from langchain_chroma import Chroma
 
 
@@ -129,7 +130,7 @@ def run_full_rebuild(year_limit=None):
     # (date/topic/party/vote_result). Los campos que usa el canal de búsqueda
     # temática (_thematic_search) — tema_principal, temas, resultado,
     # grupo_proponente, prop_id — vienen de un pipeline SEPARADO
-    # (extract_proposals.py -> build_graph.py --enrich -> build_rdf.py)
+    # (extraer.py proposiciones -> build_graph.py --enrich -> build_rdf.py)
     # y de scripts/enrich_vector_metadata.py, que NO se invocan aquí porque
     # implican llamadas a LLM (coste/tiempo que este script no debe decidir
     # por su cuenta). Sin ese segundo paso, las actas nuevas indexadas ahora
@@ -140,9 +141,9 @@ def run_full_rebuild(year_limit=None):
     print("    incluye el enriquecimiento temático del RAG vectorial todavía.")
     print("    Para que el canal de búsqueda por tema (_thematic_search) las")
     print("    cubra, ejecutar en orden:")
-    print("      1) python graphrag/graphrag/construccion/extract_proposals.py")
-    print("      2) python graphrag/graphrag/construccion/build_graph.py --enrich --model qwen3:8b")
-    print("      3) python graphrag/graphrag/construccion/build_rdf.py")
+    print("      1) python -m grafo.construccion.extraer proposiciones")
+    print("      2) python -m grafo.construccion.build_graph --enrich --model vertex")
+    print("      3) python -m grafo.construccion.build_rdf")
     print("      4) python scripts/enrich_vector_metadata.py")
 
 
