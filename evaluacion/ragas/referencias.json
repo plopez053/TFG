@@ -1,0 +1,2727 @@
+{
+  "1": {
+    "question": "¿Qué se dijo sobre la estabilización y la OPE del empleo público municipal del Ayuntamiento de Bilbao?",
+    "ground_truth": "El 24-06-2021 el grupo Elkarrekin Bilbao-Podemos/Ezker Anitza-IU/Equo Berdeak presentó una proposición sobre las OPE (Ofertas Públicas de Empleo) de 2017, 2018, 2019 y 2020, pidiendo apoyo institucional al personal interino en aplicación de la Directiva 1999/70/CE y de varias sentencias del TJUE; el Equipo de Gobierno presentó una enmienda de modificación que pedía continuar desarrollando las convocatorias de esas OPE para reducir la tasa de interinidad. En el debate, el concejal de Gobierno (EAJ-PNV) situó la tasa de interinidad municipal en torno al 23%, mientras que el PP atribuyó el origen de la 'temporalidad galopante' a la supresión de las tasas de reposición por el Ministro Montoro en 2017-2018, y EH Bildu se mostró cauto ante paralizar procesos de oposición en marcha desde 2017. Posteriormente, el 30-11-2023 el Pleno conoció una tasa adicional de estabilización conforme a la disposición adicional 8ª de la Ley 20/2021, con plazas que debían quedar aprobadas antes del 31-12-2023; y el 29-02-2024 se dio cuenta de una Oferta de Empleo Público excepcional de estabilización para 2023 (acordada por la Junta de Gobierno el 5-12-2023), que incluía, entre otras, 10 plazas de Trabajador/a Social.",
+    "sources": [
+      {
+        "date": "24-06-2021",
+        "page": 136,
+        "note": "Proposición de Elkarrekin Bilbao-Podemos sobre OPE 2017-2020 y enmienda del Equipo de Gobierno"
+      },
+      {
+        "date": "24-06-2021",
+        "page": 142,
+        "note": "Debate: tasa de interinidad ~23% (EAJ-PNV), crítica a recortes de Montoro (PP), cautela de EH Bildu"
+      },
+      {
+        "date": "30-11-2023",
+        "page": 28,
+        "note": "Tasa adicional de estabilización (D.A. 8ª Ley 20/2021), plazo 31-12-2023"
+      },
+      {
+        "date": "29-02-2024",
+        "page": 6,
+        "note": "Oferta excepcional de Empleo Público de estabilización 2023, 10 plazas de trabajador/a social entre otras"
+      }
+    ]
+  },
+  "2": {
+    "question": "¿Qué iniciativas ha habido sobre las bibliotecas municipales y los equipamientos culturales de barrio?",
+    "ground_truth": "El 28-02-2008 el Grupo Municipal Socialistas Vascos presentó una proposición instando a elaborar durante 2008 un Plan Municipal de Bibliotecas que abordara personal, horarios y fondos para favorecer el uso de la red de bibliotecas municipales, citando la propia memoria de la red de 2006 que reconocía un rendimiento decreciente. El 25-06-2009 se debatió una proposición para garantizar, durante el verano, la continuidad del horario habitual en bibliotecas, centros cívicos y oficinas de atención al público, que fue enmendada por EAJ-PNV y EB-Berdeak. Años después, el 28-11-2019 el Grupo EH Bildu presentó una proposición pidiendo un estudio de necesidades de la Red de Bibliotecas Municipales de Bilbao como primer paso para un Plan Estratégico, con una enmienda de Elkarrekin Bilbao-Podemos; en el debate se mencionó un presupuesto cercano a los 3 millones de euros para la red, con 280.000 euros destinados a la adquisición de fondos bibliográficos.",
+    "sources": [
+      {
+        "date": "28-02-2008",
+        "page": 95,
+        "note": "Proposición del PSE-EE pidiendo un Plan Municipal de Bibliotecas para 2008"
+      },
+      {
+        "date": "25-06-2009",
+        "page": 99,
+        "note": "Proposición sobre mantenimiento del horario de bibliotecas en verano, enmendada por EAJ-PNV/EB-Berdeak"
+      },
+      {
+        "date": "28-11-2019",
+        "page": 76,
+        "note": "Proposición de EH Bildu: estudio de necesidades y Plan Estratégico de la Red de Bibliotecas Municipales; presupuesto ~3M€, 280.000€ en fondos bibliográficos"
+      }
+    ]
+  },
+  "3": {
+    "question": "¿Qué propuestas se han hecho sobre la situación de las personas sin hogar en Bilbao?",
+    "ground_truth": "El 26-11-2020 el Pleno debatió una proposición para adaptar en Bilbao la Estrategia Vasca de Personas Sin Hogar tras la pandemia, citando el estudio 'Personas sin Hogar en Bilbao' encargado por el Ayuntamiento a la UPV-EHU en 2018. El 27-05-2021 EH Bildu recordó la muerte de dos personas sin hogar (Peter, de Uribarri, y Fátima) y citó un recuento de septiembre de 2020 con 223 personas pernoctando en la calle pese a existir 494 plazas en recursos nocturnos de urgencia, denunciando además desalojos sin alternativa en puntos como el Puente de La Salve, el Puente Euskalduna o las canchas de Atxuri. El 24-02-2022 se debatió la polémica por el cierre nocturno de las canchas deportivas de Atxuri (medida impulsada originalmente a propuesta del PP), que en la práctica desplazó a las personas sin hogar que pernoctaban allí. En el debate presupuestario del 28-11-2022 se detalló que el Ayuntamiento destinaría 1,4 millones de euros a la atención coordinada de personas sin hogar (573.000€ más que el año anterior) y se reclamó un nuevo albergue, señalando que el Servicio Municipal de Acogida Nocturna (SMAN) de Uribitarte llevaba 15 años funcionando en condición 'provisional' y saturado.",
+    "sources": [
+      {
+        "date": "26-11-2020",
+        "page": 73,
+        "note": "Proposición para adaptar la Estrategia Vasca de Personas Sin Hogar; cita el estudio UPV-EHU 2018"
+      },
+      {
+        "date": "27-05-2021",
+        "page": 202,
+        "note": "EH Bildu: recuento sept-2020 (223 en calle / 494 plazas), desalojos sin alternativa; muertes de Peter y Fátima"
+      },
+      {
+        "date": "24-02-2022",
+        "page": 185,
+        "note": "Debate sobre cierre nocturno de canchas de Atxuri y su efecto de desplazar a personas sin hogar"
+      },
+      {
+        "date": "28-11-2022",
+        "page": 43,
+        "note": "Presupuesto 2023: 1,4M€ a atención a personas sin hogar (+573.000€); SMAN de Uribitarte saturado y 'provisional' desde hace 15 años"
+      }
+    ]
+  },
+  "4": {
+    "question": "¿Qué se ha debatido sobre la memoria de las víctimas del terrorismo en el Pleno de Bilbao?",
+    "ground_truth": "El 24-11-2015 el Grupo Popular presentó una proposición para colocar una placa en las calles de Bilbao donde hubiera sido asesinada alguna víctima del terrorismo (fundamentalmente por ETA, y en menor medida por el Batallón Vasco Español y el GAL), que fue enmendada por Goazen Bilbao y, según se recordó después, no llegó a salir adelante. El 31-01-2019 se debatió una nueva proposición para colocar placas identificativas en recuerdo de las víctimas del terrorismo y la violencia antes de acabar el mandato, siguiendo el ejemplo de Donostia y Gasteiz, y recordando expresamente el intento fallido de 2015. El 26-09-2019, en el marco de un debate sobre la plaza de toros, el PP acusó a EH Bildu de falta de empatía con las víctimas del terrorismo por sus 'ongi etorri' a presos de ETA, y otro grupo mencionó el acuerdo alcanzado entre la Fiscalía, la Asociación de Víctimas del Terrorismo y las personas encausadas en el macrosumario 11/13 (caso Herrira). El 30-06-2022, coincidiendo con el 25º aniversario del asesinato de Miguel Ángel Blanco, se debatió un homenaje/escultura en su memoria y se dio cuenta de la creación del Foro Bilbao por la Paz y la Convivencia como espacio de acompañamiento a las políticas municipales sobre víctimas del terrorismo y la violencia.",
+    "sources": [
+      {
+        "date": "24-11-2015",
+        "page": 65,
+        "note": "Proposición del PP para placas en calles donde fueron asesinadas víctimas del terrorismo; enmienda de Goazen Bilbao"
+      },
+      {
+        "date": "31-01-2019",
+        "page": 80,
+        "note": "Nueva proposición de placas identificativas antes de fin de mandato; recuerda el intento de 2015"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 371,
+        "note": "Mención al acuerdo Fiscalía-Asociación de Víctimas del Terrorismo en el macrosumario 11/13 (caso Herrira)"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 237,
+        "note": "25º aniversario del asesinato de Miguel Ángel Blanco; creación del Foro Bilbao por la Paz y la Convivencia"
+      }
+    ]
+  },
+  "5": {
+    "question": "¿Qué se debatió sobre el tranvía en Bilbao?",
+    "ground_truth": "El 28-11-2007 el Grupo Popular presentó una proposición pidiendo al Gobierno Vasco instalar una señalización más eficaz, luminosa y acústica, que advirtiera de la presencia del tranvía en las calles de Bilbao, por motivos de seguridad de peatones y viandantes. El 31-01-2008 se aprobó una enmienda conjunta de EAJ-PNV y EB-Berdeak que reiteraba el apoyo a la Línea 3 de Metro y pedía que el tranvía llegara 'en el menor plazo posible' al barrio de Rekalde, además de iniciar estudios para prolongarlo por la calle Autonomía. El 24-04-2008 se debatió una nueva proposición y enmienda sobre la llegada del tranvía a Rekalde, en ese caso fijando el objetivo de que las obras necesarias concluyeran para 2009, en paralelo al desarrollo urbanístico del barrio.",
+    "sources": [
+      {
+        "date": "28-11-2007",
+        "page": 75,
+        "note": "Proposición del PP sobre señalización luminosa/acústica del tranvía por seguridad"
+      },
+      {
+        "date": "31-01-2008",
+        "page": 31,
+        "note": "Enmienda EAJ-PNV/EB-Berdeak: apoyo a Línea 3 de Metro y llegada del tranvía a Rekalde, estudios de prolongación por Autonomía"
+      },
+      {
+        "date": "24-04-2008",
+        "page": 90,
+        "note": "Proposición y enmienda sobre llegada del tranvía a Rekalde para 2009"
+      }
+    ]
+  },
+  "6": {
+    "question": "¿Qué propuso el Partido Popular sobre aparcamientos?",
+    "ground_truth": "El 28-01-2009 el Grupo Popular presentó una proposición para suprimir el 'rescate' obligatorio de parcelas por parte del Ayuntamiento en los futuros contratos de construcción y explotación de aparcamientos municipales, proponiendo que el precio de las parcelas fuera el criterio de mayor peso; en el debate recordaron que ya en 2005 el Pleno había aprobado por unanimidad, a propuesta del PP, promover el alquiler de las plazas de los aparcamientos municipales que no se vendían. El 28-01-2016 el PP presentó otra proposición para extender la OTA (regulación de estacionamiento) a todos los barrios del municipio, planteando que cualquier propietario de vehículo que pagara el impuesto de circulación recibiera gratuitamente la tarjeta OTA que le permitiera aparcar en su entorno; la propuesta generó oposición de otros grupos, que consideraban que favorecía el uso del vehículo privado frente a alternativas de movilidad sostenible.",
+    "sources": [
+      {
+        "date": "28-01-2009",
+        "page": 32,
+        "note": "Proposición del PP contra el rescate obligatorio de parcelas de aparcamiento; recuerda moción de 2005 sobre alquiler de plazas"
+      },
+      {
+        "date": "28-01-2016",
+        "page": 161,
+        "note": "Proposición del PP para extender la OTA a todos los barrios con tarjeta gratuita por pago del impuesto de circulación"
+      }
+    ]
+  },
+  "7": {
+    "question": "¿Qué ocurrió en el pleno del 26-01-2023?",
+    "ground_truth": "En el Pleno ordinario del 26-01-2023, presidido por el alcalde Juan María Aburto, se debatieron doce proposiciones de los grupos de la oposición. Entre ellas: EH Bildu pidió un estudio sobre el impacto del patinete eléctrico y una moratoria de licencias de alquiler hasta regularlo por ordenanza, y presentó otra proposición para elaborar un Plan Estratégico por el Derecho a la Vivienda; también planteó mecanismos de traspaso de información entre juzgados, Fiscalía, Ertzaintza y áreas municipales para apoyar a víctimas de violencia machista, y una bonificación fiscal del 50% en la tasa de basuras para quienes usasen el quinto contenedor de orgánico. Elkarrekin Bilbao-Podemos propuso fomentar el agua del grifo en dependencias municipales frente al agua embotellada, incluir acciones contra la serofobia en las campañas sobre VIH/sida, un proceso de consulta ciudadana en Uribarri sobre los locales de la Torre Bilbo Barria, y un servicio permanente en SURBISA para asesorar en proyectos de rehabilitación. El PP presentó proposiciones sobre un Plan de Calidad del Paisaje Urbano, una campaña e incremento de sanciones contra el uso de armas blancas (con enmienda conjunta con el Equipo de Gobierno) y la igualdad de condiciones de acceso a instalaciones deportivas para menores con grandes discapacidades. También se debatió una proposición de EH Bildu sobre el liderazgo municipal en el proceso de alegaciones para el acceso soterrado de la estación de Zorrotza, con enmienda conjunta con el Equipo de Gobierno.",
+    "sources": [
+      {
+        "date": "26-01-2023",
+        "page": 93,
+        "note": "Proposición de EH Bildu sobre patinetes eléctricos y moratoria de licencias"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 104,
+        "note": "Proposición de EH Bildu: Plan Estratégico por el Derecho a la Vivienda"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 154,
+        "note": "Proposición del PP: Plan de Calidad del Paisaje Urbano"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 170,
+        "note": "Proposición del PP sobre armas blancas, con enmienda conjunta con el Equipo de Gobierno"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 196,
+        "note": "Proposición de EH Bildu: bonificación del 50% en tasa de basuras por uso del quinto contenedor"
+      }
+    ]
+  },
+  "8": {
+    "question": "¿Qué se debatió sobre los desahucios en Bilbao?",
+    "ground_truth": "El 26-01-2012 el Grupo Popular presentó una proposición para que, entre los colectivos con atención preferente en el acceso a vivienda municipal, se incluyera a las personas desahuciadas por impago de hipoteca (junto con personas divorciadas al corriente de pensiones), lo que fue objeto de una enmienda del Equipo de Gobierno. Poco después, el 23-02-2012, el Grupo Socialistas Vascos presentó una proposición pidiendo que, a través de sus representantes en los órganos rectores de la BBK (Kutxabank), el Ayuntamiento impulsara procesos de mediación con los deudores hipotecarios antes de recurrir a la vía judicial; el Equipo de Gobierno añadió una enmienda de adición pidiendo a la BBK y al resto de entidades financieras que suspendieran la ejecución de hipotecas hasta contar con una alternativa legal que evitara la expulsión de la vivienda de las personas afectadas.",
+    "sources": [
+      {
+        "date": "26-01-2012",
+        "page": 102,
+        "note": "Proposición del PP: incluir a desahuciados por impago de hipoteca como colectivo preferente en vivienda municipal"
+      },
+      {
+        "date": "23-02-2012",
+        "page": 57,
+        "note": "Proposición del PSE sobre mediación de BBK/Kutxabank con deudores hipotecarios; enmienda del Equipo de Gobierno pidiendo suspender ejecuciones de hipoteca"
+      }
+    ]
+  },
+  "9": {
+    "question": "¿Qué propuestas sobre vivienda social ha habido?",
+    "ground_truth": "El 29-10-2015 EH Bildu denunció que había 6.000 personas esperando acceder a una vivienda social en Bilbao a través de Etxebide. El 25-10-2018 se debatió, coincidiendo con el centenario de Viviendas Municipales, una proposición del PP en la que se señaló que el organismo se había desprendido de una quinta parte de su parque de vivienda social en alquiler a lo largo de los años, y se pidió destinar fondos del solar de Zorrotzaurre (subasta a la constructora Amenábar) a nueva vivienda social en alquiler. El 26-11-2020 se debatió una proposición para revisar los requisitos de acceso del Servicio Municipal de Atención Frente a Desahucios y ampliar el parque de vivienda social. El 31-03-2022 Elkarrekin Bilbao-Podemos propuso que el Ayuntamiento instara a la Sociedad de Gestión de Activos procedentes de la Reestructuración Bancaria (SAREB) a poner viviendas a disposición del alquiler social, señalando que más de 13.000 personas estaban inscritas en Etxebide como demandantes de vivienda en alquiler en Bilbao. Más recientemente, el 30-10-2025 se debatió una proposición para que, en la aprobación de nuevos planes urbanísticos, se calificara para vivienda protegida un porcentaje superior al estándar legal mínimo, en el contexto de lo que varios grupos calificaron de 'emergencia habitacional'.",
+    "sources": [
+      {
+        "date": "29-10-2015",
+        "page": 234,
+        "note": "EH Bildu: 6.000 personas esperando vivienda social en Bilbao (Etxebide)"
+      },
+      {
+        "date": "25-10-2018",
+        "page": 140,
+        "note": "Debate PP: Viviendas Municipales perdió una quinta parte de su parque social en alquiler"
+      },
+      {
+        "date": "26-11-2020",
+        "page": 62,
+        "note": "Proposición: revisar requisitos de acceso del Servicio Municipal de Atención Frente a Desahucios y ampliar parque de vivienda social"
+      },
+      {
+        "date": "31-03-2022",
+        "page": 226,
+        "note": "Elkarrekin Bilbao-Podemos: instar a SAREB a ceder vivienda; +13.000 personas en Etxebide"
+      },
+      {
+        "date": "30-10-2025",
+        "page": 92,
+        "note": "Proposición: elevar el porcentaje de vivienda protegida por encima del estándar legal en nuevos planes urbanísticos"
+      }
+    ]
+  },
+  "10": {
+    "question": "¿Qué se ha debatido sobre la calidad del aire y la Zona de Bajas Emisiones en Bilbao?",
+    "ground_truth": "El 25-11-2021 se debatió la política de calidad del aire del Ayuntamiento y las futuras zonas de bajas emisiones ('Bilbao Central'), con el PP mostrando su oposición. El 24-11-2022 se aprobó impulsar un sistema automático de cámaras de vigilancia del distintivo ambiental de los vehículos que circulasen por las zonas que se determinaran en Bilbao. El 28-12-2023 el Pleno resolvió alegaciones a la ordenanza reguladora de la Zona de Bajas Emisiones, incorporando, entre otras cosas, la obligación de publicar un informe cada dos años sobre su efecto (incluido el posible 'efecto frontera'). Tras un nuevo periodo de alegaciones, el 10-05-2024 el Pleno aprobó definitivamente la Ordenanza municipal de la zona de emisiones bajas, resolviendo 186 alegaciones (55 estimadas total o parcialmente y 131 desestimadas), enmarcada explícitamente en un mandato europeo de mejora de la calidad del aire. La medida siguió generando debate en 2025: el 27-03-2025 el PP la calificó de ordenanza 'expansiva' y crítica con el régimen sancionador, y el 30-10-2025 se propuso un programa de ayudas para subvencionar cuotas de leasing de vehículos eléctricos o híbridos a residentes afectados por las restricciones de circulación.",
+    "sources": [
+      {
+        "date": "25-11-2021",
+        "page": 273,
+        "note": "Debate sobre zonas de bajas emisiones ('Bilbao Central') y oposición del PP"
+      },
+      {
+        "date": "24-11-2022",
+        "page": 60,
+        "note": "Sistema automático de cámaras de vigilancia del perfil ambiental de vehículos"
+      },
+      {
+        "date": "28-12-2023",
+        "page": 88,
+        "note": "Resolución de alegaciones a la ordenanza de la Zona de Bajas Emisiones; informe bienal de efectos"
+      },
+      {
+        "date": "10-05-2024",
+        "page": 2,
+        "note": "Aprobación definitiva de la Ordenanza de la Zona de Bajas Emisiones; 55 alegaciones estimadas y 131 desestimadas de 186"
+      },
+      {
+        "date": "27-03-2025",
+        "page": 251,
+        "note": "Crítica del PP a la ordenanza como 'expansiva'"
+      }
+    ]
+  },
+  "11": {
+    "question": "¿Qué iniciativas ha habido sobre la peatonalización de calles en Bilbao?",
+    "ground_truth": "El 28-03-2012 el Grupo Socialista presentó una proposición para poner en marcha un Plan Especial de Peatonalizaciones que estableciera los criterios y necesidades de la Villa para futuros proyectos, con una enmienda negociada con el grupo proponente de otra iniciativa similar previa (26-01-2012). El 25-01-2018 se debatió una nueva proposición sobre un estudio o plan de peatonalizaciones; el Equipo de Gobierno se mostró cauto y subrayó la necesidad de consenso vecinal antes de iniciar cualquier proceso de peatonalización o semipeatonalización. El 30-06-2022 Elkarrekin Bilbao-Podemos presentó una proposición pidiendo que, en el plazo de seis meses, el Equipo de Gobierno redactara un proyecto técnico para peatonalizar el Camino Etxezuribidea. El 30-03-2023 el mismo grupo instó a cumplir el objetivo 2.2 del Plan de Movilidad Urbana Sostenible (PMUS) sobre un modelo de peatonalización 'eficiente, equitativo y funcional', pidiendo que antes de acabar el mandato se identificaran pública y detalladamente todas las intervenciones de peatonalización previstas; el PP, aunque no se opuso a peatonalizar, pidió más criterio y alternativas de aparcamiento disuasorio.",
+    "sources": [
+      {
+        "date": "28-03-2012",
+        "page": 105,
+        "note": "Proposición del PSE: Plan Especial de Peatonalizaciones con criterios generales"
+      },
+      {
+        "date": "25-01-2018",
+        "page": 183,
+        "note": "Debate sobre estudio/plan de peatonalizaciones; exigencia de consenso vecinal"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 209,
+        "note": "Elkarrekin Bilbao-Podemos: proyecto técnico de peatonalización del Camino Etxezuribidea en 6 meses"
+      },
+      {
+        "date": "30-03-2023",
+        "page": 142,
+        "note": "Elkarrekin Podemos: cumplimiento del objetivo 2.2 del PMUS sobre peatonalización; identificar intervenciones antes de fin de mandato"
+      }
+    ]
+  },
+  "12": {
+    "question": "¿Qué se ha dicho sobre la empresa Tubacex en el Pleno de Bilbao?",
+    "ground_truth": "Tras buscar la palabra 'Tubacex' en el texto completo de las 236 actas del corpus (2007-2026), solo aparece una vez, en el Pleno del 27-05-2021. No se trata de una proposición dedicada a Tubacex: el concejal de EH Bildu Xabier Jiménez la menciona de pasada, al inicio de su turno de palabra sobre una proposición distinta (relativa al cierre de sucursales bancarias de Kutxabank en el barrio de Arangoiti), enviando 'un abrazo solidario a las plantillas de Tubacex, de PCI-ITP, Petronor y UTE Bilboko Argiak', que en esos días llevaban adelante jornadas de movilización en defensa de sus puestos de trabajo. No se ha localizado ninguna proposición, debate ni acuerdo del Pleno centrado específicamente en Tubacex en el resto del corpus.",
+    "sources": [
+      {
+        "date": "27-05-2021",
+        "page": 76,
+        "note": "Única mención de 'Tubacex' en todo el corpus: saludo solidario de EH Bildu a las plantillas de Tubacex/PCI-ITP/Petronor/UTE Bilboko Argiak, dentro de una intervención sobre otra proposición (cierre de sucursales bancarias)"
+      }
+    ]
+  },
+  "13": {
+    "question": "¿Qué se ha debatido sobre Petronor en Bilbao?",
+    "ground_truth": "El 25-06-2020 Elkarrekin Bilbao-Podemos presentó una proposición para actualizar el Plan de Emergencia Municipal e incluir a la empresa SADER S.A. (tratamiento de residuos peligrosos, en el barrio de Zorrotza) como espacio de alto riesgo, citando a Petronor (en Muskiz) como ejemplo de empresa que, por manejar sustancias peligrosas, ya está obligada a disponer de un Plan de Emergencia Exterior con protocolos de actuación y alertas a la población vecina. El 25-03-2021, en el debate sobre el suministro energético de Zorrotzaurre, se discutió la contratación de energía renovable a través de cooperativas frente a grandes eléctricas, y se citó que Petronor, junto con Iberdrola, aporta más de 700 millones de euros anuales a las haciendas vascas, además de plantearse dudas sobre si Petronor había participado en la elaboración del estudio de autosuficiencia energética de la isla. En otros plenos (24-11-2016, 25-05-2017, 14-09-2018) Petronor aparece repetidamente citada, junto a Iberdrola, como una de las grandes empresas tractoras de la economía y el empleo de Bizkaia en debates presupuestarios y fiscales, sin ser objeto de una proposición específica.",
+    "sources": [
+      {
+        "date": "25-06-2020",
+        "page": 64,
+        "note": "Proposición sobre SADER S.A.; Petronor citada como ejemplo de empresa con Plan de Emergencia Exterior obligatorio"
+      },
+      {
+        "date": "25-03-2021",
+        "page": 117,
+        "note": "Debate energético de Zorrotzaurre: aportación de Petronor (>700M€/año) a haciendas vascas; posible autoría del estudio de autosuficiencia"
+      },
+      {
+        "date": "24-11-2016",
+        "page": 77,
+        "note": "Mención de Petronor, CLH e Iberdrola como pilares de la suficiencia financiera de Bizkaia"
+      }
+    ]
+  },
+  "14": {
+    "question": "¿Qué se ha debatido en el Pleno sobre el Tour de Francia en Bilbao?",
+    "ground_truth": "El 27-02-2014 el Grupo Socialistas Vascos (PSE-EE) propuso iniciar conversaciones con los organizadores del Tour de Francia para que Bilbao acogiera la salida o llegada de alguna etapa entre 2015 y 2019, recordando la candidatura fallida de 2006 para la salida de 2013. El PP la apoyó; Bildu se opuso por el gasto ('pan para hoy y hambre para mañana') y EAJ-PNV votó en contra alegando rigor presupuestario y no querer comprometer al siguiente mandato (se habló de un canon de unos 3 millones). Fue rechazada (10 votos a favor, 18 en contra). El 30-09-2021, tras la designación de Euskadi como sede de la Grand Départ de 2023, el Pleno aprobó ampliar los créditos de compromiso con 2,4 millones de euros para 2023, la aportación inicial del Ayuntamiento (a través de Bilbao Ekintza) según el convenio con el Gobierno Vasco y la Diputación, cada uno con 2,4 millones. Votaron a favor 21 y se abstuvieron Elkarrekin Bilbao y EH Bildu, que pidió transparencia, control de las condiciones laborales y uso del euskera. El 30-03-2023 EH Bildu presentó una proposición para que, con motivo del Tour, se controlaran los pisos turísticos, se garantizaran las condiciones laborales, se evitaran imágenes sexistas y se usara el euskera. Se aprobó una enmienda conjunta del Equipo de Gobierno y EH Bildu con esos cuatro ejes (26 votos a favor y 3 abstenciones del PP, que la tachó de negativa e 'identitaria'). Después se dio cuenta de modificaciones de crédito para gastos de la Grand Départ (28-09-2023 y 25-01-2024). La proposición del PP de 31-10-2013 que sugería el índice trata en realidad del Camino de Santiago (Basquetour), no del Tour.",
+    "sources": [
+      {
+        "date": "27-02-2014",
+        "page": 55,
+        "note": "Proposición PSE-EE para acoger una etapa del Tour 2015-2019; inicio del debate"
+      },
+      {
+        "date": "27-02-2014",
+        "page": 58,
+        "note": "Intervención de Anuzita (EAJ-PNV): voto en contra por rigor en la gestión"
+      },
+      {
+        "date": "27-02-2014",
+        "page": 61,
+        "note": "Votación: rechazada (10 a favor, 18 en contra)"
+      },
+      {
+        "date": "30-09-2021",
+        "page": 154,
+        "note": "Ampliación de créditos de compromiso de 2,4 M€ para la Grand Départ 2023"
+      },
+      {
+        "date": "30-09-2021",
+        "page": 158,
+        "note": "Votación: 21 a favor, 7 abstenciones (Elkarrekin y EH Bildu)"
+      },
+      {
+        "date": "30-03-2023",
+        "page": 109,
+        "note": "Proposición de EH Bildu sobre pisos turísticos, empleo, no sexismo y euskera en el Tour"
+      },
+      {
+        "date": "30-03-2023",
+        "page": 110,
+        "note": "Texto de la enmienda conjunta Equipo de Gobierno y EH Bildu"
+      },
+      {
+        "date": "30-03-2023",
+        "page": 117,
+        "note": "Aprobada la enmienda conjunta (26 a favor, 3 abstenciones del PP)"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 192,
+        "note": "Dación de cuenta: crédito de 75.000 € para gastos de la Grand Départ"
+      },
+      {
+        "date": "31-10-2013",
+        "page": 99,
+        "note": "Proposición del PP sobre el Camino de Santiago (no es sobre el Tour)"
+      }
+    ]
+  },
+  "15": {
+    "question": "¿Qué propuestas se han presentado sobre la pobreza energética?",
+    "ground_truth": "El 10-12-2014 Socialistas Vascos (PSE-EE) pidió una Estrategia para erradicar la pobreza energética en Bilbao, que el Gobierno Vasco financiara el gasto energético dentro de las Ayudas de Emergencia Social (AES), que no se cortaran la luz, el gas o el agua a los hogares vulnerables y que se rehabilitaran energéticamente las viviendas. Se aprobó una enmienda del Gobierno Municipal para seguir dotando de recursos a las familias mediante las AES (20 votos a favor y 7 en contra), y la proposición decayó. El 26-03-2015 el PSE-EE propuso un programa de 'Asesores de Energía' (inquilinos de viviendas municipales formados para orientar a sus vecinos), que se aprobó enmendado in voce por el Equipo de Gobierno. El 29-10-2015 Udalberri-Bilbao en Común pidió extender a otras suministradoras el convenio firmado con Iberdrola para evitar cortes por impago, y EH Bildu presentó una enmienda con cláusulas como el informe previo de los servicios sociales. Se aprobó la enmienda del Equipo de Gobierno, que ofrecía a las demás empresas un convenio similar al de Iberdrola del 07-10-2015. El 26-01-2017 Udalberri propuso un Plan municipal contra la Pobreza Energética, una ley estatal con tarifa social y tregua invernal, y un IVA reducido para la luz y el gas. Se impuso la enmienda del Equipo de Gobierno para participar en la estrategia institucional y mantener el sistema de protección social (21 votos a favor y 8 en contra). El 31-01-2019 Goazen Bilbao pidió que los servicios sociales emitieran informes a las compañías para evitar cortes de agua o luz. Se aprobó la enmienda del Gobierno para trabajar para que ninguna familia se quedara sin suministro por falta de pago. De forma relacionada, el 28-01-2021 EH Bildu propuso estudiar una comercializadora municipal de energía renovable que abasteciera también a quienes sufren pobreza energética, y prosperó la enmienda del Equipo de Gobierno.",
+    "sources": [
+      {
+        "date": "10-12-2014",
+        "page": 69,
+        "note": "Proposición PSE-EE: estrategia contra la pobreza energética; enmienda del Gobierno"
+      },
+      {
+        "date": "10-12-2014",
+        "page": 74,
+        "note": "Aprobada la enmienda del Gobierno (20-7); decae la proposición"
+      },
+      {
+        "date": "26-03-2015",
+        "page": 148,
+        "note": "Proposición PSE-EE 'Asesores de Energía'"
+      },
+      {
+        "date": "26-03-2015",
+        "page": 152,
+        "note": "Aceptada la proposición, enmendada in voce"
+      },
+      {
+        "date": "29-10-2015",
+        "page": 156,
+        "note": "Proposición de Udalberri para extender el convenio con Iberdrola; enmiendas de EH Bildu y del Gobierno"
+      },
+      {
+        "date": "26-01-2017",
+        "page": 114,
+        "note": "Proposición de Udalberri: Plan contra la Pobreza Energética; enmienda del Gobierno"
+      },
+      {
+        "date": "26-01-2017",
+        "page": 126,
+        "note": "Aprobada la enmienda del Equipo de Gobierno (21-8)"
+      },
+      {
+        "date": "31-01-2019",
+        "page": 161,
+        "note": "Proposición de Goazen Bilbao contra los cortes de suministro; enmienda del Gobierno"
+      },
+      {
+        "date": "28-01-2021",
+        "page": 56,
+        "note": "Proposición de EH Bildu: comercializadora municipal de energía (menciona la pobreza energética)"
+      }
+    ]
+  },
+  "16": {
+    "question": "¿Qué se ha debatido sobre los patinetes eléctricos y los vehículos de movilidad personal?",
+    "ground_truth": "El 25-10-2018 Goazen Bilbao pidió presentar cuanto antes ante el Foro por la Movilidad Sostenible una propuesta de ordenanza para 'poner orden' y encajar los vehículos de movilidad personal (VMP) en las calles, ante el auge de sus ventas y el vacío legal a la espera de la regulación de la DGT. Se aprobó la enmienda del Equipo de Gobierno: seguir trabajando en la comisión creada por la DGT y, con sus conclusiones, presentar al Foro una ordenanza o reglamento para los aspectos no regulados (25 votos a favor y 4 abstenciones del PP). El 25-11-2021 se aprobó inicialmente la Ordenanza de zonas de preferencia peatonal, que regula la circulación de bicicletas y VMP (artículos 11 y 33, Casco Viejo). Varios grupos presentaron enmiendas sobre ese régimen. El 26-01-2023 EH Bildu propuso estudiar el impacto del patinete eléctrico y un posible servicio municipal de préstamo de VMP, regularlo en una ordenanza y aplicar una moratoria a las licencias de alquiler de patinetes, tras la reciente implantación de una empresa y el anuncio de otras dos. Criticó que el PMUS no mencione los VMP y citó problemas de circulación por aceras. Elkarrekin Bilbao presentó una enmienda de adición para cobrar una tasa por uso del espacio público a las empresas de alquiler. Se aprobó la enmienda del Equipo de Gobierno, que insta a analizar la movilidad de los VMP y su impacto para incluir su regulación en la futura ordenanza de movilidad (19 votos a favor). Decayeron la proposición de EH Bildu y la enmienda de Elkarrekin.",
+    "sources": [
+      {
+        "date": "25-10-2018",
+        "page": 128,
+        "note": "Proposición de Goazen Bilbao: ordenanza para los VMP; enmienda del Equipo de Gobierno"
+      },
+      {
+        "date": "25-10-2018",
+        "page": 135,
+        "note": "Aprobada la enmienda del Gobierno (25 a favor, 4 abstenciones)"
+      },
+      {
+        "date": "25-11-2021",
+        "page": 154,
+        "note": "Ordenanza de zonas de preferencia peatonal: enmiendas al art. 33 sobre bicicletas y VMP"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 93,
+        "note": "Proposición de EH Bildu: estudio, ordenanza y moratoria de los patinetes eléctricos"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 94,
+        "note": "Enmienda de Elkarrekin (tasa) y enmienda del Equipo de Gobierno"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 103,
+        "note": "Aprobada la enmienda del Gobierno; decaen la proposición y la enmienda de Elkarrekin"
+      }
+    ]
+  },
+  "17": {
+    "question": "¿Qué iniciativas ha habido sobre el ruido y la contaminación acústica en Bilbao?",
+    "ground_truth": "El 19-09-2008 el PSE-EE pidió vallas antirruido en la A-8 a su paso por Basurtogorta, y se aceptó sin votación una enmienda de EAJ-PNV y EB-Berdeak para que la Diputación estudiara medios contra el ruido de la autopista. El 25-04-2013 Bildu logró aprobar un Mapa de Ruido de Ocio (18 votos a favor y 10 abstenciones). El 27-06-2013 se aprobó la propuesta del PSE-EE de revisar la Ordenanza de Protección del Medio Ambiente, cuyo debate se centró en las afecciones acústicas. El 28-01-2016 Goazen Bilbao pidió negociar con Adif medidas contra el ruido de los trenes, y se aprobó la enmienda del Gobierno para estudiarlas en el marco de la estrategia sonora. El 30-06-2016 se rechazó (8 a favor y 16 en contra) la propuesta de EH Bildu de estudiar la relación entre el ruido, la contaminación y el rendimiento escolar. El 25-05-2017 se aprobó, enmendada, la proposición de Udalberri para delimitar en la zonificación acústica las zonas residenciales con ocio nocturno. El 29-11-2018 el PP pidió formar a policías municipales en la medición del ruido, y se aprobó la enmienda de formación general del Gobierno. La Asociación de Vecinos Uribitarte Anaitasuna llevó varias iniciativas vecinales sobre el ruido del ocio en Albia-Uribitarte: el 28-02-2019 pidió declarar una zona acústicamente saturada (se aprobó la enmienda del Gobierno para aplicar el proyecto de la Estrategia Sonora BIOSON), el 28-11-2019 pidió publicar las mediciones de ruido (se aprobó la enmienda de seguir con la estrategia sonora y el mapa de ruido; se recoge en la memoria del 27-02-2020) y el 24-11-2022 reclamó un Plan Piloto Urgente para no superar los 55 dB de noche (rechazado, 10-19). Con el PP, el 29-02-2024 se aprobó la enmienda del Gobierno sobre compatibilizar el ocio y el descanso frente a su petición de cumplir las recomendaciones del Defensor del Pueblo. El 26-09-2024 se aprobó una enmienda conjunta con Elkarrekin Bilbao para extender el proyecto Bilboko Doinuak a barrios de sonido insalubre, y el 25-09-2025 se rechazó el piloto de ecoterrazas fonoabsorbentes que proponía el PP.",
+    "sources": [
+      {
+        "date": "19-09-2008",
+        "page": 165,
+        "note": "PSE-EE: vallas antirruido en la A-8; enmienda de EAJ-PNV y EB aceptada (p.166)"
+      },
+      {
+        "date": "25-04-2013",
+        "page": 112,
+        "note": "Bildu: Mapa de Ruido de Ocio, aprobada (p.116)"
+      },
+      {
+        "date": "27-06-2013",
+        "page": 27,
+        "note": "PSE-EE: revisión de la Ordenanza de Protección del Medio Ambiente (afecciones acústicas), aprobada"
+      },
+      {
+        "date": "28-01-2016",
+        "page": 91,
+        "note": "Goazen Bilbao: ruido ferroviario (Adif); enmienda del Gobierno"
+      },
+      {
+        "date": "30-06-2016",
+        "page": 284,
+        "note": "EH Bildu: estudio del ruido y la contaminación en colegios; rechazada"
+      },
+      {
+        "date": "25-05-2017",
+        "page": 230,
+        "note": "Udalberri: zonificación acústica de zonas de ocio nocturno; aprobada enmendada"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 137,
+        "note": "PP: policías formados en medición de ruido; enmienda del Gobierno"
+      },
+      {
+        "date": "28-02-2019",
+        "page": 230,
+        "note": "Iniciativa vecinal Uribitarte: zona acústicamente saturada; enmienda BIOSON"
+      },
+      {
+        "date": "27-02-2020",
+        "page": 19,
+        "note": "Memoria: iniciativa vecinal del 28-11-2019 sobre la monitorización del ruido y enmienda aprobada"
+      },
+      {
+        "date": "24-11-2022",
+        "page": 130,
+        "note": "Iniciativa vecinal Uribitarte: Plan Piloto Urgente de 55 dB; rechazada (p.139)"
+      },
+      {
+        "date": "29-02-2024",
+        "page": 102,
+        "note": "PP: recomendaciones del Defensor del Pueblo sobre contaminación acústica; enmienda del Gobierno"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 163,
+        "note": "Elkarrekin Bilbao: proyecto Bilboko Doinuak; enmienda conjunta aprobada"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 317,
+        "note": "PP: piloto de ecoterrazas contra el ruido; rechazada (p.325)"
+      }
+    ]
+  },
+  "18": {
+    "question": "¿Qué se ha debatido sobre la prostitución en Bilbao?",
+    "ground_truth": "El 28-02-2008 el PP pidió cámaras de videovigilancia en Miribilla, en parte para acabar con la prostitución, y la propuesta se rechazó (7 a favor y 22 en contra). El 25-06-2009 el PP pidió una 'Ordenanza local sobre utilización de los espacios públicos para el ejercicio de la prostitución'. Se aprobó la enmienda del Equipo de Gobierno (EAJ-PNV y EB-Berdeak) para articular medidas de prevención y apoyo social mediante el diálogo (22 a favor y 7 en contra). El 25-03-2010 el PP retiró una proposición similar cuando el Gobierno anunció la Ordenanza de Espacio Público, que se aprobó inicialmente el 27-05-2010 y de forma definitiva el 23-09-2010. Esa ordenanza incluye la prostitución en la vía pública, aunque el PP la consideró insuficiente. El 29-01-2015 el PP pidió un plan para la zona de Particular de Costa, y se aprobó la enmienda del Gobierno para intensificar el control de la prostitución callejera (25 a favor y 4 en contra). El 24-11-2016 el PP pidió un dispositivo policial para 'terminar con la prostitución' en el centro. EH Bildu enmendó pidiendo consensuar con las trabajadoras sexuales y suprimir el capítulo sancionador de la ordenanza, y el PP acabó retirando su proposición. El 26-01-2017 Goazen Bilbao, desde un enfoque abolicionista, propuso adherirse a la red de ciudades libres de trata, hacer campañas contra los 'prostituidores' y penalizar al cliente y al proxeneta, pero no a la mujer. Se rechazó la alternativa de EH Bildu y se aprobó la autoenmienda de Goazen. El 28-09-2017 Goazen Bilbao pidió retirar la publicidad municipal a los medios con anuncios de prostitución, y se aprobó la enmienda del Gobierno que solo insta a los medios a eliminarlos. El 28-10-2021 se aprobó una enmienda conjunta de EAJ-PNV, Socialistas Vascos y Elkarrekin para adherirse a la Red de Municipios libres de trata y explotación sexual. El 30-06-2022 se aprobó por unanimidad un crédito de 16.000 € para Askabide, un centro de acogida para personas que ejercen o han ejercido la prostitución.",
+    "sources": [
+      {
+        "date": "28-02-2008",
+        "page": 108,
+        "note": "PP: videovigilancia en Miribilla ligada a la prostitución; rechazada"
+      },
+      {
+        "date": "25-06-2009",
+        "page": 106,
+        "note": "PP: ordenanza sobre prostitución en espacio público; aprobada la enmienda del Gobierno"
+      },
+      {
+        "date": "25-03-2010",
+        "page": 125,
+        "note": "PP retira la proposición tras el anuncio de la Ordenanza de Espacio Público"
+      },
+      {
+        "date": "27-05-2010",
+        "page": 17,
+        "note": "Aprobación inicial de la Ordenanza de Espacio Público; debate sobre la prostitución"
+      },
+      {
+        "date": "23-09-2010",
+        "page": 52,
+        "note": "Aprobación definitiva de la Ordenanza de Espacio Público"
+      },
+      {
+        "date": "29-01-2015",
+        "page": 106,
+        "note": "PP: plan para Particular de Costa; enmienda del Gobierno (p.110)"
+      },
+      {
+        "date": "24-11-2016",
+        "page": 134,
+        "note": "PP: dispositivo contra la prostitución; enmienda de EH Bildu; retirada (p.137)"
+      },
+      {
+        "date": "26-01-2017",
+        "page": 181,
+        "note": "Goazen Bilbao: enfoque abolicionista; autoenmienda aprobada (p.192)"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 50,
+        "note": "Goazen Bilbao: anuncios de prostitución en los medios; enmienda del Gobierno"
+      },
+      {
+        "date": "28-10-2021",
+        "page": 133,
+        "note": "Elkarrekin: Red de Municipios libres de trata; enmienda conjunta aprobada"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 169,
+        "note": "Crédito de 16.000 € para el centro de acogida de Askabide; unanimidad"
+      }
+    ]
+  },
+  "19": {
+    "question": "¿Qué propuestas ha habido sobre el Mercado de la Ribera?",
+    "ground_truth": "El 28-05-2009, durante la reforma del mercado, el PP pidió hacer público el informe de la Comisión de Patrimonio sobre la eliminación de parte del Mercado de la Ribera. Se aprobó por 15 votos contra 14 la enmienda de EAJ-PNV y EB-Berdeak para emprender cuanto antes la reforma y restituir la actividad comercial. El 25-06-2009 el PP propuso un concurso de ideas para usar el espacio sobrante de la última planta, y prosperó la enmienda del Gobierno para desarrollar un proyecto funcional que favoreciera la actividad comercial (15 a favor, 7 en contra y 7 abstenciones). El 28-11-2013 el PP pidió un tramo horario de mañana para que los restaurantes usaran el aparcamiento del mercado, y se aprobó la enmienda del Gobierno para mantener el rigor en la gestión del aparcamiento y el tráfico del entorno (14 a favor y 13 abstenciones). El 25-10-2018 EH Bildu propuso un plan piloto de Bilbao Zerbitzuak y la Asociación de Comerciantes para usar la planta baja con talleres y actividades para los vecinos del Casco Viejo. Se aprobó la enmienda del Equipo de Gobierno para incluir ese plan piloto en el plan de actuación de las zonas comunes. El 26-02-2026 la Asociación de Comerciantes del Mercado de la Ribera presentó una iniciativa vecinal sobre su situación económica y su forma de gestión. Pedía informes sobre costes, ingresos y la caída de la cobertura de costes, debatir alternativas a la gestión por Bilbao Zerbitzuak e informar a la asociación de las iniciativas de los grupos. Fue rechazada (solo la apoyaron los 4 concejales del PP), y el Gobierno defendió la gestión directa. En el mismo Pleno se aprobó una enmienda del Gobierno a la propuesta del PP de un plan de choque para los mercados que gestiona Bilbao Zerbitzuak. No se ha encontrado ninguna iniciativa sobre el mercado el 26-03-2015.",
+    "sources": [
+      {
+        "date": "28-05-2009",
+        "page": 51,
+        "note": "PP: informe de la Comisión de Patrimonio sobre la reforma; enmienda de EAJ-PNV y EB aprobada"
+      },
+      {
+        "date": "25-06-2009",
+        "page": 74,
+        "note": "PP: concurso de ideas para la última planta; enmienda del Gobierno aprobada"
+      },
+      {
+        "date": "28-11-2013",
+        "page": 87,
+        "note": "PP: aparcamiento del mercado para restaurantes; enmienda del Gobierno"
+      },
+      {
+        "date": "25-10-2018",
+        "page": 193,
+        "note": "EH Bildu: plan piloto de uso de la planta baja; enmienda del Gobierno"
+      },
+      {
+        "date": "26-02-2026",
+        "page": 158,
+        "note": "Iniciativa vecinal de la Asociación de Comerciantes sobre la gestión y los costes"
+      },
+      {
+        "date": "26-02-2026",
+        "page": 167,
+        "note": "Votación: rechazada la iniciativa de la Asociación de Comerciantes"
+      },
+      {
+        "date": "26-02-2026",
+        "page": 128,
+        "note": "PP: plan de choque en los mercados de Bilbao Zerbitzuak; enmienda del Gobierno (p.137)"
+      }
+    ]
+  },
+  "20": {
+    "question": "¿Qué propuso el Partido Popular sobre la okupación de viviendas?",
+    "ground_truth": "El PP ha llevado la okupación al Pleno de forma recurrente. El 31-01-2008 propuso crear un grupo de trabajo sobre la ocupación de inmuebles, que se rechazó (7 a favor y 22 en contra). El 27-11-2008 pidió cerrar los locales ocupados ilegalmente o 'gaztetxes' y rescindir el convenio de cesión de un local municipal en Deusto (La Pajarería). Se aprobó por 15-14 la enmienda de EAJ-PNV y EB-Berdeak de no permitir la ocupación de edificios municipales. El 28-06-2012, tras Kukutza (Rekalde) y Patakon (Uribarri), pidió medidas contra la ocupación ilegal de edificios. Se debatió junto a una proposición de Bildu en defensa de los centros autogestionados, y se aprobó la enmienda del Gobierno de respeto a la propiedad privada y rechazo de la ocupación ilegal. El 29-11-2012 pidió apoyar la actuación policial y medidas urbanísticas en los pabellones ocupados de Zorrozaurre, y se rechazó (6-23). El 27-02-2020 propuso asistencia jurídica gratuita y urgente para los propietarios de viviendas ocupadas, que se rechazó (3 a favor y 26 en contra). El 24-09-2020 pidió un 'Plan integral municipal anti-okupación', y se aprobó la enmienda del Gobierno de prevenir las ocupaciones desde los Talleres de Seguridad y el Observatorio de la Convivencia. El 29-09-2022 pidió endurecer la ley, un protocolo policial de actuación inmediata, un teléfono de atención urgente y un operativo contra las mafias en San Francisco, Bilbao La Vieja y Zabala. De nuevo prosperó la enmienda del Gobierno sobre los Talleres de Seguridad. El 28-11-2024 instó al Congreso a desbloquear la ley contra la ocupación ilegal aprobada por el Senado, y se rechazaron tanto la enmienda de EAJ-PNV como la proposición. El 29-05-2025 logró aprobar (21 votos) la condena de los incidentes de los okupas en el desalojo del gaztetxe de Etxarri (Rekalde) y el agradecimiento a la Policía Municipal y la Ertzaintza.",
+    "sources": [
+      {
+        "date": "31-01-2008",
+        "page": 71,
+        "note": "PP: grupo de trabajo sobre la ocupación de inmuebles; rechazada"
+      },
+      {
+        "date": "27-11-2008",
+        "page": 94,
+        "note": "PP: cierre de gaztetxes y del convenio de La Pajarería; enmienda aprobada (p.101)"
+      },
+      {
+        "date": "28-06-2012",
+        "page": 38,
+        "note": "PP: ocupación ilegal de edificios (Rekalde, Uribarri); debate con la proposición de Bildu"
+      },
+      {
+        "date": "28-06-2012",
+        "page": 51,
+        "note": "Aprobada la enmienda del Gobierno; decae la proposición del PP"
+      },
+      {
+        "date": "29-11-2012",
+        "page": 101,
+        "note": "PP: Zorrozaurre y pabellones ocupados; rechazada"
+      },
+      {
+        "date": "27-02-2020",
+        "page": 106,
+        "note": "PP: asistencia jurídica para los propietarios; rechazada (p.116)"
+      },
+      {
+        "date": "24-09-2020",
+        "page": 157,
+        "note": "PP: Plan integral municipal anti-okupación; enmienda del Gobierno aprobada"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 176,
+        "note": "PP: medidas contra la okupación; enmienda del Gobierno aprobada"
+      },
+      {
+        "date": "28-11-2024",
+        "page": 136,
+        "note": "PP: desbloquear la ley contra la ocupación; rechazada (p.146)"
+      },
+      {
+        "date": "29-05-2025",
+        "page": 91,
+        "note": "PP: condena de los incidentes del desalojo del gaztetxe de Etxarri; aprobada"
+      }
+    ]
+  },
+  "21": {
+    "question": "¿Qué se ha debatido sobre la emergencia climática y el cambio climático?",
+    "ground_truth": "Las primeras iniciativas fueron de 2008. El 31-01-2008 el PP propuso un programa para que los hogares redujeran su consumo y sus emisiones de CO2, y se aceptó una propuesta alternativa de la concejala de Medio Ambiente. El 24-04-2008 el PSE-EE pidió un inventario de gases de efecto invernadero, y se aceptó sin votación la enmienda del Gobierno de poner en marcha la Oficina de Cambio Climático. El 24-11-2015, ante la COP21, Udalberri propuso descarbonizar Bilbao para 2050 con un 100 % de energía renovable, y se aprobó la enmienda del Gobierno de seguir impulsando políticas de reducción de CO2. El 24-11-2016 se rechazó (8-17) la propuesta de Udalberri de dar a la Oficina de Cambio Climático carácter físico y no virtual. El 28-02-2019 Goazen Bilbao propuso convertir las azoteas en jardines contra el cambio climático, y se aprobó la enmienda del Gobierno sobre cubiertas verdes en el nuevo PGOU. El 26-09-2019 EH Bildu retiró su proposición para declarar la emergencia climática. Ese día también se aprobó una enmienda del Gobierno a la propuesta de Elkarrekin Bilbao de un Plan de calidad del aire, cambio climático y restricción del tráfico. Además se rechazó la iniciativa vecinal de Ekologistak Martxan (defendida por Fridays for Future) para alcanzar el balance neto cero en 2040. Finalmente, el 31-10-2019 todos los grupos firmaron una Declaración Institucional que declara la emergencia climática en Bilbao, con el compromiso de la neutralidad en carbono antes de 2050 (intentando adelantarla a 2040) y la perspectiva climática en planes y presupuestos. Después se aprobó una enmienda conjunta con Elkarrekin para impulsar una Asamblea Ciudadana por el Clima (30-03-2023) y la adhesión a la plataforma citiES 2030 (29-02-2024) y a la Red Española de Ciudades por el Clima (28-11-2024), ambas por unanimidad. El 25-09-2025 se aprobó una enmienda conjunta con EH Bildu a su propuesta de un Plan de Calor con refugios climáticos.",
+    "sources": [
+      {
+        "date": "31-01-2008",
+        "page": 67,
+        "note": "PP: programa de ahorro energético y de CO2 para hogares; propuesta alternativa aceptada (p.69)"
+      },
+      {
+        "date": "24-04-2008",
+        "page": 106,
+        "note": "PSE-EE: inventario de GEI; enmienda de la Oficina de Cambio Climático (p.108)"
+      },
+      {
+        "date": "24-11-2015",
+        "page": 176,
+        "note": "Udalberri: medidas ante la COP21; enmienda del Gobierno (p.177)"
+      },
+      {
+        "date": "24-11-2016",
+        "page": 144,
+        "note": "Udalberri: Oficina de Cambio Climático física; rechazada"
+      },
+      {
+        "date": "28-02-2019",
+        "page": 148,
+        "note": "Goazen Bilbao: azoteas verdes contra el cambio climático; enmienda del Gobierno"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 319,
+        "note": "EH Bildu: declaración de emergencia climática; retirada (p.321)"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 328,
+        "note": "Elkarrekin: Plan de calidad del aire y cambio climático; enmienda del Gobierno"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 418,
+        "note": "Iniciativa vecinal de Ekologistak Martxan (neto cero en 2040); rechazada (p.425)"
+      },
+      {
+        "date": "31-10-2019",
+        "page": 134,
+        "note": "Declaración Institucional de emergencia climática, firmada por todos los grupos"
+      },
+      {
+        "date": "30-03-2023",
+        "page": 78,
+        "note": "Elkarrekin: Asamblea Ciudadana por el Clima; enmienda conjunta aprobada"
+      },
+      {
+        "date": "29-02-2024",
+        "page": 18,
+        "note": "Adhesión a la Plataforma citiES 2030 de neutralidad climática"
+      },
+      {
+        "date": "28-11-2024",
+        "page": 64,
+        "note": "Adhesión a la Red Española de Ciudades por el Clima; unanimidad"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 310,
+        "note": "EH Bildu: Plan de Calor; enmienda conjunta aprobada"
+      }
+    ]
+  },
+  "22": {
+    "question": "¿Qué se ha propuesto sobre la lucha contra la droga y las adicciones?",
+    "ground_truth": "El 28-02-2013 el PP pidió recuperar los perros detectores de drogas en la Unidad Canina de la Policía Municipal contra el menudeo, y se rechazó. El 26-06-2014 el PSE-EE pidió que las instituciones asumieran la gestión de la sala de consumo supervisado de Bailén. Se aprobó la enmienda del Gobierno, que valoraba el servicio y pedía mantener los recursos de atención a la drogadicción. El 29-09-2016 EH Bildu, Udalberri y Goazen Bilbao propusieron conjuntamente una norma municipal sobre los clubes sociales de cannabis, al amparo de la Ley 1/2016 de Adicciones. Se aprobó la enmienda del Gobierno de elaborar una normativa urbanística participativa, y la Junta de Gobierno suspendió las licencias cautelarmente, según la dación de cuenta del 30-03-2017. El 31-01-2019 el PP pidió identificar y cerrar los narcopisos de San Francisco, y se aprobó la enmienda del Gobierno de seguir luchando contra el narcotráfico. En el ámbito de las adicciones al juego, el 28-02-2019 una iniciativa vecinal pidió medidas sobre las casas de apuestas. Se aprobó la enmienda del Gobierno para que las administraciones competentes limitaran su implantación y su publicidad. El 31-03-2022 Elkarrekin Bilbao propuso diagnosticar las nuevas adicciones digitales, y se aprobó una enmienda conjunta que las vincula al VI Plan de Adicciones (2023-2027). El 27-02-2025 se rechazó la propuesta del PP de reactivar la Unidad Especial Antidroga de la Policía Municipal, desmantelada unos cinco años antes. El 26-02-2026 el PP propuso una campaña de concienciación contra el consumo de drogas, y se aprobó una enmienda conjunta del Equipo de Gobierno y el PP. Esa enmienda refuerza las medidas del VI Plan Local de Adicciones en prevención con la infancia, las familias y la comunidad, e insta al Gobierno Vasco a una campaña contra las adicciones.",
+    "sources": [
+      {
+        "date": "28-02-2013",
+        "page": 66,
+        "note": "PP: perros detectores de drogas; rechazada (p.74)"
+      },
+      {
+        "date": "26-06-2014",
+        "page": 232,
+        "note": "PSE-EE: sala de consumo supervisado de Bailén; enmienda del Gobierno"
+      },
+      {
+        "date": "29-09-2016",
+        "page": 113,
+        "note": "Proposición conjunta sobre los clubes sociales de cannabis; enmienda del Gobierno (p.119)"
+      },
+      {
+        "date": "30-03-2017",
+        "page": 133,
+        "note": "Dación de cuenta: suspensión cautelar de licencias de clubes de cannabis"
+      },
+      {
+        "date": "31-01-2019",
+        "page": 114,
+        "note": "PP: cierre de los narcopisos de San Francisco; enmienda del Gobierno"
+      },
+      {
+        "date": "28-02-2019",
+        "page": 219,
+        "note": "Iniciativa vecinal sobre casas de apuestas; enmienda del Gobierno"
+      },
+      {
+        "date": "31-03-2022",
+        "page": 312,
+        "note": "Elkarrekin: adicciones digitales; enmienda conjunta aprobada (p.318)"
+      },
+      {
+        "date": "27-02-2025",
+        "page": 106,
+        "note": "PP: reactivar la Unidad Especial Antidroga; rechazada"
+      },
+      {
+        "date": "26-02-2026",
+        "page": 119,
+        "note": "PP: campaña contra el consumo de drogas; enmienda conjunta Gobierno-PP aprobada"
+      }
+    ]
+  },
+  "23": {
+    "question": "¿Qué se ha debatido sobre las corridas de toros y la tauromaquia en Bilbao?",
+    "ground_truth": "La tauromaquia ha sido un debate recurrente. El 26-11-2009 (sesión extraordinaria) el Pleno concedió la Medalla de Oro de la Villa al Club Cocherito de Bilbao, club taurino que cumplía cien años, junto a la Escuela de Ingenieros y la Residencia Conde de Aresti (entregada el 09-03-2010). El 31-05-2012 Bildu pidió prohibir actos sin trato ético a los animales y no subvencionar ni permitir corridas en instalaciones municipales; se aprobó (25-3) la enmienda del Equipo de Gobierno de cumplir la Ley 6/1993 de protección de los animales (el PP había enmendado para defender 'la fiesta de los toros'). El 27-09-2012 Bildu pidió dejar de comprar abonos taurinos para la corporación; prosperó la enmienda del Gobierno de mantener la representación institucional en los espectáculos. El 26-06-2014 Bildu pidió oponerse a la sokamuturra en Vista Alegre; se aprobó una enmienda genérica de cumplir la normativa de protección animal. El 24-09-2015 Udalberri-Bilbao en Común pidió excluir de las fiestas los espectáculos con maltrato animal (Goazen Bilbao añadía eliminar la financiación del palco de la Plaza de Toros); se rechazó 8-21. El 26-05-2016 EH Bildu propuso una consulta sobre los usos de la Plaza de Toros (rechazada 8-21). El 26-01-2017 se aprobó (21-8) la proposición del PP de programar nuevos eventos además de los taurinos en Vista Alegre, rechazando las enmiendas de EH Bildu (concurso de ideas sin maltrato) y Goazen (prever el fin de la tauromaquia). El 25-05-2017 EH Bildu pidió resolver el contrato con Martínez Flamarique SL; se aprobó (21 votos) una enmienda in voce del Gobierno para impulsar otros modos de gestión con transparencia y concurrencia. Se rechazaron después propuestas de EH Bildu: consultar los usos del nuevo pliego (27-09-2018), tributar como retribución en especie los abonos de toros y ópera (31-01-2019) y una consulta vinculante sobre la plaza (26-09-2019). El 25-11-2021 el PP pidió declarar la tauromaquia bien cultural inmaterial; prosperó la enmienda del Gobierno de potenciar el BIVA como centro de eventos. El 28-09-2023 el PP pidió incluir las Corridas Generales en el programa de Aste Nagusia; se aprobó incluir solo información de la Plaza de Toros. El 30-05-2024 se rechazaron la proposición del PP de restituir el Premio Nacional de Tauromaquia (4-25) y la de EH Bildu de no exigir maltrato animal en los contratos de instalaciones públicas. El 27-11-2025 Elkarrekin Bilbao pidió retirar la publicidad taurina de los soportes municipales; se aprobó la enmienda de seguir aplicando la normativa sectorial de publicidad.",
+    "sources": [
+      {
+        "date": "26-11-2009",
+        "page": 2,
+        "note": "Extraordinaria: Medalla de Oro al Club Cocherito de Bilbao (club taurino)"
+      },
+      {
+        "date": "31-05-2012",
+        "page": 125,
+        "note": "Bildu: prohibir actos con maltrato y corridas; enmiendas Gobierno (Ley 6/1993) y PP"
+      },
+      {
+        "date": "27-09-2012",
+        "page": 161,
+        "note": "Bildu: dejar de comprar abonos taurinos; enmienda Gobierno aprobada"
+      },
+      {
+        "date": "26-06-2014",
+        "page": 162,
+        "note": "Bildu contra la sokamuturra; enmienda Gobierno"
+      },
+      {
+        "date": "24-09-2015",
+        "page": 327,
+        "note": "Udalberri: prohibir espectáculos con maltrato; enmienda Goazen (palco); rechazada 8-21 (p339)"
+      },
+      {
+        "date": "26-05-2016",
+        "page": 136,
+        "note": "EH Bildu: consulta sobre usos de la Plaza de Toros; rechazada"
+      },
+      {
+        "date": "26-01-2017",
+        "page": 197,
+        "note": "PP: nuevos usos además de taurinos en Vista Alegre; aprobada 21-8"
+      },
+      {
+        "date": "25-05-2017",
+        "page": 205,
+        "note": "EH Bildu: resolver contrato Martínez Flamarique; enmienda in voce Gobierno (p216-217)"
+      },
+      {
+        "date": "27-09-2018",
+        "page": 169,
+        "note": "EH Bildu: consulta usos pliego de Vista Alegre; rechazada"
+      },
+      {
+        "date": "31-01-2019",
+        "page": 144,
+        "note": "EH Bildu: abonos toros y ópera como retribución en especie; rechazada"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 348,
+        "note": "EH Bildu: consulta vinculante sobre la Plaza de Toros; rechazada"
+      },
+      {
+        "date": "25-11-2021",
+        "page": 277,
+        "note": "PP: tauromaquia bien cultural inmaterial; enmienda Gobierno BIVA"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 420,
+        "note": "PP: Corridas Generales en programa de Aste Nagusia; enmienda Gobierno (p421)"
+      },
+      {
+        "date": "30-05-2024",
+        "page": 165,
+        "note": "PP: restituir Premio Nacional de Tauromaquia; rechazada 4-25"
+      },
+      {
+        "date": "30-05-2024",
+        "page": 183,
+        "note": "EH Bildu: sin maltrato animal en contratos de instalaciones públicas; rechazada"
+      },
+      {
+        "date": "27-11-2025",
+        "page": 116,
+        "note": "Elkarrekin: retirar publicidad taurina; enmienda Gobierno aprobada"
+      }
+    ]
+  },
+  "24": {
+    "question": "¿Qué iniciativas ha habido sobre la acogida de personas refugiadas?",
+    "ground_truth": "El 24-09-2015 se debatieron conjuntamente dos proposiciones: Goazen Bilbao pedía emprender medidas para acoger refugiados de guerra (Siria, Yemen, Eritrea, Libia...) e integrar Bilbao en una red de ciudades-refugio, y Udalberri-Bilbao en Común declarar Bilbao 'ciudad-refugio', con un grupo de trabajo con CEAR y Cruz Roja, pisos de acogida (edificios municipales o pisos vacíos de Kutxabank) y una política europea de asilo con vías seguras. Ambas fueron rechazadas (6 y 8 votos a favor, 17 en contra de EAJ-PNV y Socialistas Vascos); el Gobierno y el PP se remitieron a la Declaración Institucional firmada en la Junta de Portavoces el 7 de septiembre. El 28-04-2016 EH Bildu presentó una proposición contra las devoluciones de solicitantes de asilo y el acuerdo UE-Turquía, ofreciendo la disponibilidad inmediata del municipio, pero la retiró. El 26-05-2016 Goazen Bilbao pidió medidas de protección de menores migrantes y refugiados; se aprobó por unanimidad la enmienda del Gobierno que instaba al Estado y a la UE a proteger y buscar a los menores refugiados desaparecidos. El 28-02-2019 se aprobó (25 votos, abstención del PP) la proposición de EH Bildu de solidaridad con los barcos de rescate 'Aita Mari' y 'Open Arms' y de pedir que se les permitiera hacerse a la mar. El 28-05-2020 Elkarrekin Bilbao-Podemos pidió un protocolo de acogida integral de personas migrantes y refugiadas inspirado en el 'Modelo Riace'; se rechazó la enmienda de EH Bildu y se aprobó (22-3-4) la enmienda conjunta de EAJ-PNV, Socialistas Vascos y Elkarrekin de participar en el Modelo Vasco de Acogida con herramientas municipales propias. La plataforma Ongi Etorri Errefuxiatuak llevó iniciativas vecinales: el 27-05-2021 (plan de contingencia de albergues, objeto de una enmienda del Gobierno) y el 24-02-2022 (retirar las vallas de las canchas de Atxuri, rechazada). El 23-02-2023 se aprobó por unanimidad una subvención de 25.000 € a Zaporeak Solidarios para apoyar a personas refugiadas en los campamentos de Lesbos.",
+    "sources": [
+      {
+        "date": "24-09-2015",
+        "page": 386,
+        "note": "Goazen Bilbao: acoger refugiados y red de ciudades-refugio; enmienda de adición Udalberri"
+      },
+      {
+        "date": "24-09-2015",
+        "page": 387,
+        "note": "Udalberri: declarar Bilbao ciudad-refugio (CEAR, Cruz Roja, pisos de acogida)"
+      },
+      {
+        "date": "24-09-2015",
+        "page": 400,
+        "note": "Votaciones: ambas proposiciones rechazadas"
+      },
+      {
+        "date": "28-04-2016",
+        "page": 249,
+        "note": "EH Bildu: asilo, acuerdo UE-Turquía; retirada (p250)"
+      },
+      {
+        "date": "26-05-2016",
+        "page": 114,
+        "note": "Goazen: menores migrantes y refugiados; enmienda Gobierno aprobada por unanimidad"
+      },
+      {
+        "date": "28-02-2019",
+        "page": 199,
+        "note": "EH Bildu: solidaridad con Aita Mari y Open Arms; aprobada 25 votos (p205)"
+      },
+      {
+        "date": "28-05-2020",
+        "page": 67,
+        "note": "Elkarrekin: acogida integral 'Modelo Riace'; enmienda conjunta aprobada (p80)"
+      },
+      {
+        "date": "27-05-2021",
+        "page": 199,
+        "note": "Iniciativa vecinal Ongi Etorri Errefuxiatuak: plan de contingencia de albergues"
+      },
+      {
+        "date": "24-02-2022",
+        "page": 181,
+        "note": "Iniciativa vecinal Ongi Etorri Errefuxiatuak: vallas canchas de Atxuri; rechazada"
+      },
+      {
+        "date": "23-02-2023",
+        "page": 129,
+        "note": "Subvención 25.000 € a Zaporeak Solidarios (refugiados en Lesbos); unanimidad"
+      }
+    ]
+  },
+  "25": {
+    "question": "¿Qué se ha debatido en el Pleno sobre Palestina y Gaza?",
+    "ground_truth": "El 24-06-2010 Socialistas Vascos presentó una proposición que condenaba el ataque del ejército israelí a la flotilla humanitaria que se dirigía a Gaza y el bloqueo de la Franja, pero la retiró. El 29-09-2011 Bildu pidió rescindir la concesión del transporte urbano a Veolia por colaborar con las colonias israelíes en Jerusalén y Cisjordania e incluir cláusulas de derechos humanos en los pliegos; fue rechazada (4-25). El 01-04-2014 Bildu pidió izar la bandera palestina en el mástil de la plaza del Arriaga el 15 de mayo (aniversario de la Nakba); se aprobó la enmienda del Equipo de Gobierno de limitar ese mástil a casos excepcionales, sociales y ajenos a causas políticas. El 30-10-2014 se aprobó (21 a favor, 6 abstenciones del PP) la proposición de Bildu de dar una ayuda económica de emergencia al campesinado de Gaza tras los bombardeos israelíes del verano. El 25-04-2024 una iniciativa vecinal de la Federación de Asociaciones Vecinales (FAVB) pidió apoyar al pueblo palestino, rechazar la ocupación y dotar una partida para proyectos en Palestina; se aprobó (21 votos, 8 abstenciones de EH Bildu y Elkarrekin) la enmienda del Gobierno que condena los asesinatos de civiles palestinos e israelíes, el ataque de Hamás del 7 de octubre y la respuesta 'cruel y desproporcionada' de Israel, valora la labor de UNRWA y pide al Gobierno de España reconocer el Estado palestino. El 27-06-2024 Elkarrekin Bilbao propuso iniciar un hermanamiento oficial de Bilbao con Gaza y Ramala; se aprobó (23 votos, abstenciones de PP y Elkarrekin) la enmienda del Gobierno de reforzar la solidaridad mediante proyectos de cooperación a través de Naciones Unidas y ONGD, y explorar colaboraciones 'ciudad a ciudad' con Gaza y Ramala dentro del IV Plan Director de Cooperación. El 26-09-2024 se aprobó por unanimidad una subvención de 24.000 € a UNICEF para su programa de emergencia en Gaza. El 25-09-2025, ante una proposición del PP que condenaba los incidentes que impidieron el final de la Vuelta en Bilbao, EH Bildu enmendó para condenar la acción militar de Israel y la participación de equipos israelíes (rechazada 8-20) y se aprobó la enmienda del Gobierno de condenar todas las guerras, genocidios y actos violentos.",
+    "sources": [
+      {
+        "date": "24-06-2010",
+        "page": 98,
+        "note": "PSE-EE: condena ataque a la flotilla de Gaza y bloqueo; retirada (p99)"
+      },
+      {
+        "date": "29-09-2011",
+        "page": 275,
+        "note": "Bildu: rescindir concesión a Veolia (colonias israelíes); rechazada 4-25"
+      },
+      {
+        "date": "01-04-2014",
+        "page": 149,
+        "note": "Bildu: bandera palestina en el Arriaga por la Nakba; enmienda Gobierno aprobada"
+      },
+      {
+        "date": "30-10-2014",
+        "page": 107,
+        "note": "Bildu: ayuda de emergencia al campesinado de Gaza; aprobada"
+      },
+      {
+        "date": "25-04-2024",
+        "page": 169,
+        "note": "Iniciativa vecinal FAVB de apoyo a Palestina; enmienda Gobierno aprobada (p180)"
+      },
+      {
+        "date": "27-06-2024",
+        "page": 176,
+        "note": "Elkarrekin: hermanamiento Bilbao-Gaza-Ramala; enmienda Gobierno aprobada (p185)"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 112,
+        "note": "Subvención 24.000 € a UNICEF para la emergencia en Gaza; unanimidad"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 301,
+        "note": "PP sobre la Vuelta; enmienda EH Bildu contra Israel rechazada; enmienda Gobierno aprobada"
+      }
+    ]
+  },
+  "26": {
+    "question": "¿Qué se ha debatido sobre la monarquía y la Casa Real en el Pleno de Bilbao?",
+    "ground_truth": "El 26-06-2014, tras la abdicación del Rey, Bildu propuso que el Pleno se posicionara a favor de un régimen republicano con un Jefe del Estado elegido y de abrir un proceso constituyente que reconociera el derecho a decidir. Socialistas Vascos enmendó para reformar la Constitución de 1978, pero se aprobó (15-14) la enmienda del Equipo de Gobierno (EAJ-PNV): todas las instituciones deben profundizar en su legitimidad democrática, con respeto a las instituciones vigentes y al derecho de la ciudadanía a decidir su arquitectura institucional. El 24-09-2015, tras la pitada al himno y al Rey en la final de Copa del 30 de mayo, EH Bildu pidió defender la libertad de expresión, que la Delegación del Gobierno no sancionara y solidaridad con el Athletic y el Barcelona; se aprobó (23-4-2) la enmienda del Gobierno, modificada in voce, que aplaudía la deportividad de las aficiones y se solidarizaba con las entidades sancionadas. El 26-01-2017 el PP pidió que San Mamés acogiera la final de la Copa del Rey; en el debate EH Bildu y Goazen criticaron la Monarquía y se aprobó (19-4-6) la enmienda del Gobierno de apoyar eventos de interés una vez logrados los consensos. El 29-11-2018 se debatieron conjuntamente tres proposiciones: Udalberri-Bilbao en Común (reformar el Código Penal para que el honor de la Casa Real tenga la misma protección que el de cualquier ciudadano y un sociómetro sobre la Casa Real y la jefatura del Estado), EH Bildu (abolir la monarquía, 'institución obsoleta y antidemocrática', y compromiso con la república vasca) y Goazen Bilbao (proceso constituyente y posicionarse contra la monarquía). Se rechazaron las enmiendas de Socialistas Vascos (4 votos) y en los tres casos se aprobó por 13-12-4 la enmienda de EAJ-PNV que insta a dotar a todas las instituciones de la más amplia legitimidad democrática, control democrático, cercanía e igual responsabilidad ante la ley.",
+    "sources": [
+      {
+        "date": "26-06-2014",
+        "page": 170,
+        "note": "Bildu: régimen republicano y proceso constituyente; enmiendas Gobierno y PSE-EE"
+      },
+      {
+        "date": "26-06-2014",
+        "page": 175,
+        "note": "Votación: enmienda del Gobierno aprobada 15-14"
+      },
+      {
+        "date": "24-09-2015",
+        "page": 354,
+        "note": "EH Bildu: pitada al himno y al Rey en la final de Copa; libertad de expresión"
+      },
+      {
+        "date": "24-09-2015",
+        "page": 363,
+        "note": "Enmienda del Gobierno modificada in voce aprobada 23-4-2"
+      },
+      {
+        "date": "26-01-2017",
+        "page": 208,
+        "note": "PP: final de la Copa del Rey en San Mamés; críticas a la Monarquía en el debate"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 96,
+        "note": "Debate conjunto de tres proposiciones sobre el Rey/Monarquía"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 97,
+        "note": "Udalberri: Código Penal y honor de la Casa Real; sociómetro"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 98,
+        "note": "EH Bildu: abolición de la monarquía"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 99,
+        "note": "Goazen Bilbao: proceso constituyente contra la monarquía"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 110,
+        "note": "Votaciones: enmiendas de EAJ-PNV aprobadas 13-12-4"
+      }
+    ]
+  },
+  "27": {
+    "question": "¿Qué subvenciones o acuerdos ha habido relacionados con el Athletic Club?",
+    "ground_truth": "En relación con el estadio, el 27-11-2008 se aprobó definitivamente la modificación del Plan Especial del Área Equipamental de San Mamés promovida por San Mamés Barria S.L., que permitía usos como la Tienda y el Museo del Athletic, y el 27-05-2010 se designaron los representantes municipales en la sociedad San Mamés Barria S.L. (15 a favor, 14 abstenciones), en la que participa el Ayuntamiento. El 26-03-2009 se aceptó por unanimidad, con enmienda in voce, la proposición de Socialistas Vascos de elaborar con el Athletic un protocolo para seguir la final de Copa en equipamientos municipales. El 31-05-2012 el PP pidió nombrar al Athletic 'Embajador de la Villa'; el Alcalde recordó que ya tenía la Medalla de Oro (1998) y, al ser competencia de Alcaldía, se comprometió a llevarlo a la Junta de Portavoces. El 27-09-2012 se aprobó (20-8) la proposición del PP de instar a las instituciones del nuevo San Mamés a respetar los acuerdos alcanzados y retirar la situación del Athletic del debate electoral, rechazando la enmienda de Bildu de revisar la financiación. El 31-10-2013 se aprobó por unanimidad pedir a la LFP y la RFEF que volvieran a programar los partidos en fin de semana. Udalberri pidió el polideportivo de San Mamés (29-10-2015) y no destinar más dinero al estadio (28-01-2016); prosperaron enmiendas del Gobierno (proyecto del polideportivo; ninguna partida para las obras del estadio). El 30-06-2016 Goazen Bilbao pidió que la gabarra saliera si el Athletic femenino ganaba la liga; se aprobó una enmienda sobre igualdad en los clubes. En subvenciones, el 30-03-2023 se aprobaron por unanimidad 15.000 € (vía Bilbao Ekintza) a la Peña Athletic Casco Viejo para el XLIX Congreso Internacional de Peñas, y el 28-09-2023 una subvención nominativa de 43.600 € al Athletic Club para la escultura homenaje a José Ángel Iribar (23 a favor, abstenciones de PP y Elkarrekin).",
+    "sources": [
+      {
+        "date": "27-11-2008",
+        "page": 30,
+        "note": "Modificación del Plan Especial de San Mamés (Tienda y Museo del Athletic)"
+      },
+      {
+        "date": "26-03-2009",
+        "page": 125,
+        "note": "PSE-EE: protocolo con el Athletic para la final de Copa; unanimidad"
+      },
+      {
+        "date": "27-05-2010",
+        "page": 3,
+        "note": "Representantes municipales en la sociedad San Mamés Barria S.L."
+      },
+      {
+        "date": "31-05-2012",
+        "page": 148,
+        "note": "PP: Athletic 'Embajador de la Villa'; compromiso de la Alcaldía (p149)"
+      },
+      {
+        "date": "27-09-2012",
+        "page": 147,
+        "note": "PP: respetar acuerdos del nuevo San Mamés; aprobada 20-8"
+      },
+      {
+        "date": "31-10-2013",
+        "page": 79,
+        "note": "PSE-EE: horarios de partidos en fin de semana; unanimidad"
+      },
+      {
+        "date": "29-10-2015",
+        "page": 195,
+        "note": "Udalberri: polideportivo en San Mamés Barria; enmienda Gobierno"
+      },
+      {
+        "date": "28-01-2016",
+        "page": 201,
+        "note": "Udalberri: no destinar partidas al estadio; enmienda Gobierno"
+      },
+      {
+        "date": "30-06-2016",
+        "page": 215,
+        "note": "Goazen: gabarra para el Athletic femenino; enmienda Gobierno"
+      },
+      {
+        "date": "30-03-2023",
+        "page": 50,
+        "note": "Subvención 15.000 € a la Peña Athletic Casco Viejo; unanimidad"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 80,
+        "note": "Subvención 43.600 € al Athletic para la escultura de Iribar; 23 a favor"
+      }
+    ]
+  },
+  "28": {
+    "question": "¿Qué se ha debatido sobre el servicio de bomberos de Bilbao?",
+    "ground_truth": "Las iniciativas sobre bomberos se han centrado en su régimen laboral y organizativo. El 27-05-2010 Socialistas Vascos propuso ofrecer al Gobierno Vasco la incorporación de los bomberos de Bilbao a la Unidad Vasca de Emergencias, pero la retiró. El 27-02-2014 Bildu pidió a AENA cubrir las bajas y jubilaciones de bomberos del aeropuerto de Bilbao y reabrir su servicio médico; se aprobó una enmienda del Equipo de Gobierno. El 25-09-2014 Socialistas Vascos presentó como moción de urgencia la adscripción de la escala básica de bomberos y personal de emergencias al grupo C1, pero no se aceptó la urgencia; el 30-10-2014 la misma iniciativa, como proposición (instar al Parlamento Vasco a reclasificarlos en el grupo C1 y negociar mientras con los sindicatos compensaciones retributivas), se aprobó por unanimidad (29 votos). El 28-04-2016 EH Bildu pidió al Gobierno Vasco retirar su proyecto de ley de servicios de prevención y extinción de incendios y salvamento y negociarlo con los sindicatos; fue rechazada. El 26-10-2017 EH Bildu, Udalberri y Goazen Bilbao presentaron una proposición conjunta para actualizar el procedimiento por el que los bomberos retiran carteles, pancartas y banderolas sin riesgo para las personas, y la retiraron. El 25-02-2021 se rechazó la iniciativa vecinal de la Asociación Deportiva Cultural Bomberos de Bilbao para ampliar a todas las vacantes el proceso selectivo en curso. Además, el Pleno ha actualizado la Ordenanza fiscal de tasas por los servicios del Cuerpo Municipal de Bomberos (22-12-2014, 15 votos a favor y 14 abstenciones; 28-09-2023, aprobación inicial con actualización general del 3 % para 2024). De forma relacionada, el PP pidió restablecer la ambulancia municipal SAMUR, que atendía también a policía y bomberos (26-01-2023 y 28-09-2023), y ambas proposiciones fueron rechazadas.",
+    "sources": [
+      {
+        "date": "27-05-2010",
+        "page": 121,
+        "note": "PSE-EE: bomberos a la Unidad Vasca de Emergencias; retirada"
+      },
+      {
+        "date": "27-02-2014",
+        "page": 112,
+        "note": "Bildu: bomberos y servicio médico del aeropuerto (AENA); enmienda Gobierno"
+      },
+      {
+        "date": "25-09-2014",
+        "page": 167,
+        "note": "Moción de urgencia PSE-EE grupo C1; urgencia rechazada"
+      },
+      {
+        "date": "30-10-2014",
+        "page": 20,
+        "note": "PSE-EE: bomberos al grupo C1; aprobada por unanimidad (p21)"
+      },
+      {
+        "date": "28-04-2016",
+        "page": 214,
+        "note": "EH Bildu: retirar proyecto de ley de extinción de incendios; rechazada"
+      },
+      {
+        "date": "26-10-2017",
+        "page": 125,
+        "note": "Proposición conjunta sobre retirada de carteles por bomberos; retirada"
+      },
+      {
+        "date": "25-02-2021",
+        "page": 135,
+        "note": "Iniciativa vecinal Asociación Bomberos de Bilbao sobre vacantes; rechazada (p146)"
+      },
+      {
+        "date": "22-12-2014",
+        "page": 14,
+        "note": "Modificación de la Ordenanza fiscal de tasas del Cuerpo de Bomberos"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 259,
+        "note": "Aprobación inicial de la modificación de tasas de Bomberos para 2024"
+      },
+      {
+        "date": "26-01-2023",
+        "page": 186,
+        "note": "PP: restablecer ambulancia SAMUR; desestimada"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 412,
+        "note": "PP: poner en marcha el SAMUR; rechazada"
+      }
+    ]
+  },
+  "29": {
+    "question": "¿Qué propuestas ha habido sobre el arbolado urbano y la tala de árboles?",
+    "ground_truth": "El 22-03-2018 Udalberri-Bilbao en Común pidió que las obligaciones de plantación de arbolado derivadas de los desarrollos urbanísticos se cumplieran en suelo urbano (calles, plazas, parques) y no en montes periféricos; se aprobó (21-8) la enmienda del Gobierno de seguir incrementando la presencia arbórea en centro, barrios y Anillo Verde. El 25-10-2018 Goazen Bilbao propuso 'árboles' de placas solares en el Anillo Verde y parques infantiles, y se aprobó una enmienda sobre paneles solares en mobiliario urbano. El 31-03-2022 Elkarrekin Bilbao-Podemos pidió un Plan Director de Arbolado participativo y actualizar la Ordenanza de Zonas Verdes; se aprobó (18-3-7) la enmienda del Gobierno de elaborar cartas de servicios de parques urbanos y forestales. En 2023 la tala de olmos en la avenida Lehendakari Agirre (Deusto) centró el debate: el 28-09-2023 el PP pidió detener la tala, exigir pruebas del estado de salud de cada árbol y reponer ejemplares, y la FAVB pidió en una iniciativa vecinal parar la tala, mantener y aumentar el arbolado y justificar cada corte; en ambos casos se aprobaron (17-12) enmiendas del Gobierno (la presentada al PP planteaba sustituir los olmos siberianos por una especie más adecuada, ganar 1.200 m2 de parterres y reponer en Deusto al menos los árboles retirados). El 26-10-2023 se aprobaron dos enmiendas conjuntas: con Elkarrekin (unanimidad), para que los proyectos de urbanización u obra pública consideren el arbolado y condicionen la tala a justificar su necesidad, proporcionalidad y ausencia de perjuicio ambiental; y con EH Bildu (27 votos), para revisar la Ordenanza de Zonas Verdes y sus criterios de protección del arbolado. El 26-09-2024 el PP pidió mantener el arbolado entre la rotonda de Don Bosco y San Ignacio en la reurbanización de la avenida Agirre; se aprobó (25-4) la enmienda del Gobierno que reitera la obligación de justificar las talas. El 29-05-2025 EH Bildu propuso un plan para potenciar el arbolado urbano con especies autóctonas y densificación; se aprobó (17 votos, 12 abstenciones) la enmienda del Gobierno de seguir potenciando la biodiversidad del arbolado con criterios técnicos y científicos.",
+    "sources": [
+      {
+        "date": "22-03-2018",
+        "page": 158,
+        "note": "Udalberri: obligaciones de plantación de arbolado en suelo urbano; enmienda Gobierno 21-8"
+      },
+      {
+        "date": "25-10-2018",
+        "page": 97,
+        "note": "Goazen: árboles de placas solares; enmienda Gobierno"
+      },
+      {
+        "date": "31-03-2022",
+        "page": 283,
+        "note": "Elkarrekin: Plan Director de Arbolado; enmienda Gobierno 18-3-7"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 377,
+        "note": "PP: detener la tala de olmos en la avenida Lehendakari Agirre; enmienda Gobierno"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 431,
+        "note": "Iniciativa vecinal FAVB contra la tala en la avenida; enmienda Gobierno"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 443,
+        "note": "Votaciones 17-12 de ambas enmiendas del Gobierno"
+      },
+      {
+        "date": "26-10-2023",
+        "page": 105,
+        "note": "Elkarrekin: criterios de tala en obra pública; enmienda conjunta por unanimidad"
+      },
+      {
+        "date": "26-10-2023",
+        "page": 111,
+        "note": "EH Bildu: revisar la Ordenanza de Zonas Verdes; enmienda conjunta aprobada"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 140,
+        "note": "PP: mantener el arbolado entre Don Bosco y San Ignacio; enmienda Gobierno 25-4"
+      },
+      {
+        "date": "29-05-2025",
+        "page": 186,
+        "note": "EH Bildu: plan de arbolado urbano; enmienda Gobierno aprobada"
+      }
+    ]
+  },
+  "30": {
+    "question": "¿Qué se ha debatido sobre la regulación de las terrazas de hostelería?",
+    "ground_truth": "El 26-03-2009 se aprobó inicialmente, y el 28-05-2009 definitivamente, una modificación de la Ordenanza Local sobre Instalación de Terrazas y Veladores (limitaciones generales, horarios de montaje y colindantes). El 27-05-2010 se aprobó inicialmente la Ordenanza de Espacio Público, que integró la regulación de terrazas, con aprobación definitiva el 23-09-2010. Tras la Ley Antitabaco, el PP pidió flexibilizar la ordenanza para las terrazas (27-01-2011) y rebajar un 70 % las tasas por mesas, sillas y veladores (24-02-2011); en ambos casos se aprobaron enmiendas del Gobierno de seguir colaborando con la hostelería y apoyando al sector. El 28-02-2013 se aprobó la proposición del PP de flexibilizar las condiciones, enmendada in voce por el Gobierno para seguir flexibilizando la instalación de terrazas de doce meses. El 31-10-2013 el PP pidió fijar con exactitud los criterios de autorización para evitar la discrecionalidad; prosperó la enmienda del Gobierno que considera las terrazas fundamentales para el sector pero compatibles con el uso social del espacio y el descanso vecinal. El 27-10-2016 Goazen Bilbao pidió modificar el capítulo de terrazas de la normativa de espacio público para equilibrar hostelería y ciudadanía; se aprobó la enmienda del Gobierno de profundizar en los criterios de ocupación, en especial en Casco Viejo y Centro. El 24-11-2016, al modificar la Ordenanza nº 7 del PGOU sobre usos hosteleros en el Ensanche, se estimó una alegación sobre las terrazas de restaurantes sin barra. El 30-11-2017 se rechazó (4 votos a favor) una proposición del PP sobre el gravamen por ocupación de espacio público con terrazas durante Aste Nagusia, comparándolo con el de las konpartsak. El 28-09-2023 se aprobó (21 votos) una enmienda conjunta del Gobierno y el PP para cumplir y hacer cumplir los límites de superficie de las terrazas. El 25-09-2025 se rechazó (4-16-8) el proyecto piloto de 'ecoterrazas' contra el ruido en el Muelle de Marzana propuesto por el PP. Finalmente, el 26-03-2026 se aprobó inicialmente la nueva Ordenanza Reguladora de Terrazas, tras resolver las enmiendas de Elkarrekin Bilbao, EH Bildu y PP, con 16 votos a favor (EAJ-PNV y Socialistas Vascos), 6 en contra (PP y Elkarrekin) y 6 abstenciones (EH Bildu).",
+    "sources": [
+      {
+        "date": "26-03-2009",
+        "page": 16,
+        "note": "Aprobación inicial de la modificación de la Ordenanza de Terrazas y Veladores"
+      },
+      {
+        "date": "28-05-2009",
+        "page": 16,
+        "note": "Aprobación definitiva de esa modificación"
+      },
+      {
+        "date": "27-05-2010",
+        "page": 13,
+        "note": "Aprobación inicial de la Ordenanza de Espacio Público"
+      },
+      {
+        "date": "23-09-2010",
+        "page": 52,
+        "note": "Aprobación definitiva de la Ordenanza de Espacio Público"
+      },
+      {
+        "date": "27-01-2011",
+        "page": 77,
+        "note": "PP: flexibilizar terrazas tras la Ley Antitabaco; enmienda Gobierno"
+      },
+      {
+        "date": "24-02-2011",
+        "page": 51,
+        "note": "PP: rebajar 70 % las tasas de mesas y sillas; enmienda Gobierno"
+      },
+      {
+        "date": "28-02-2013",
+        "page": 82,
+        "note": "PP: flexibilizar tarifas y condiciones; aprobada con enmienda in voce"
+      },
+      {
+        "date": "31-10-2013",
+        "page": 101,
+        "note": "PP: criterios exactos de autorización; enmienda Gobierno"
+      },
+      {
+        "date": "27-10-2016",
+        "page": 149,
+        "note": "Goazen: reformar el capítulo de terrazas; enmienda Gobierno"
+      },
+      {
+        "date": "24-11-2016",
+        "page": 49,
+        "note": "Ordenanza nº 7 PGOU (Ensanche): alegación sobre terrazas de restaurantes sin barra"
+      },
+      {
+        "date": "30-11-2017",
+        "page": 107,
+        "note": "PP: gravamen de terrazas en Aste Nagusia; rechazada"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 364,
+        "note": "PP: límites de superficie de terrazas; enmienda conjunta aprobada"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 317,
+        "note": "PP: ecoterrazas en el Muelle de Marzana; rechazada"
+      },
+      {
+        "date": "26-03-2026",
+        "page": 30,
+        "note": "Aprobación inicial de la Ordenanza Reguladora de Terrazas (votación p94)"
+      }
+    ]
+  },
+  "31": {
+    "question": "¿Qué se ha debatido sobre el Museo Guggenheim en el Pleno?",
+    "ground_truth": "Tras conocerse el desfalco en el museo, el 24-04-2008 el Pleno rechazó la urgencia de una moción del PP de respaldo al Guggenheim, y el 19-05-2008, sobre sendas proposiciones de Socialistas Vascos (auditoría integral de las sociedades del complejo Guggenheim y actuación del Tribunal Vasco de Cuentas) y del PP (respaldo al museo), se aprobó por consenso una enmienda conjunta de todos los grupos: respaldo público al museo, máxima transparencia, auditoría integral independiente complementada por el Tribunal Vasco de Cuentas Públicas, procedimientos públicos de adjudicación y selección de personal, e información económica a los grupos. El 28-01-2010 se aceptó por unanimidad la proposición del PP sobre la necesidad de renovar el convenio con la Fundación Guggenheim, que vencía en 2013. El 26-10-2010 se aceptó por unanimidad la proposición del PP de estudiar mejorar el aparcamiento de autobuses turísticos en el entorno del museo, y el 28-10-2011 se aceptó sin votación su petición de cumplir ese acuerdo. El 27-06-2013 el PP pidió evitar las concentraciones de apoyo a presos de ETA en la explanada del museo; se aprobó una enmienda del Gobierno. El 29-09-2016 EH Bildu, Udalberri y Goazen Bilbao pidieron mantener los 18 puestos de trabajo del Departamento de Educación del museo y contratar mediante bolsas públicas; fue rechazada. El 25-11-2021 EH Bildu pidió a la Fundación implicarse en la huelga de la limpieza del museo (brecha salarial de género); se aprobó por unanimidad (28) una enmienda in voce del Gobierno que insta a los agentes en conflicto a buscar una solución. En financiación, el 27-10-2022 se aprobó un crédito adicional de 84.700 € para la Fundación por el 25 aniversario (19 a favor, 7 abstenciones de Elkarrekin y EH Bildu) y el 29-02-2024 una subvención de 534.754 € a Bilbao Ría 2000 para renovar las placas del muelle de Abandoibarra frente al museo (20 a favor, 8 abstenciones).",
+    "sources": [
+      {
+        "date": "24-04-2008",
+        "page": 119,
+        "note": "Moción de urgencia del PP sobre el desfalco; urgencia rechazada"
+      },
+      {
+        "date": "19-05-2008",
+        "page": 33,
+        "note": "PSE-EE: auditoría integral del complejo Guggenheim"
+      },
+      {
+        "date": "19-05-2008",
+        "page": 34,
+        "note": "PP: respaldo al museo; enmienda conjunta de todos los grupos (consenso p37)"
+      },
+      {
+        "date": "28-01-2010",
+        "page": 78,
+        "note": "PP: renovar el convenio con la Fundación Guggenheim; unanimidad"
+      },
+      {
+        "date": "26-10-2010",
+        "page": 56,
+        "note": "PP: aparcamiento de autobuses junto al museo; unanimidad"
+      },
+      {
+        "date": "28-10-2011",
+        "page": 166,
+        "note": "PP: cumplir el acuerdo de 2010; aceptada sin votación (p167)"
+      },
+      {
+        "date": "27-06-2013",
+        "page": 104,
+        "note": "PP: concentraciones en la explanada del museo; enmienda Gobierno"
+      },
+      {
+        "date": "29-09-2016",
+        "page": 151,
+        "note": "Proposición conjunta sobre el Departamento de Educación del museo; rechazada"
+      },
+      {
+        "date": "25-11-2021",
+        "page": 306,
+        "note": "EH Bildu: huelga de limpieza; enmienda in voce aprobada (p314)"
+      },
+      {
+        "date": "27-10-2022",
+        "page": 81,
+        "note": "Crédito de 84.700 € para el 25 aniversario del museo"
+      },
+      {
+        "date": "29-02-2024",
+        "page": 48,
+        "note": "Subvención de 534.754 € a Bilbao Ría 2000 (muelle frente al museo)"
+      }
+    ]
+  },
+  "32": {
+    "question": "¿Qué propuestas ha habido sobre los polideportivos municipales?",
+    "ground_truth": "El 28-05-2009 el PP y los Socialistas Vascos pidieron comisiones de investigación sobre las obras del polideportivo y aparcamiento de La Peña; ambas fueron rechazadas (14-15). El 25-02-2010 el PSE-EE propuso guarderías en los polideportivos (decayó ante una enmienda de EAJ-PNV y EB-Berdeak para estudiar la conciliación) y el PP convertir el pabellón de La Casilla en polideportivo (se aprobó la enmienda del PSE-EE que aplazaba el debate). El 25-03-2010 el PSE-EE pidió un polideportivo compacto en Otxarkoaga; se aprobó la enmienda del Equipo de Gobierno de hacer un estudio de los polideportivos municipales. El 29-10-2015 Udalberri-Bilbao en Común reclamó acabar en 2016 el polideportivo público de San Mamés Barria; se aprobó la enmienda del Equipo de Gobierno de presupuestar en 2016 el proyecto y construirlo en el mandato. El 28-01-2016 Udalberri pidió no destinar más dinero al estadio salvo al espacio del polideportivo; se aprobó por unanimidad una enmienda del Equipo de Gobierno para no financiar el estadio y seguir desarrollando el polideportivo de San Mamés para Basurto. El 28-09-2017 se aprobó por unanimidad la proposición de Udalberri para que las personas trans elijan aseo o vestuario en las instalaciones de Bilbao Kirolak. El 31-10-2019 EH Bildu y Elkarrekin Bilbao-Podemos pidieron mejorar las condiciones del personal subcontratado de los polideportivos; se aprobó la enmienda del Equipo de Gobierno, que instaba a negociar un convenio sectorial. El 24-09-2020 se aprobó por unanimidad la proposición de EH Bildu de ofrecer polideportivos y otros equipamientos a los colegios por la COVID-19. El 26-11-2020 decayó la del PP de repartir mascarillas gratis en los polideportivos, entre otros equipamientos. El 25-01-2024 se rechazó (4-24) la del PP de llamar Ignacio Echeverría al skatepark del polideportivo de Txurdinaga. El 26-09-2024 se rechazó la de Elkarrekin Bilbao para que Bilbao Kirolak gestionara directamente el nuevo equipamiento de La Casilla/Etxetxua. El 31-10-2024 EH Bildu pidió descuentos de Bilbao Kirolak para personas con discapacidad, que se aprobaron con una enmienda conjunta con el Equipo de Gobierno. El 26-06-2025 EH Bildu propuso mejoras en los polideportivos de San Ignacio, Zorrotza, Txurdinaga y Rekalde, y se aprobó por unanimidad una enmienda conjunta que mandaba estudiar su viabilidad a Bilbao Kirolak. El 27-11-2025 Elkarrekin Bilbao pidió mantener los cursos de pelota vasca del polideportivo de Abusu-La Peña, y se aprobó por unanimidad una enmienda conjunta.",
+    "sources": [
+      {
+        "date": "28-05-2009",
+        "page": 59,
+        "note": "Proposiciones PP y PSE-EE: comisión sobre el polideportivo y aparcamiento de La Peña (resultado en p. 74)"
+      },
+      {
+        "date": "25-02-2010",
+        "page": 17,
+        "note": "PSE-EE: guarderías en polideportivos; enmienda EAJ-PNV/EB-Berdeak"
+      },
+      {
+        "date": "25-02-2010",
+        "page": 52,
+        "note": "PP: convertir el pabellón de La Casilla en polideportivo; enmienda PSE-EE aprobada (p. 58)"
+      },
+      {
+        "date": "25-03-2010",
+        "page": 109,
+        "note": "PSE-EE: polideportivo compacto en Otxarkoaga; enmienda aprobada (p. 119)"
+      },
+      {
+        "date": "29-10-2015",
+        "page": 195,
+        "note": "Udalberri: polideportivo de San Mamés Barria; enmienda del Equipo de Gobierno"
+      },
+      {
+        "date": "28-01-2016",
+        "page": 201,
+        "note": "Udalberri: San Mamés Barria/polideportivo; enmienda aprobada por unanimidad (p. 205)"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 44,
+        "note": "Udalberri: vestuarios para personas trans; aprobada por unanimidad (p. 50)"
+      },
+      {
+        "date": "31-10-2019",
+        "page": 99,
+        "note": "EH Bildu y Elkarrekin: personal subcontratado de polideportivos; enmienda aprobada (p. 107)"
+      },
+      {
+        "date": "24-09-2020",
+        "page": 103,
+        "note": "EH Bildu: polideportivos para colegios por la COVID; aprobada 29-0 (p. 113)"
+      },
+      {
+        "date": "26-11-2020",
+        "page": 111,
+        "note": "PP: mascarillas gratuitas en polideportivos y otros equipamientos"
+      },
+      {
+        "date": "25-01-2024",
+        "page": 107,
+        "note": "PP: skatepark de Txurdinaga; rechazada (p. 111)"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 146,
+        "note": "Elkarrekin: gestión directa del equipamiento de La Casilla; rechazada (p. 155)"
+      },
+      {
+        "date": "31-10-2024",
+        "page": 177,
+        "note": "EH Bildu: descuentos de Bilbao Kirolak por discapacidad; enmienda conjunta aprobada (p. 182)"
+      },
+      {
+        "date": "26-06-2025",
+        "page": 406,
+        "note": "EH Bildu: mejoras en polideportivos; enmienda conjunta aprobada (p. 413)"
+      },
+      {
+        "date": "27-11-2025",
+        "page": 156,
+        "note": "Elkarrekin: cursos de pelota en Abusu-La Peña; enmienda conjunta aprobada (p. 162)"
+      }
+    ]
+  },
+  "33": {
+    "question": "¿Qué propuso EH Bildu sobre los presos y la política de dispersión?",
+    "ground_truth": "El 26-01-2012 Bildu pidió respetar los derechos de las personas presas, poner fin a la dispersión y liberar a las presas y presos enfermos y a quienes hubieran cumplido la condena, y sumarse a la manifestación del 7 de enero (luego mantuvo solo el primer punto). Se aprobó la enmienda del Equipo de Gobierno: exige la desaparición de ETA, se solidariza con las víctimas y pide que todos los reclusos cumplan la pena cerca de su entorno familiar. El 29-11-2012 se aprobó la proposición de Bildu que pedía la libertad condicional de los presos con enfermedades graves e incurables. El 25-04-2013, tras la sentencia de Estrasburgo, Bildu pidió derogar la 'doctrina Parot' y las 'leyes de excepción' y liberar a los presos afectados; se aprobó la enmienda del Equipo de Gobierno que remitía estas cuestiones a la Ponencia de Paz y Convivencia del Parlamento Vasco. El 26-06-2014 Bildu pidió a Instituciones Penitenciarias acercar a todos los presos vascos, acabar con el aislamiento, excarcelar a los mayores de 70 años y a quienes hubieran cumplido 2/3 o 3/4 de la condena, y liberar a los enfermos graves. Se volvió a aprobar la enmienda del Equipo de Gobierno sobre la Ponencia de Paz y Convivencia, y decayó también una enmienda del PSE-EE. El 25-02-2016 EH Bildu votó a favor, junto con Udalberri y Goazen (8 votos), de la iniciativa vecinal de Etxerat contra la dispersión, que fue rechazada (8-21). En 2018 los representantes de EH Bildu en la comisión votaron a favor de tramitar la iniciativa de Sare, que no fue admitida (se dio cuenta el 28-02-2019). El 26-09-2019 EH Bildu mostró su preocupación por el juicio a 47 personas por actividades de apoyo a presos; se aprobó una enmienda conjunta de EAJ-PNV, Socialistas Vascos, EH Bildu y Elkarrekin. El 28-11-2019 EH Bildu pidió liberar a los presos gravemente enfermos, que cumplieran condena en cárceles cercanas, la progresión de grado, el reagrupamiento de parejas con hijos menores de 3 años y acudir a la manifestación de Sare. Se aprobó (26-3) una enmienda conjunta de EAJ-PNV, Socialistas Vascos, EH Bildu y Elkarrekin que ratificaba los acuerdos de las Juntas Generales y el Parlamento Vasco de 2017 sobre política penitenciaria y presos enfermos.",
+    "sources": [
+      {
+        "date": "26-01-2012",
+        "page": 54,
+        "note": "Bildu: fin de la dispersión y libertad de presos enfermos; enmienda del Equipo de Gobierno aprobada (p. 65)"
+      },
+      {
+        "date": "29-11-2012",
+        "page": 80,
+        "note": "Bildu: libertad condicional para presos gravemente enfermos; aprobada (p. 84)"
+      },
+      {
+        "date": "25-04-2013",
+        "page": 105,
+        "note": "Bildu: derogación de la doctrina Parot; enmienda del Equipo de Gobierno (p. 111)"
+      },
+      {
+        "date": "26-06-2014",
+        "page": 216,
+        "note": "Bildu: acercamiento, fin del aislamiento, excarcelaciones; enmiendas del Equipo de Gobierno y PSE-EE (p. 223)"
+      },
+      {
+        "date": "25-02-2016",
+        "page": 202,
+        "note": "Iniciativa vecinal de Etxerat contra la dispersión y enmienda de EAJ-PNV; votaciones en p. 214-215"
+      },
+      {
+        "date": "28-02-2019",
+        "page": 12,
+        "note": "Dación de cuenta: iniciativa de Sare no admitida; EH Bildu votó en contra de no admitirla"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 368,
+        "note": "EH Bildu: juicio a 47 personas por apoyar a presos; enmienda conjunta aprobada (p. 376)"
+      },
+      {
+        "date": "28-11-2019",
+        "page": 84,
+        "note": "EH Bildu: presos enfermos, acercamiento y manifestación de Sare; enmienda conjunta aprobada (p. 93)"
+      }
+    ]
+  },
+  "34": {
+    "question": "¿Qué medidas se debatieron en el Pleno sobre la pandemia de COVID-19?",
+    "ground_truth": "El 30-04-2020 EH Bildu presentó una moción de urgencia para crear un Consejo Asesor que consensuara la desescalada de Bilbao. No logró la mayoría absoluta para declararla urgente (10-19) y no se debatió. Ese día se aprobó una enmienda conjunta de EAJ-PNV, Socialistas Vascos y EH Bildu sobre destinar a políticas sociales el margen de la regla de gasto. El 28-05-2020 se debatieron varias propuestas: EH Bildu pidió carriles bici y aceras más anchas para el desconfinamiento (se aprobó la enmienda del Equipo de Gobierno); Elkarrekin Bilbao-Podemos pidió un plan de comunicación de emergencias liderado por el alcalde (rechazado); el PP pidió test para la plantilla y mascarillas para la población, y una oficina para las familias de fallecidos por COVID. En ambos casos se aprobaron enmiendas conjuntas de EAJ-PNV, Socialistas Vascos y EH Bildu: seguir dando material de protección a la plantilla y atender a esas familias desde los servicios sociales de base. El 25-06-2020 EH Bildu pidió espacios de ocio al aire libre con distancia de seguridad (se aprobó su autoenmienda). El PP propuso la Medalla de Oro de la Villa para el personal sanitario, y se aprobó por unanimidad una enmienda del Equipo de Gobierno para homenajearlo. El 24-09-2020 se aprobó por unanimidad la proposición de EH Bildu de ofrecer equipamientos municipales a los colegios para volver a las aulas con garantías; se rechazó una adición de Elkarrekin sobre los comedores. Elkarrekin pidió además un estudio sobre la seguridad ciudadana en la pandemia, que acabó en una enmienda conjunta. El 29-10-2020 se rechazó la petición de una AMPA de aplazar un derribo por la emergencia sanitaria. Mundubat retiró su propuesta sobre derechos humanos en Centroamérica durante la crisis de la COVID. El 26-11-2020 el PP pidió mascarillas gratis en las dependencias municipales; retiró el punto sobre el IVA y se aprobó la enmienda del Equipo de Gobierno de seguir repartiéndolas entre los colectivos vulnerables. Elkarrekin propuso estudiar la exclusión residencial provocada por la pandemia. El 31-03-2022 se aprobaron por unanimidad 150.000 € para UNICEF y el mecanismo COVAX de vacunas. El 23-02-2023 se informó de que no se admitió la moción de la asociación BIEL, que relacionaba un exceso de mortalidad con las vacunas.",
+    "sources": [
+      {
+        "date": "30-04-2020",
+        "page": 47,
+        "note": "Moción de urgencia de EH Bildu: Consejo Asesor para la desescalada; urgencia no aceptada (p. 48)"
+      },
+      {
+        "date": "30-04-2020",
+        "page": 34,
+        "note": "EH Bildu: regla de gasto y políticas sociales; enmienda conjunta aprobada (p. 47)"
+      },
+      {
+        "date": "28-05-2020",
+        "page": 38,
+        "note": "EH Bildu: reconfigurar el espacio público en el desconfinamiento; enmienda del Equipo de Gobierno (p. 49)"
+      },
+      {
+        "date": "28-05-2020",
+        "page": 81,
+        "note": "Elkarrekin: plan de comunicación de emergencias; rechazado (p. 93)"
+      },
+      {
+        "date": "28-05-2020",
+        "page": 133,
+        "note": "PP: test y mascarillas; enmienda conjunta EAJ-PNV/PSE/EH Bildu (p. 142)"
+      },
+      {
+        "date": "28-05-2020",
+        "page": 142,
+        "note": "PP: oficina para familias de fallecidos por COVID; enmienda conjunta (p. 149)"
+      },
+      {
+        "date": "25-06-2020",
+        "page": 99,
+        "note": "EH Bildu: espacios de ocio con distancia social; autoenmienda aprobada (p. 110)"
+      },
+      {
+        "date": "25-06-2020",
+        "page": 193,
+        "note": "PP: Medalla de Oro al personal sanitario; enmienda aprobada por unanimidad (p. 199)"
+      },
+      {
+        "date": "24-09-2020",
+        "page": 103,
+        "note": "EH Bildu: equipamientos para la vuelta a las aulas; aprobada por unanimidad (p. 113)"
+      },
+      {
+        "date": "24-09-2020",
+        "page": 125,
+        "note": "Elkarrekin: estudio de seguridad ciudadana en la pandemia; enmienda conjunta (p. 144)"
+      },
+      {
+        "date": "29-10-2020",
+        "page": 174,
+        "note": "Mundubat: derechos humanos en Centroamérica durante la COVID; retirada (según el acta del 25-02-2021)"
+      },
+      {
+        "date": "26-11-2020",
+        "page": 111,
+        "note": "PP: mascarillas gratuitas y rebaja del IVA; autoenmienda y enmienda del Equipo de Gobierno (p. 118-119)"
+      },
+      {
+        "date": "26-11-2020",
+        "page": 73,
+        "note": "Elkarrekin: exclusión residencial por la pandemia; enmienda del Equipo de Gobierno"
+      },
+      {
+        "date": "31-03-2022",
+        "page": 193,
+        "note": "Crédito de 150.000 € para UNICEF/COVAX; unanimidad"
+      },
+      {
+        "date": "23-02-2023",
+        "page": 13,
+        "note": "Moción de BIEL sobre las vacunas, no admitida"
+      }
+    ]
+  },
+  "35": {
+    "question": "¿Qué iniciativas ha habido en defensa de los derechos del colectivo LGTBI?",
+    "ground_truth": "El 28-01-2016 Udalberri-Bilbao en Común y EH Bildu pidieron una política municipal integral de igualdad y libertad sexoafectiva que empoderara al colectivo LGTBIQ+; se aprobó por unanimidad una enmienda del Equipo de Gobierno. El 29-06-2017 se aprobó (25 votos a favor y 4 abstenciones) la proposición de EH Bildu de crear programas de atención a las personas mayores LGTBIQ+. Ese mismo día Udalberri pidió un diagnóstico participativo de la población LGTBIQ+, que se sustituyó por una enmienda del Equipo de Gobierno para incluir la diversidad sexual en el V Plan de Igualdad. El 28-09-2017 se aprobó por unanimidad la proposición de Udalberri para que las personas trans y transgénero elijan aseo y vestuario en las instalaciones deportivas. El 28-06-2018 se aprobó, con una enmienda oral, la propuesta de EH Bildu de un ciclo de teatro sobre diversidad afectivo-sexual y modelos de familia. El 26-09-2019 se aprobó el primer punto de la proposición de EH Bildu (Bilbao, ciudad libre de discriminación LGTBI), pero se suprimió el segundo, un Centro Municipal de Recursos LGTBI+. Ese día se aprobó una enmienda del Equipo de Gobierno a la propuesta de Elkarrekin Bilbao-Podemos para ir incorporando una tercera casilla de género ('no binario'). El 25-06-2020 EH Bildu pidió un diagnóstico de la población LGTBIQ+, que se remitió al Foro LGTBI de Bilbao mediante una enmienda conjunta de EAJ-PNV, Socialistas Vascos y EH Bildu. El 24-06-2021 EH Bildu propuso un observatorio municipal contra la LGTBIfobia; se aprobó la enmienda del Equipo de Gobierno para colaborar con el Gobierno Vasco en un observatorio de la diversidad. El 31-03-2022 se aprobaron 20.000 € para la asociación Ortzadar LGBT (Bilbao Bizkaia Harro 2022), con la abstención de EH Bildu y Elkarrekin. El 26-05-2022 Elkarrekin pidió medidas de igualdad laboral para las personas LGTBIQ+ y trans, y el 29-09-2022 un protocolo frente a los incidentes de odio, también LGTBIfóbicos. Ambas se aprobaron por unanimidad mediante enmiendas conjuntas. El 23-02-2023 EH Bildu pidió un protocolo contra las agresiones machistas y LGTBIfóbicas en el ocio nocturno; se aprobó la enmienda del Equipo de Gobierno. El 27-06-2024 los grupos se adhirieron a una declaración por el Día del Orgullo LGTBI. El 26-09-2024 se aprobaron por unanimidad 10.000 € para Aldarte, con un programa sobre los derechos de las personas LGTBI migradas.",
+    "sources": [
+      {
+        "date": "28-01-2016",
+        "page": 148,
+        "note": "Udalberri y EH Bildu: política integral de libertad sexoafectiva; enmienda aprobada por unanimidad (p. 155)"
+      },
+      {
+        "date": "29-06-2017",
+        "page": 347,
+        "note": "EH Bildu: atención a las personas mayores LGTBIQ+; aprobada (p. 352)"
+      },
+      {
+        "date": "29-06-2017",
+        "page": 361,
+        "note": "Udalberri: diagnóstico LGTBQI+; enmienda del Equipo de Gobierno (p. 367)"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 44,
+        "note": "Udalberri: vestuarios para personas trans; unanimidad (p. 50)"
+      },
+      {
+        "date": "28-06-2018",
+        "page": 390,
+        "note": "EH Bildu: ciclo de teatro sobre diversidad afectivo-sexual; aprobada (p. 395)"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 321,
+        "note": "EH Bildu: ciudad libre de LGTBIfobia y Centro de Recursos LGTBI+ (suprimido) (p. 328)"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 344,
+        "note": "Elkarrekin: tercera casilla 'no binario'; enmienda del Equipo de Gobierno (p. 348)"
+      },
+      {
+        "date": "25-06-2020",
+        "page": 81,
+        "note": "EH Bildu: diagnóstico LGTBIQ+; enmienda conjunta para el Foro LGTBI (p. 90)"
+      },
+      {
+        "date": "24-06-2021",
+        "page": 31,
+        "note": "EH Bildu: observatorio contra la LGTBIfobia; enmienda del Equipo de Gobierno (p. 40)"
+      },
+      {
+        "date": "31-03-2022",
+        "page": 198,
+        "note": "20.000 € para Ortzadar LGBT (Harro 2022); 22 votos a favor y 7 abstenciones"
+      },
+      {
+        "date": "26-05-2022",
+        "page": 153,
+        "note": "Elkarrekin: igualdad laboral LGTBIQ+ y trans; enmienda conjunta aprobada por unanimidad (p. 159)"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 133,
+        "note": "Elkarrekin: respuesta a los incidentes de odio, también LGTBIfóbicos; enmienda conjunta aprobada por unanimidad (p. 138)"
+      },
+      {
+        "date": "23-02-2023",
+        "page": 203,
+        "note": "EH Bildu: protocolo en el ocio nocturno; enmienda del Equipo de Gobierno (p. 210)"
+      },
+      {
+        "date": "27-06-2024",
+        "page": 2,
+        "note": "Declaración del Día del Orgullo LGTBI"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 96,
+        "note": "10.000 € para Aldarte (personas LGTBI migradas); unanimidad (p. 101)"
+      }
+    ]
+  },
+  "36": {
+    "question": "¿Qué se ha debatido sobre el Teatro Arriaga?",
+    "ground_truth": "Las iniciativas dedicadas al Teatro Arriaga son pocas. La mayoría de las menciones son nombramientos del consejo de administración de la sociedad 'Centro de Actividades Culturales Teatro Arriaga, S.A.', aprobación de sus cuentas y transferencias de crédito. El 24-04-2008 se destinaron 200.000 € del remanente de Udalkutxa a reforzar la producción propia del teatro. El 25-11-2010 se trató la contratación de su auditoría de cuentas (LKS Auditores, 8.500 €). El 31-10-2013 se aprobó (20 a favor, 4 en contra, 4 abstenciones), con una enmienda oral del Equipo de Gobierno, la proposición del PP de adherirse al Plan Estatal de Activación de Teatros (PLATEA) a través del Arriaga u otro espacio público; el Gobierno se comprometió a estudiar la adhesión. El 28-04-2016 el PP pidió abrir los edificios públicos a visitas guiadas regulares y citó el Arriaga como ejemplo. Se aprobó por unanimidad una enmienda del Equipo de Gobierno. El 23-02-2017 el PP celebró que el Arriaga hubiera inaugurado visitas guiadas. El 30-11-2017 se habilitaron 284.704,46 € para actividades del teatro. El 27-09-2018 se rechazó la proposición de EH Bildu, Udalberri y Goazen Bilbao de sortear entre la ciudadanía las entradas que recibe el Ayuntamiento; en el debate el Equipo de Gobierno defendió que los pases al Arriaga forman parte de la labor de fiscalización de los concejales. El 26-11-2020 el PP pidió mascarillas gratis en dependencias municipales como el Teatro Arriaga. El 29-09-2022 EH Bildu propuso estudiar entradas muy baratas para menores de 35 años cuando no se hubiera llenado el aforo la víspera, y que el alumnado de artes pudiera asistir a ensayos. Se aprobó por unanimidad una enmienda conjunta de EAJ-PNV, Socialistas Vascos y EH Bildu para analizar las políticas de acceso y crear nuevas modalidades de entrada para jóvenes de 35 años y estudiantes de arte.",
+    "sources": [
+      {
+        "date": "24-04-2008",
+        "page": 52,
+        "note": "Remanente de Udalkutxa: 200.000 € para la producción propia del Teatro Arriaga"
+      },
+      {
+        "date": "25-11-2010",
+        "page": 76,
+        "note": "Contratación de la auditoría de cuentas del Teatro Arriaga S.A."
+      },
+      {
+        "date": "31-10-2013",
+        "page": 93,
+        "note": "PP: adhesión a PLATEA a través del Arriaga; aprobada con enmienda oral (p. 99)"
+      },
+      {
+        "date": "28-04-2016",
+        "page": 227,
+        "note": "PP: visitas guiadas a edificios públicos (Arriaga); enmienda aprobada por unanimidad (p. 232)"
+      },
+      {
+        "date": "23-02-2017",
+        "page": 154,
+        "note": "Mención a la inauguración de las visitas guiadas al Arriaga"
+      },
+      {
+        "date": "30-11-2017",
+        "page": 16,
+        "note": "Crédito de 284.704,46 € para actividades del Teatro Arriaga"
+      },
+      {
+        "date": "27-09-2018",
+        "page": 146,
+        "note": "Debate sobre el sorteo de entradas; pases al Arriaga (proposición rechazada, p. 151)"
+      },
+      {
+        "date": "26-11-2020",
+        "page": 111,
+        "note": "PP: mascarillas gratuitas en el Teatro Arriaga y otros equipamientos"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 127,
+        "note": "EH Bildu: entradas baratas para menores de 35 años; enmienda conjunta aprobada (p. 133)"
+      }
+    ]
+  },
+  "37": {
+    "question": "¿Qué propuestas ha habido sobre memoria histórica y símbolos franquistas?",
+    "ground_truth": "El 27-05-2010 se aprobó la proposición de EB-Berdeak para esclarecer los crímenes de la Guerra Civil y la represión franquista. El 28-03-2012 Bildu retiró antes del Pleno su propuesta de una comisión municipal de memoria histórica, con censo de lugares y de símbolos franquistas y revisión del callejero. El 27-06-2013 se aprobó una proposición conjunta de EAJ-PNV, Bildu y PSE-EE que condenaba la sublevación franquista de 1936. El 27-02-2014 Bildu pidió cumplir el dictamen de la Comisión Técnica del Gobierno Vasco para retirar los símbolos franquistas; se aprobó una enmienda del Equipo de Gobierno. El 26-02-2015 se aprobó solo el tercer punto, con una enmienda oral, de otra proposición de Bildu sobre el callejero. El 24-11-2015 EH Bildu pidió un proceso participativo para renombrar calles, que se sustituyó por una enmienda del Equipo de Gobierno. El 25-02-2016 se aprobó por unanimidad pedir al Gobierno Vasco que actuara en las fosas de Monte Avril (Udalberri). El 29-09-2016 EH Bildu pidió actos por el 80 aniversario de los bombardeos, y se aprobó una enmienda del Equipo de Gobierno. El 26-01-2017 EH Bildu, Udalberri y Goazen pidieron devolver a la calle Reyes Católicos su nombre de Avenida Principal; se aprobó una enmienda del Equipo de Gobierno. El 23-02-2017 se informó de que no se admitió la iniciativa vecinal de Iralabarri, porque el Gobierno entendía que no la amparaba la Ley de Memoria Histórica. El 22-02-2018 esos tres grupos pidieron señalizar la sede de Mujeres Antifascistas (AMA), y se aprobó una enmienda del Equipo de Gobierno. El 28-11-2019 se aprobó un homenaje a AMA propuesto por Elkarrekin Bilbao-Podemos. El 28-03-2019 se aprobó la proposición de EH Bildu y Udalberri de cumplir los acuerdos de memoria del mandato. El 30-01-2020 el Colectivo Republicano pidió reponer la estatua de Mallona; se aprobó por unanimidad una enmienda para señalizar el monumento. En 2021 se aprobó otra enmienda para homenajear a la corporación de 1931 (se informó el 24-02-2022). El 27-01-2022 el PP pidió señalizar los asaltos a las cárceles de 1937 y la cripta de Derio; se aprobó una enmienda del Equipo de Gobierno. El 26-05-2022 se aprobaron 570.000 € para que Aranzadi hiciera un proyecto de memoria en el cementerio de Begoña. El 25-04-2024 se aprobó una enmienda conjunta del Equipo de Gobierno y el PP para declarar los restos del monumento de Mallona lugar de memoria democrática. El 25-09-2025 EH Bildu retiró su propuesta de un centro de interpretación de la memoria histórica.",
+    "sources": [
+      {
+        "date": "27-05-2010",
+        "page": 195,
+        "note": "EB-Berdeak: crímenes del franquismo; aprobada (p. 200)"
+      },
+      {
+        "date": "28-03-2012",
+        "page": 94,
+        "note": "Bildu: comisión de memoria histórica; retirada (p. 95)"
+      },
+      {
+        "date": "27-06-2013",
+        "page": 95,
+        "note": "EAJ-PNV/Bildu/PSE-EE: condena del alzamiento de 1936; aprobada (p. 100)"
+      },
+      {
+        "date": "27-02-2014",
+        "page": 8,
+        "note": "Bildu: dictamen sobre símbolos franquistas; enmienda del Equipo de Gobierno (p. 21)"
+      },
+      {
+        "date": "26-02-2015",
+        "page": 128,
+        "note": "Bildu: callejero franquista; aprobado solo el punto tercero (p. 137)"
+      },
+      {
+        "date": "24-11-2015",
+        "page": 101,
+        "note": "EH Bildu: proceso participativo para renombrar calles; enmienda (p. 113)"
+      },
+      {
+        "date": "25-02-2016",
+        "page": 169,
+        "note": "Udalberri: fosas de Monte Avril; unanimidad (p. 174)"
+      },
+      {
+        "date": "29-09-2016",
+        "page": 123,
+        "note": "EH Bildu: 80 aniversario de los bombardeos; enmienda (p. 133)"
+      },
+      {
+        "date": "26-01-2017",
+        "page": 63,
+        "note": "EH Bildu/Udalberri/Goazen: calle Reyes Católicos; enmienda (p. 76)"
+      },
+      {
+        "date": "23-02-2017",
+        "page": 28,
+        "note": "Iniciativa vecinal de Iralabarri no admitida"
+      },
+      {
+        "date": "22-02-2018",
+        "page": 88,
+        "note": "Señalización de la sede de AMA; enmienda (p. 93)"
+      },
+      {
+        "date": "28-03-2019",
+        "page": 227,
+        "note": "EH Bildu/Udalberri: cumplir los acuerdos de memoria; aprobada (p. 235)"
+      },
+      {
+        "date": "28-11-2019",
+        "page": 69,
+        "note": "Elkarrekin: homenaje a AMA; aprobada (p. 76)"
+      },
+      {
+        "date": "30-01-2020",
+        "page": 157,
+        "note": "Colectivo Republicano: estatua de Mallona; enmienda aprobada por unanimidad"
+      },
+      {
+        "date": "24-02-2022",
+        "page": 5,
+        "note": "Homenaje a la corporación de 1931: resultado"
+      },
+      {
+        "date": "27-01-2022",
+        "page": 90,
+        "note": "PP: asaltos a las cárceles de 1937 y cripta de Derio; enmienda (p. 100)"
+      },
+      {
+        "date": "26-05-2022",
+        "page": 67,
+        "note": "570.000 € para Aranzadi: memoria en el cementerio de Begoña"
+      },
+      {
+        "date": "25-04-2024",
+        "page": 121,
+        "note": "PP: Mallona como lugar de memoria democrática; enmienda conjunta (p. 126)"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 223,
+        "note": "EH Bildu: centro de interpretación de la memoria; retirada"
+      }
+    ]
+  },
+  "38": {
+    "question": "¿Qué se ha debatido sobre el Consorcio de Aguas Bilbao Bizkaia?",
+    "ground_truth": "El 24-06-2010 se rechazó (14-15) la proposición de los Socialistas Vascos para reformar los estatutos del Consorcio de Aguas Bilbao Bizkaia: representación proporcional a la población, un Comité Directivo plural y una Mesa de Contratación más transparente. Ese mismo día decayó la del PP para no subir el precio del agua en 2011, frente a una enmienda del Equipo de Gobierno. El 25-11-2010 el PP pidió renunciar a la subida del 1,5 %; se aprobó la enmienda que pedía a los organismos no agravar la situación de las familias con los precios. El 26-03-2015 el Pleno aprobó la modificación de los estatutos con el voto en contra de Bildu, que criticó que toda la representación de Bilbao fuera de EAJ-PNV. El 11-04-2019 aprobó una nueva modificación de estatutos (21-8). El 30-03-2017 EH Bildu, Udalberri y Goazen Bilbao pidieron tarifas progresivas: bono social con exención total o del 50 % según la RGI, suministro mínimo vital y fraccionamientos. Se aprobó (21-8) la enmienda del Equipo de Gobierno: seguir con las bonificaciones a las familias desfavorecidas y que ninguna sufra cortes por motivos económicos. El 24-06-2021 se rechazó la proposición de Elkarrekin Bilbao-Podemos de ampliar las bonificaciones a quienes cobran el IMV y otras personas vulnerables. El 30-05-2024 el PP pidió cancelar la encomienda al Consorcio para facturar y cobrar la tasa de basuras; se aprobó una enmienda del Equipo de Gobierno. El 27-06-2024 debatió otra propuesta del PP sobre la tasa, en la que se criticó el coste de esa encomienda (se aprobó otra enmienda del Equipo de Gobierno). El 28-11-2024 se aprobó por unanimidad la proposición del PP de revisar el acuerdo de colaboración entre el Ayuntamiento y el Consorcio. El 26-06-2025 el Pleno acordó por unanimidad dejar sin efecto, desde el 01-01-2026, la encomienda de 1980. Desde esa fecha el Ayuntamiento gestiona directamente la tasa de basuras.",
+    "sources": [
+      {
+        "date": "24-06-2010",
+        "page": 86,
+        "note": "PSE-EE: reforma de estatutos del Consorcio; rechazada 14-15 (p. 92)"
+      },
+      {
+        "date": "24-06-2010",
+        "page": 102,
+        "note": "PP: no subir el precio del agua en 2011; enmienda del Equipo de Gobierno (p. 108)"
+      },
+      {
+        "date": "25-11-2010",
+        "page": 117,
+        "note": "PP: renunciar a la subida del 1,5 %; enmienda aprobada (p. 122)"
+      },
+      {
+        "date": "26-03-2015",
+        "page": 23,
+        "note": "Modificación de estatutos del Consorcio; votación en p. 28 (Bildu en contra)"
+      },
+      {
+        "date": "30-03-2017",
+        "page": 228,
+        "note": "EH Bildu/Udalberri/Goazen: tarifa social y suministro mínimo vital; enmienda aprobada (p. 236)"
+      },
+      {
+        "date": "11-04-2019",
+        "page": 2,
+        "note": "Aprobación de la modificación de estatutos del Consorcio (votación en p. 30)"
+      },
+      {
+        "date": "24-06-2021",
+        "page": 74,
+        "note": "Elkarrekin: ampliar bonificaciones (IMV); rechazada (p. 82)"
+      },
+      {
+        "date": "30-05-2024",
+        "page": 189,
+        "note": "PP: cancelar la encomienda de cobro de la tasa de basuras; enmienda (p. 196)"
+      },
+      {
+        "date": "27-06-2024",
+        "page": 256,
+        "note": "PP: ordenanza de la tasa de basuras; debate sobre el coste de la encomienda al Consorcio"
+      },
+      {
+        "date": "28-11-2024",
+        "page": 178,
+        "note": "PP: redefinir la colaboración con el Consorcio; aprobada por unanimidad (p. 184)"
+      },
+      {
+        "date": "26-06-2025",
+        "page": 266,
+        "note": "Dejar sin efecto la encomienda de 1980; aprobado por unanimidad (p. 270)"
+      }
+    ]
+  },
+  "39": {
+    "question": "¿Qué se ha debatido sobre los cementerios municipales?",
+    "ground_truth": "Casi todo lo que el Pleno trató sobre cementerios fueron las actualizaciones anuales de la ordenanza fiscal de tasas, que incluye el epígrafe de Cementerios. Por ejemplo: el 28-11-2007 se rechazaron alegaciones contra la tasa de conservación; el 28-06-2018 se rebajó un 50 % la inhumación de cenizas incineradas en el cementerio municipal y el crematorio pasó a precio público; el 30-09-2021 se reguló el esparcimiento de cenizas en el Bosque del Recuerdo; el 28-09-2023 se subieron las tarifas un 3 % para 2024. El 23-09-2010 se aprobó, con la abstención del PP, la cesión global de Servicios Funerarios de Bilbao S.L. al Ayuntamiento y a Bilbao Merkatuak (luego Bilbao Zerbitzuak), que pasó a gestionar los cementerios. El 31-01-2013 y el 27-02-2014 Bildu pidió no renovar y revocar la licencia del crematorio privado de Zumalakarregi; la primera vez se aprobó una enmienda del Equipo de Gobierno y la segunda se rechazó. El 28-11-2013 el PP retiró su propuesta de cobrar un euro simbólico por renovar las concesiones a perpetuidad de los cementerios municipales. El 26-05-2016, ante el cierre del cementerio de Begoña, se aprobó (25-4) la proposición de EH Bildu de mantener el terreno como zona verde en el nuevo PGOU, con un parque que conserve los elementos históricos, y un proceso participativo. El 27-01-2022 el PP pidió poner en valor la cripta de las víctimas de 1936-37 en el cementerio de Derio; se aprobó una enmienda del Equipo de Gobierno. El 26-05-2022 se aprobaron 570.000 € para que Aranzadi hiciera un proyecto de memoria histórica en el cementerio de Begoña; los restos exhumados se llevan a Derio. Las menciones a 'Vista Alegre' de 2014 y 2023 corresponden a la plaza de toros, no a un cementerio.",
+    "sources": [
+      {
+        "date": "28-11-2007",
+        "page": 32,
+        "note": "Alegaciones contra la tasa de conservación de cementerios"
+      },
+      {
+        "date": "23-09-2010",
+        "page": 131,
+        "note": "Cesión global de Servicios Funerarios de Bilbao S.L. (acuerdo en p. 141-142)"
+      },
+      {
+        "date": "31-01-2013",
+        "page": 62,
+        "note": "Bildu: crematorio de Zumalakarregi; enmienda del Equipo de Gobierno (p. 69)"
+      },
+      {
+        "date": "27-02-2014",
+        "page": 83,
+        "note": "Bildu: revocar la licencia del crematorio; rechazada (p. 88)"
+      },
+      {
+        "date": "28-11-2013",
+        "page": 94,
+        "note": "PP: un euro por renovar concesiones a perpetuidad; retirada"
+      },
+      {
+        "date": "26-05-2016",
+        "page": 147,
+        "note": "EH Bildu: cementerio de Begoña como zona verde; aprobada (p. 152)"
+      },
+      {
+        "date": "28-06-2018",
+        "page": 94,
+        "note": "Ordenanza: tarifas de cenizas y Bosque del Recuerdo; crematorio a precio público (p. 108)"
+      },
+      {
+        "date": "30-09-2021",
+        "page": 49,
+        "note": "Ordenanza: esparcimiento de cenizas en el Bosque del Recuerdo"
+      },
+      {
+        "date": "27-01-2022",
+        "page": 90,
+        "note": "PP: cripta-mausoleo del cementerio de Derio; enmienda (p. 100)"
+      },
+      {
+        "date": "26-05-2022",
+        "page": 67,
+        "note": "570.000 € para Aranzadi: memoria en el cementerio de Begoña"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 266,
+        "note": "Ordenanza fiscal: tarifas de cementerios para 2024 (+3 %)"
+      }
+    ]
+  },
+  "40": {
+    "question": "¿Qué apoyo ha dado el Ayuntamiento de Bilbao al pueblo saharaui?",
+    "ground_truth": "El Ayuntamiento ha apoyado al pueblo saharaui con declaraciones y, sobre todo, subvenciones. Financia el programa Vacaciones en Paz, que acoge en verano a niñas y niños de los campamentos de Tinduf (aparece en modificaciones presupuestarias del 30-10-2014 y el 31-05-2018 se aprobó por unanimidad un crédito adicional de 3.145 € para acoger a 17 menores). En 2014 también se recordó que cada año se iza la bandera saharaui por el aniversario de la RASD. El 29-10-2015 Udalberri pidió no participar en actos del Reino de Marruecos; se aprobó una enmienda del Equipo de Gobierno que instaba a Marruecos a respetar los derechos humanos en el Sáhara Occidental. El 30-03-2017 se aprobó por unanimidad una enmienda a la iniciativa de Mundubat: pedía cumplir la sentencia del TJUE de 2016 (los acuerdos UE-Marruecos no se aplican al Sáhara Occidental), rechazaba la explotación de sus recursos y apoyaba un referéndum de autodeterminación. Se informó de ello el 22-02-2018. El 27-02-2020 todos los grupos firmaron una declaración institucional por el 44 aniversario de la RASD. Desde 2017 el Pleno aprueba cada año, por unanimidad, una subvención para la Caravana Vasca solidaria con el Sáhara: 20.000 € (28-09-2017), 40.000 € (27-09-2018), 40.000 € (26-09-2019), 10.000 € (24-09-2020), 30.000 € (30-09-2021), 38.756 € para la XIX Caravana (29-09-2022), 30.000 € (28-09-2023), 30.000 € (26-09-2024) y 38.000 € para la XXII Caravana (25-09-2025). El 27-11-2025 no se admitió un escrito contra la subvención de 2025, porque su autor no era parte interesada; votaron a favor 24 concejales y el PP se abstuvo.",
+    "sources": [
+      {
+        "date": "30-10-2014",
+        "page": 11,
+        "note": "Programa Vacaciones en Paz para menores saharauis"
+      },
+      {
+        "date": "01-04-2014",
+        "page": 150,
+        "note": "Mención al izado anual de la bandera saharaui"
+      },
+      {
+        "date": "29-10-2015",
+        "page": 165,
+        "note": "Udalberri: no participar en actos de Marruecos; enmienda del Equipo de Gobierno (p. 172)"
+      },
+      {
+        "date": "30-03-2017",
+        "page": 276,
+        "note": "Iniciativa de Mundubat sobre la sentencia del TJUE; enmienda aprobada por unanimidad (p. 285)"
+      },
+      {
+        "date": "22-02-2018",
+        "page": 9,
+        "note": "Dación de cuenta de la iniciativa de Mundubat y su resultado (p. 11)"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 13,
+        "note": "20.000 € para la Asociación de Amigos de la RASD (XIV Caravana)"
+      },
+      {
+        "date": "31-05-2018",
+        "page": 20,
+        "note": "3.145 € más para Vacaciones en Paz 2018 (17 menores)"
+      },
+      {
+        "date": "27-09-2018",
+        "page": 33,
+        "note": "40.000 € para la XV Caravana; unanimidad"
+      },
+      {
+        "date": "26-09-2019",
+        "page": 251,
+        "note": "40.000 € para la XVI Caravana; unanimidad"
+      },
+      {
+        "date": "27-02-2020",
+        "page": 159,
+        "note": "Declaración institucional por el 44 aniversario de la RASD"
+      },
+      {
+        "date": "24-09-2020",
+        "page": 66,
+        "note": "10.000 € para la XVII Caravana"
+      },
+      {
+        "date": "30-09-2021",
+        "page": 139,
+        "note": "30.000 € para la XVIII Caravana"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 69,
+        "note": "38.756 € para la XIX Caravana; unanimidad"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 121,
+        "note": "30.000 € para la XX Caravana; unanimidad"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 107,
+        "note": "30.000 € para la XXI Caravana; unanimidad"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 182,
+        "note": "38.000 € para la XXII Caravana; unanimidad"
+      },
+      {
+        "date": "27-11-2025",
+        "page": 57,
+        "note": "Escrito contra la subvención de 2025 no admitido"
+      }
+    ]
+  },
+  "41": {
+    "question": "¿Qué propuestas se han hecho sobre el barrio de Otxarkoaga?",
+    "ground_truth": "Hay numerosas iniciativas dedicadas a Otxarkoaga. El 25-03-2010 Socialistas Vascos pidió construir un polideportivo compacto en el barrio; se aprobó por 15 votos a 14 la enmienda de EAJ-PNV y EB-Berdeak (un estudio general de polideportivos) y decayó la proposición. El 26-10-2010 el mismo grupo pidió un mapa de necesidades de escaleras mecánicas o ascensores para Otxarkoaga con partida en 2011; prosperó (15-14) una enmienda del Gobierno de seguir planificando ascensores y rampas en los barrios altos. Bildu pidió el 28-10-2011 reanudar la subvención a las clases de euskera del Centro Cívico y del colegio Ramón y Cajal, y el 28-02-2013 que el Gobierno Vasco abriera líneas de modelo D en las escuelas públicas del barrio; en ambos casos se impuso una enmienda genérica del Gobierno. El 26-10-2017 EH Bildu propuso un plan con los propietarios para rehabilitar los edificios con humedades y ayudas de Viviendas Municipales; se aprobó (17-8-4) la enmienda de seguir impulsando la regeneración urbana. El 28-10-2021 la Asociación de familias de Otxarkoaga presentó una iniciativa vecinal para un Plan Integral de Regeneración Socioeconómica; se aprobó la enmienda del Gobierno (completar los proyectos comprometidos y estudiar los del mandato 2023-2027) con 18 votos de EAJ-PNV y Socialistas Vascos, 7 en contra de EH Bildu y Elkarrekin y 2 abstenciones del PP (dado cuenta el 24-02-2022). El 27-01-2022 EH Bildu pidió un plan integral para la zona de Aixe-Ona (accesibilidad, transporte, aparcamiento, inundabilidad); prosperó (24-4) una enmienda del Gobierno. El 29-09-2022 se aprobó por unanimidad la declaración inicial de necesidad de rehabilitación de los edificios del programa Orain Otxar. Se aprobaron subvenciones a la Asociación Tendel para programas de infancia y juventud del barrio: 13.200 € para el equipamiento juvenil «Ramoni» (26-10-2023, 28 votos a favor), 11.000 € (31-10-2024, 23 a favor) y 6.126 € (25-09-2025, unanimidad). El 25-01-2024 el PP pidió continuar la accesibilidad peatonal en el Distrito 3 Otxarkoaga-Txurdinaga; se aprobó una enmienda del Gobierno (16-4-8). El 30-01-2025 se rechazó (9 a favor, 16 en contra) la iniciativa de la Agrupación de Vecinos Otxarkoaga de modificar el PGOU para construir las VPO en un lugar más céntrico. El 27-03-2025 EH Bildu pidió un plan de activación de la zona comercial C de Otxarkoaga, aprobado por unanimidad mediante enmienda conjunta con el Gobierno.",
+    "sources": [
+      {
+        "date": "25-03-2010",
+        "page": 109,
+        "note": "PSE-EE: polideportivo compacto en Otxarkoaga"
+      },
+      {
+        "date": "26-10-2010",
+        "page": 36,
+        "note": "PSE-EE: mapa de escaleras mecánicas/ascensores en Otxarkoaga"
+      },
+      {
+        "date": "28-10-2011",
+        "page": 134,
+        "note": "Bildu: subvención clases de euskera en Otxarkoaga"
+      },
+      {
+        "date": "28-02-2013",
+        "page": 25,
+        "note": "Bildu: modelo D en escuelas públicas de Otxarkoaga"
+      },
+      {
+        "date": "26-10-2017",
+        "page": 78,
+        "note": "EH Bildu: rehabilitación de edificios con humedades"
+      },
+      {
+        "date": "28-10-2021",
+        "page": 210,
+        "note": "Iniciativa vecinal Asociación de familias de Otxarkoaga: Plan Integral"
+      },
+      {
+        "date": "24-02-2022",
+        "page": 12,
+        "note": "Da cuenta del resultado de la iniciativa vecinal (18-7-2)"
+      },
+      {
+        "date": "27-01-2022",
+        "page": 68,
+        "note": "EH Bildu: plan integral zona Aixe-Ona"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 24,
+        "note": "Propuesta Orain Otxar: necesidad de rehabilitación (29/29)"
+      },
+      {
+        "date": "26-10-2023",
+        "page": 68,
+        "note": "Subvención Tendel 13.200 € equipamiento Ramoni"
+      },
+      {
+        "date": "25-01-2024",
+        "page": 98,
+        "note": "PP: accesibilidad peatonal Distrito 3"
+      },
+      {
+        "date": "31-10-2024",
+        "page": 87,
+        "note": "Incremento subvención Tendel 11.000 €"
+      },
+      {
+        "date": "30-01-2025",
+        "page": 159,
+        "note": "Iniciativa vecinal AVO: modificar PGOU (VPO); rechazada p.168-169"
+      },
+      {
+        "date": "27-03-2025",
+        "page": 259,
+        "note": "EH Bildu: plan de activación zona comercial C"
+      },
+      {
+        "date": "25-09-2025",
+        "page": 157,
+        "note": "Incremento subvención Tendel 6.126 €"
+      }
+    ]
+  },
+  "42": {
+    "question": "¿Qué se ha debatido sobre Azkuna Zentroa (antigua Alhóndiga)?",
+    "ground_truth": "El 25-11-2010 el PP pidió instalar en La Alhóndiga el Centro Municipal de Distrito de Abando-Indautxu; decayó (7 a favor, 15 en contra, 7 abstenciones). El 31-10-2013 Socialistas Vascos propuso crear una ruta atractiva por la calle Iparraguirre entre el Museo Guggenheim y Alhóndiga Bilbao, aprobada con 23 votos a favor y 4 abstenciones. En el Pleno del 10-12-2014 el alcalde Ibon Areso anunció su propuesta de homenajear a Iñaki Azkuna dando su nombre al edificio de La Alhóndiga; la concejala del PP Beatriz Marcos mostró reservas porque «La Alhóndiga ha sido Alhóndiga toda la vida». El 29-10-2015 el PP volvió a pedir el Centro de Distrito de Abando en el edificio Azkuna Zentroa y fue rechazada. Udalberri-Bilbao en Común pidió el 29-06-2017 cursos de terapia acuática para niños con patologías neurológicas en Bilbao Kirolak y Azkuna Zentroa (aprobada por unanimidad una enmienda del Gobierno) y el 28-09-2017 que las personas trans pudieran elegir aseos y vestuarios en las instalaciones de Bilbao Kirolak, Azkuna Zentroa y los centros de distrito (aprobada por unanimidad). El 31-10-2019 EH Bildu y Elkarrekin Bilbao pidieron mejorar las condiciones del personal subcontratado de los polideportivos de Bilbao Kirolak y Azkuna Zentroa; se aprobó (19-7-3) la enmienda del Gobierno que instaba a patronal y sindicatos a negociar el convenio sectorial. El 27-10-2022 se aprobó (17 a favor, 10 en contra) atribuir al Consejo de Administración de la sociedad Centro Azkuna la aprobación de las tarifas deportivas, modificando el art. 26 de sus estatutos; Elkarrekin Bilbao sostuvo que restaba transparencia. El 30-11-2023 el PP propuso una exposición en Azkuna Zentroa por el Día Internacional del Euskera; se aprobó una enmienda conjunta con el Gobierno para una exposición itinerante por los centros cívicos. El 30-01-2025 EH Bildu pidió garantizar la gestión pública directa de sus espacios culturales y mantener las residencias artísticas; se aprobó (17-8-4) la enmienda del Gobierno de impulsar la colaboración público-privada para implantar allí el proyecto TUMO, reubicar en lo posible los proyectos comprometidos y avanzar en la convergencia con Bilbao Arte. La Alhóndiga aparece además de pasada el 26-11-2020, en una proposición del PP sobre mascarillas gratuitas.",
+    "sources": [
+      {
+        "date": "25-11-2010",
+        "page": 112,
+        "note": "PP: Centro de Distrito de Abando en La Alhóndiga (decae)"
+      },
+      {
+        "date": "31-10-2013",
+        "page": 36,
+        "note": "PSE-EE: ruta Guggenheim-Alhóndiga por Iparraguirre"
+      },
+      {
+        "date": "10-12-2014",
+        "page": 152,
+        "note": "Alcalde Areso propone dar el nombre de Azkuna a La Alhóndiga"
+      },
+      {
+        "date": "10-12-2014",
+        "page": 156,
+        "note": "Reservas de la concejala Marcos (PP)"
+      },
+      {
+        "date": "29-10-2015",
+        "page": 86,
+        "note": "PP: Centro de Distrito de Abando en Azkuna Zentroa (rechazada)"
+      },
+      {
+        "date": "29-06-2017",
+        "page": 379,
+        "note": "Udalberri: terapia acuática en Bilbao Kirolak y Azkuna Zentroa"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 44,
+        "note": "Udalberri: aseos y vestuarios para personas trans"
+      },
+      {
+        "date": "31-10-2019",
+        "page": 99,
+        "note": "EH Bildu y Elkarrekin: personal subcontratado polideportivos"
+      },
+      {
+        "date": "27-10-2022",
+        "page": 17,
+        "note": "Propuesta: tarifas deportivas del Centro Azkuna al Consejo de Administración"
+      },
+      {
+        "date": "30-11-2023",
+        "page": 79,
+        "note": "PP: exposición Día Internacional del Euskera"
+      },
+      {
+        "date": "30-01-2025",
+        "page": 52,
+        "note": "EH Bildu: carácter público de Azkuna Zentroa; enmienda TUMO"
+      }
+    ]
+  },
+  "43": {
+    "question": "¿Qué propuso el Partido Popular sobre Aste Nagusia?",
+    "ground_truth": "El PP presentó muchas proposiciones sobre Aste Nagusia, sobre todo acerca de comparsas, txosnas y el cumplimiento de la Ordenanza de Fiestas. El 31-01-2008 pidió aplicar el art. 27 de la Ordenanza a la comparsa Kaskagorri e impedir su participación; se rechazó (7 a favor, 15 en contra, 7 abstenciones). El 30-10-2008 pidió que la Ordenanza se cumpliera por igual, incluida la obligación de las comparsas de justificar ingresos y gastos, y se aprobó (22 a favor, 7 abstenciones). El 24-09-2009 pidió ratificar la Ordenanza y vigilar los carteles que atenten contra la dignidad o apoyen el terrorismo; se debatió junto a una del PSE-EE y se impuso la enmienda del Gobierno. El 29-09-2011 pidió extender las fiestas a toda la villa; prosperó (19-6-4) una enmienda que defendía el modelo actual. El 27-09-2012 pidió conciertos municipales gratuitos; salió la enmienda del Gobierno en una votación empatada a 14. El 25-09-2013 pidió ampliar la Comisión Mixta de Fiestas, que esta eligiera también a la txupinera y encargar una auditoría; salió la enmienda del Gobierno (21-6). El 24-09-2015 pidió convocar la Mesa de Seguridad antes del dispositivo de Aste Nagusia; salió la enmienda del Gobierno (17-8-4). Se rechazaron por 4 votos a 24 o 25: suspender dos ediciones a las comparsas Txori Barrote y Mekauen por homenajes a presos de ETA (29-09-2016), auditar Bilboko Konpartsak y las txosnas (28-09-2017), el sorteo público de espacios del recinto festivo entre asociaciones y ONG (26-10-2017), un gravamen a los hosteleros por ocupar espacio público similar al de las comparsas (30-11-2017) y el pago con pulsera en el recinto, como en el BBK Live (27-09-2018). El 31-05-2018 pidió que el Gobierno y Bilboko Konpartsak cumplieran el art. 27 y se impuso la enmienda del Gobierno (25-4). El 28-09-2023 pidió incluir las corridas generales en el programa y reservar 4 días de la Banda Municipal en Vista Alegre; se aprobó la enmienda de solo informar sobre la Plaza de Toros en el programa. El 26-09-2024 pidió exigir que los contenidos de las txosnas respeten la dignidad y los derechos humanos; salió la enmienda del Gobierno (17-4-8). El 30-10-2025 pidió trasladar Aste Nagusia de forma permanente a la última semana de agosto desde 2026; se rechazó la enmienda de Elkarrekin Bilbao y se aprobó (22-4-2) la del Gobierno: llevar a la Comisión Mixta de Fiestas que empiece el primer sábado tras el 15 de agosto cuando este caiga en sábado o domingo.",
+    "sources": [
+      {
+        "date": "31-01-2008",
+        "page": 45,
+        "note": "Comparsa Kaskagorri (rechazada)"
+      },
+      {
+        "date": "30-10-2008",
+        "page": 111,
+        "note": "Cumplimiento Ordenanza de Fiestas y cuentas de comparsas (aprobada)"
+      },
+      {
+        "date": "24-09-2009",
+        "page": 52,
+        "note": "Ratificar Ordenanza de Fiestas; debate conjunto con PSE-EE"
+      },
+      {
+        "date": "29-09-2011",
+        "page": 247,
+        "note": "Extender las fiestas a toda la villa"
+      },
+      {
+        "date": "27-09-2012",
+        "page": 165,
+        "note": "Conciertos gratuitos"
+      },
+      {
+        "date": "25-09-2013",
+        "page": 199,
+        "note": "Comisión Mixta de Fiestas y txupinera"
+      },
+      {
+        "date": "24-09-2015",
+        "page": 401,
+        "note": "Mesa de Seguridad antes de Aste Nagusia"
+      },
+      {
+        "date": "29-09-2016",
+        "page": 141,
+        "note": "Suspender a Txori Barrote y Mekauen"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 92,
+        "note": "Auditoría Bilboko Konpartsak y txosnas"
+      },
+      {
+        "date": "26-10-2017",
+        "page": 116,
+        "note": "Sorteo de espacios en el recinto festivo"
+      },
+      {
+        "date": "30-11-2017",
+        "page": 107,
+        "note": "Gravamen a hosteleros por ocupación"
+      },
+      {
+        "date": "31-05-2018",
+        "page": 265,
+        "note": "Cumplir el art. 27 de la Ordenanza"
+      },
+      {
+        "date": "27-09-2018",
+        "page": 140,
+        "note": "Pago con pulsera en el recinto festivo"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 420,
+        "note": "Corridas generales y Banda Municipal"
+      },
+      {
+        "date": "26-09-2024",
+        "page": 219,
+        "note": "Contenidos de las txosnas"
+      },
+      {
+        "date": "30-10-2025",
+        "page": 187,
+        "note": "Cambio de fecha de Aste Nagusia"
+      }
+    ]
+  },
+  "44": {
+    "question": "¿Qué se ha propuesto sobre ascensores y elementos mecánicos para mejorar la accesibilidad en los barrios?",
+    "ground_truth": "Las iniciativas dedicadas son muchas. El PSE-EE pidió municipalizar el ascensor de Arangoiti (28-11-2007, rechazada 13-14), congelar las tarifas de los ascensores del Gobierno Vasco (30-10-2008, rechazada) y rescatar la concesión de Arangoiti (29-10-2009, retirada). El 26-10-2010 pidió un mapa de escaleras mecánicas y ascensores para Otxarkoaga; salió (15-14) una enmienda de seguir planificando ascensores y rampas en los barrios altos. El 31-05-2012 Bildu pidió ampliar hasta las 23 h o las 00 h el horario de los ascensores municipales de Funicular de Artxanda; se aprobó una enmienda para valorar coste y viabilidad. El 25-04-2013 el PSE-EE pidió una conexión mecánica entre las zonas bajas y altas de Uretamendi y Betolaza (enmienda del Gobierno aceptada por unanimidad). Sobre el ascensor de Begoña: Bildu pidió repararlo y que fuera municipal y gratuito (31-10-2013, enmienda del Gobierno), el PP pidió municipalizarlo (27-02-2014, enmienda) y Bildu protegerlo como Monumento (30-10-2014, aprobada con 23 votos a favor y 6 abstenciones). El 24-11-2015 Goazen Bilbao pidió ascensores y rampas en la vía vieja de Lezama (Zurbaranbarri), con enmienda del Gobierno, y el 29-09-2016 ampliar el horario de los accesos mecánicos en Aste Nagusia (aprobada por unanimidad). El 23-02-2017 una iniciativa vecinal pidió un ascensor entre Uribarri y Campo Volantín; se aprobó (23-2-4) estudiarlo en el Plan de Áreas de Oportunidad de Medios Mecánicos. Para Arangoiti, el PP pidió un ascensor hasta la plaza San Pedro (30-03-2017, enmienda del Gobierno 17-8-4) y la asociación Bihotzaran lo mismo (28-09-2017, enmienda 17-12). El 28-11-2019 el PP pidió ascensores y rampas en Zurbaranbarri (salió la enmienda de ejecutar el proyecto de accesibilidad de las calles Bakio a Tutulu, 19-10). Ese mismo día se rechazó (6-19-4) elevar la protección del ascensor de Begoña. En 2021 el PP pidió impulsar infraestructuras mecánicas (25-03-2021, enmienda conjunta aprobada por unanimidad) y rampas en Sarrikue (24-06-2021, enmienda: conectar Sarrikue y Arabella con Txurdinaga, 19-10). La asociación Gure Etxea logró el 30-09-2021 una enmienda unánime para Zurbaranbarri. Sobre el ascensor de Solokoetxe, a EH Bildu no se le admitió la urgencia de una moción (30-06-2022), y el 29-09-2022 se aprobó (22 a favor, 7 abstenciones) la enmienda de habilitar elementos mecánicos entre Solokoetxe y el Casco Viejo por la calle Ronda. El 25-01-2024 el PP pidió accesibilidad peatonal en el Distrito 3 (enmienda 16-4-8). El 31-10-2024 Elkarrekin Bilbao pidió recuperar el ascensor de Begoña; se aprobó (25 a favor, 4 abstenciones) incorporarlo al servicio municipal, gratuito y 24 horas, cuando el Gobierno Vasco lo renueve.",
+    "sources": [
+      {
+        "date": "28-11-2007",
+        "page": 87,
+        "note": "PSE-EE: municipalizar ascensor de Arangoiti"
+      },
+      {
+        "date": "30-10-2008",
+        "page": 90,
+        "note": "PSE-EE: congelar tarifas de ascensores del Gobierno Vasco"
+      },
+      {
+        "date": "29-10-2009",
+        "page": 61,
+        "note": "PSE-EE: rescate concesión ascensor Arangoiti (retirada)"
+      },
+      {
+        "date": "26-10-2010",
+        "page": 36,
+        "note": "PSE-EE: escaleras mecánicas/ascensores Otxarkoaga"
+      },
+      {
+        "date": "31-05-2012",
+        "page": 123,
+        "note": "Bildu: horario de ascensores municipales"
+      },
+      {
+        "date": "25-04-2013",
+        "page": 84,
+        "note": "PSE-EE: conexión mecánica Uretamendi-Betolaza"
+      },
+      {
+        "date": "31-10-2013",
+        "page": 108,
+        "note": "Bildu: ascensor de Begoña"
+      },
+      {
+        "date": "27-02-2014",
+        "page": 76,
+        "note": "PP: municipalizar ascensor de Begoña"
+      },
+      {
+        "date": "30-10-2014",
+        "page": 35,
+        "note": "Bildu: proteger ascensor de Begoña como Monumento"
+      },
+      {
+        "date": "24-11-2015",
+        "page": 158,
+        "note": "Goazen: ascensores y rampas vía vieja de Lezama"
+      },
+      {
+        "date": "29-09-2016",
+        "page": 100,
+        "note": "Goazen: horario de accesos mecánicos en Aste Nagusia"
+      },
+      {
+        "date": "23-02-2017",
+        "page": 191,
+        "note": "Iniciativa vecinal ascensor Uribarri-Campo Volantín"
+      },
+      {
+        "date": "30-03-2017",
+        "page": 267,
+        "note": "PP: ascensor Arangoiti-plaza San Pedro"
+      },
+      {
+        "date": "28-09-2017",
+        "page": 155,
+        "note": "Iniciativa vecinal Bihotzaran (Arangoiti)"
+      },
+      {
+        "date": "28-11-2019",
+        "page": 106,
+        "note": "PP: ascensores y rampas en Zurbaranbarri"
+      },
+      {
+        "date": "28-11-2019",
+        "page": 124,
+        "note": "PP: protección del ascensor de Begoña (rechazada)"
+      },
+      {
+        "date": "25-03-2021",
+        "page": 180,
+        "note": "PP: infraestructuras mecánicas municipales"
+      },
+      {
+        "date": "24-06-2021",
+        "page": 103,
+        "note": "PP: rampas/escaleras mecánicas en Sarrikue"
+      },
+      {
+        "date": "30-09-2021",
+        "page": 271,
+        "note": "Iniciativa vecinal Gure Etxea: Zurbaranbarri"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 287,
+        "note": "EH Bildu: moción de urgencia ascensor de Solokoetxe"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 154,
+        "note": "EH Bildu: ascensor de Solokoetxe; enmienda calle Ronda"
+      },
+      {
+        "date": "25-01-2024",
+        "page": 98,
+        "note": "PP: accesibilidad peatonal Distrito 3"
+      },
+      {
+        "date": "31-10-2024",
+        "page": 109,
+        "note": "Elkarrekin Bilbao: recuperar ascensor de Begoña"
+      }
+    ]
+  },
+  "45": {
+    "question": "¿Qué iniciativas ha habido sobre energía solar y energías renovables?",
+    "ground_truth": "Descartadas las coincidencias en que «solar» significa parcela, estas son las iniciativas dedicadas. El 31-05-2012 Bildu pidió oponerse al parque eólico de Ganekogorta y que el Gobierno Vasco lo reconsiderara; se aprobó (18-4-6). Udalberri-Bilbao en Común presentó varias. El 24-11-2015 pidió un nuevo modelo energético ante la COP21 (enmienda del Gobierno, 17-6-5). El 28-01-2016 pidió adherirse al proyecto Euronet 50/50 de eficiencia en edificios municipales (enmienda aprobada por unanimidad). El 26-05-2016 pidió instar al Estado a eliminar las trabas al autoconsumo del RD 900/2015; prosperó (21-4-4) una enmienda a favor de un nuevo decreto de autoconsumo. El 26-10-2017 pidió una Mesa de Transición Energética y se rechazó (8-21). El 31-05-2018 pidió ahorro, eficiencia, renovables y autoconsumo (enmienda, 17-8-4). El 28-06-2018 pidió renovables en todos los edificios municipales; se aprobó (21-6-2) seguir implantándolas y exigir electricidad 100 % renovable en el futuro contrato de suministro. Goazen Bilbao pidió el 25-05-2017 estudiar una comercializadora eléctrica renovable municipal, rechazada (6-21-2). El 28-06-2018 pidió facilitar que la ciudadanía produzca y comparta energía limpia (enmienda, 23 a favor y 5 abstenciones). El 25-10-2018 pidió «árboles solares» en el Anillo Verde y los parques infantiles; se aprobó por unanimidad usar paneles solares en el mobiliario urbano y los juegos infantiles cuando sea factible. El 28-01-2021 EH Bildu pidió estudiar una comercializadora municipal de energía; se rechazó la enmienda de Elkarrekin y salió la del Gobierno (19 a favor). Elkarrekin Bilbao pidió contratar cooperativas de energía renovable en Zorrotzaurre (25-03-2021; enmienda: impulsar renovables en toda la isla, 22-7) y priorizar las comunidades energéticas (24-06-2021; enmienda: proseguir los trabajos de la Comisión para la Sostenibilidad Energética, 22-7). El 30-06-2022 pidió un plan para cumplir la Ley 4/2019 de Sostenibilidad Energética (enmienda, 19-3-7). El 29-09-2022 EH Bildu logró una enmienda conjunta con EAJ-PNV y Socialistas Vascos sobre un plan de ahorro energético (26 a favor y 3 abstenciones). El 29-05-2025 se aprobaron 474.000 € para implantar geotermia en el edificio de Seguridad de Miribilla (25 a favor). Ese mismo día EH Bildu pidió adaptar la normativa local para facilitar renovables en las viviendas; se aprobó (22-6) definir esas condiciones en la normativa urbanística e informar sobre las comunidades energéticas.",
+    "sources": [
+      {
+        "date": "31-05-2012",
+        "page": 149,
+        "note": "Bildu: parque eólico de Ganekogorta"
+      },
+      {
+        "date": "24-11-2015",
+        "page": 176,
+        "note": "Udalberri: COP21 y modelo energético"
+      },
+      {
+        "date": "28-01-2016",
+        "page": 94,
+        "note": "Udalberri: Euronet 50/50"
+      },
+      {
+        "date": "26-05-2016",
+        "page": 23,
+        "note": "Udalberri: autoconsumo"
+      },
+      {
+        "date": "25-05-2017",
+        "page": 187,
+        "note": "Goazen: comercializadora eléctrica renovable municipal"
+      },
+      {
+        "date": "26-10-2017",
+        "page": 95,
+        "note": "Udalberri: Mesa de Transición Energética"
+      },
+      {
+        "date": "31-05-2018",
+        "page": 168,
+        "note": "Udalberri: ahorro, eficiencia y renovables"
+      },
+      {
+        "date": "28-06-2018",
+        "page": 355,
+        "note": "Udalberri: fomento de renovables en edificios municipales"
+      },
+      {
+        "date": "28-06-2018",
+        "page": 362,
+        "note": "Goazen: ciudadanía productora de energía limpia"
+      },
+      {
+        "date": "25-10-2018",
+        "page": 97,
+        "note": "Goazen: árboles solares"
+      },
+      {
+        "date": "28-01-2021",
+        "page": 56,
+        "note": "EH Bildu: comercializadora municipal de energía"
+      },
+      {
+        "date": "25-03-2021",
+        "page": 110,
+        "note": "Elkarrekin: cooperativas renovables en Zorrotzaurre"
+      },
+      {
+        "date": "24-06-2021",
+        "page": 83,
+        "note": "Elkarrekin: comunidades energéticas"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 230,
+        "note": "Elkarrekin: Ley 4/2019 de Sostenibilidad Energética"
+      },
+      {
+        "date": "29-09-2022",
+        "page": 147,
+        "note": "EH Bildu: plan de ahorro energético"
+      },
+      {
+        "date": "29-05-2025",
+        "page": 63,
+        "note": "Créditos para geotermia en Miribilla"
+      },
+      {
+        "date": "29-05-2025",
+        "page": 193,
+        "note": "EH Bildu: normativa para renovables en viviendas"
+      }
+    ]
+  },
+  "46": {
+    "question": "¿Qué se ha debatido sobre el sector del taxi en Bilbao?",
+    "ground_truth": "Antes de 2011 el PP ya presentó proposiciones sobre el taxi. Pidió taxis de 7 plazas (19-09-2008, rechazada) y el aviso por SMS para personas sordas (30-10-2008, salió la enmienda del Gobierno). También pidió marquesinas y mejoras en las paradas (25-02-2010, enmienda) y que se cumpliera la jornada de 12 horas (27-05-2010, rechazada 7-22). Desde 2011 las iniciativas son, sobre todo, del PP y de Goazen Bilbao. PP: problemas técnicos con la tarifa V nocturna (24-02-2011, enmienda del Gobierno, 15-7-7); reestructurar el sector con Radiotaxi y Teletaxi (28-02-2013, enmienda, 14 a favor y 13 abstenciones); suprimir el peaje de Artxanda y la Supersur a los taxistas (30-05-2013, rechazada 6-18); reforzar autobuses y taxis en Miribilla los días de eventos (30-01-2014, enmienda); permitir publicidad en los taxis (30-10-2014, enmienda, 19 a favor y 9 abstenciones); taxis de 7 plazas y cambio de la ordenanza (29-10-2015, enmienda, 27 a favor y 2 abstenciones). EH Bildu pidió el 30-06-2016 ayudas para comprar taxis eléctricos (enmienda del Gobierno, 16-8-4). Goazen Bilbao pidió perseguir los «taxis piratas» (24-11-2016, enmienda, 17-12) y destinar el sobrante de las ayudas al taxi eléctrico a otros fines (23-02-2017, enmienda, 25-4). También pidió al Gobierno Vasco publicar quién tiene las licencias VTC (25-01-2018) y exigir requisitos a las VTC (29-11-2018); ambas acabaron en enmiendas aprobadas por unanimidad. Pidió además revisar la parada de taxis de Termibus (28-06-2018, enmienda, 17-8-4) y un bono taxi con copago (28-02-2019, enmienda modificada en el Pleno a petición de Goazen, unanimidad). El 25-10-2018 la asociación vecinal de Altamira pidió reubicar su parada de taxis y más Bilbobus (enmienda, 17-12). El 30-06-2022 se aprobó inicialmente la modificación de la Ordenanza del taxi («transporte público urbano de personas viajeras en automóviles de turismo»), tras rechazarse las enmiendas reservadas de EH Bildu, Elkarrekin Bilbao y PP. Las ordenanzas fiscales de licencias de auto-taxi se modificaron en otros plenos, por ejemplo el 26-09-2019 y el 28-09-2023.",
+    "sources": [
+      {
+        "date": "19-09-2008",
+        "page": 192,
+        "note": "PP: taxis de 7 plazas (rechazada)"
+      },
+      {
+        "date": "30-10-2008",
+        "page": 106,
+        "note": "PP: SMS para personas sordas"
+      },
+      {
+        "date": "25-02-2010",
+        "page": 45,
+        "note": "PP: mejoras del servicio de taxi"
+      },
+      {
+        "date": "27-05-2010",
+        "page": 168,
+        "note": "PP: jornada de 12 horas (rechazada)"
+      },
+      {
+        "date": "24-02-2011",
+        "page": 45,
+        "note": "PP: tarifa V nocturna"
+      },
+      {
+        "date": "28-02-2013",
+        "page": 54,
+        "note": "PP: reestructuración del sector"
+      },
+      {
+        "date": "30-05-2013",
+        "page": 92,
+        "note": "PP: peajes para taxistas (rechazada)"
+      },
+      {
+        "date": "30-01-2014",
+        "page": 91,
+        "note": "PP: autobuses y taxis en Miribilla"
+      },
+      {
+        "date": "30-10-2014",
+        "page": 85,
+        "note": "PP: publicidad en los taxis"
+      },
+      {
+        "date": "29-10-2015",
+        "page": 92,
+        "note": "PP: taxis de 7 plazas"
+      },
+      {
+        "date": "30-06-2016",
+        "page": 237,
+        "note": "EH Bildu: ayudas a taxis eléctricos"
+      },
+      {
+        "date": "24-11-2016",
+        "page": 113,
+        "note": "Goazen: taxis piratas"
+      },
+      {
+        "date": "23-02-2017",
+        "page": 103,
+        "note": "Goazen: excedente de subvención de taxis eléctricos"
+      },
+      {
+        "date": "25-01-2018",
+        "page": 260,
+        "note": "Goazen: licencias VTC"
+      },
+      {
+        "date": "28-06-2018",
+        "page": 367,
+        "note": "Goazen: parada de taxis de Termibus"
+      },
+      {
+        "date": "25-10-2018",
+        "page": 225,
+        "note": "Iniciativa vecinal Altamira: parada de taxis"
+      },
+      {
+        "date": "29-11-2018",
+        "page": 118,
+        "note": "Goazen: requisitos a las VTC"
+      },
+      {
+        "date": "28-02-2019",
+        "page": 153,
+        "note": "Goazen: bono taxi"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 37,
+        "note": "Modificación de la Ordenanza del taxi (aprobación inicial)"
+      }
+    ]
+  },
+  "47": {
+    "question": "¿Qué propuestas ha habido sobre el servicio de Bizkaibus en Bilbao?",
+    "ground_truth": "Hay pocas iniciativas dedicadas a Bizkaibus, que depende de la Diputación Foral de Bizkaia. El 23-02-2012 Socialistas Vascos pidió marquesinas en las paradas de Bilbobus y reclamar a la Diputación marquesinas en las paradas de Bizkaibus en Bilbao. Se aprobó (19 a favor, 10 abstenciones) una enmienda del Gobierno limitada a incorporar marquesinas de Bilbobus en el nuevo contrato, y decayó también una enmienda de Bildu. El 29-11-2012 el mismo grupo pidió instar a la Diputación a mejorar el servicio de Bizkaibus entre Bilbao y el campus de Leioa. Se impuso (15 a favor, 14 abstenciones) la enmienda del Gobierno, que emplazaba a la Diputación a seguir ofreciendo esos servicios con las mejoras que considerara, teniendo en cuenta la situación económica. El 25-09-2014 el PP pidió exigir a la Diputación que mantuviera la línea A3216 a Artxanda, o que el Ayuntamiento asumiera el servicio. Bildu tenía otra proposición similar y el Gobierno planteaba poner una línea de Bilbobus de Artxanda al centro. Las dos proposiciones se retiraron después de que el concejal Abaunza explicara que, agotadas las gestiones con la Diputación, el Ayuntamiento se haría cargo. El 30-06-2016 Udalberri-Bilbao en Común pidió al Consorcio de Transportes más frecuencias y una tarifa social entre Bilbao y el campus de Leioa. Se aprobó (16-8-4) la enmienda del Gobierno y decayeron las enmiendas de adición de Udalberri (incluir a la Diputación) y del PP (acelerar el tranvía de Leioa). El 29-05-2025 el PP pidió más autobuses y frecuencias entre Bilbao y el aeropuerto. Se aprobó (27 a favor, 2 abstenciones) una enmienda conjunta con el Gobierno para pedir a la Diputación que estudie reforzar la línea A3247. Bizkaibus aparece también de pasada en otras iniciativas de transporte, como la de Elkarrekin Bilbao sobre intermodalidad del 25-06-2020.",
+    "sources": [
+      {
+        "date": "23-02-2012",
+        "page": 76,
+        "note": "PSE-EE: marquesinas de Bilbobus y Bizkaibus"
+      },
+      {
+        "date": "29-11-2012",
+        "page": 71,
+        "note": "PSE-EE: Bizkaibus Bilbao-campus de Leioa"
+      },
+      {
+        "date": "25-09-2014",
+        "page": 134,
+        "note": "PP: línea A3216 de Artxanda (retirada)"
+      },
+      {
+        "date": "25-09-2014",
+        "page": 135,
+        "note": "Bildu: línea A3216 (retirada)"
+      },
+      {
+        "date": "30-06-2016",
+        "page": 229,
+        "note": "Udalberri: transporte Bilbao-campus de Leioa"
+      },
+      {
+        "date": "29-05-2025",
+        "page": 180,
+        "note": "PP: autobuses Bilbao-aeropuerto (línea A3247)"
+      },
+      {
+        "date": "25-06-2020",
+        "page": 120,
+        "note": "Elkarrekin: intermodalidad (mención de Bizkaibus)"
+      }
+    ]
+  },
+  "48": {
+    "question": "¿Qué se ha propuesto sobre la salud mental en Bilbao?",
+    "ground_truth": "El 27-05-2021 EH Bildu pidió un estudio sobre el impacto de la pandemia de Covid-19 en la salud mental de la ciudadanía. Se rechazó (3-22-3) la enmienda de Elkarrekin Bilbao, que pedía reconocer ese impacto y formar en salud mental al personal municipal. Salió adelante (25 a favor, 3 abstenciones) la enmienda conjunta de EAJ-PNV, Socialistas Vascos y EH Bildu: un programa de apoyo en bienestar emocional y salud mental para los colectivos afectados por la pandemia. El 27-01-2022 Elkarrekin Bilbao pidió programas de salud mental y bienestar emocional para personas vulnerables en todos los distritos. Se aprobó por unanimidad una enmienda conjunta de EAJ-PNV, Socialistas Vascos y Elkarrekin para impulsarlos en los distritos donde se detecte la necesidad. El 30-06-2022 Elkarrekin pidió reforzar la prevención de los trastornos de la conducta alimentaria (TCA) en la infancia y la adolescencia dentro de los Planes Municipales de Salud; se aprobó por unanimidad. El 28-09-2023 Elkarrekin Bilbao presentó una proposición sobre la salud mental de la juventud. Pedía actualizar el Diagnóstico de Salud de 2019 y el informe de 2018, incluir la salud mental en el II Plan Municipal de Salud, crear ayudas o bonos para niños y jóvenes y actuar contra la soledad no deseada. Se aprobó por unanimidad una enmienda conjunta con el Gobierno con cuatro compromisos: seguir con los programas de promoción, incluir en el II Plan un Programa de Promoción de la Salud Mental y el Bienestar Emocional, ofrecer colaboración al Departamento de Salud del Gobierno Vasco y reforzar las medidas contra la soledad no deseada. El 31-10-2024 Elkarrekin Bilbao pidió una Estrategia Local de Prevención del Suicidio. Se aprobó (17 a favor, 12 abstenciones) la enmienda del Gobierno: incluir objetivos de prevención del suicidio en el II Plan Municipal de Salud, de acuerdo con la Estrategia de Salud Mental de Euskadi. El 26-03-2026 se aprobó ampliar en 52.000 € la subvención al Módulo de asistencia psico-social de Deusto-San Ignacio (26 votos a favor), después de rechazar una enmienda de Elkarrekin.",
+    "sources": [
+      {
+        "date": "27-05-2021",
+        "page": 81,
+        "note": "EH Bildu: impacto mental de la pandemia; enmienda conjunta"
+      },
+      {
+        "date": "27-01-2022",
+        "page": 42,
+        "note": "Elkarrekin: salud mental de personas vulnerables en los distritos"
+      },
+      {
+        "date": "30-06-2022",
+        "page": 243,
+        "note": "Elkarrekin: prevención de TCA (unanimidad)"
+      },
+      {
+        "date": "28-09-2023",
+        "page": 370,
+        "note": "Elkarrekin: salud mental de la juventud"
+      },
+      {
+        "date": "31-10-2024",
+        "page": 132,
+        "note": "Elkarrekin: Estrategia de Prevención del Suicidio"
+      },
+      {
+        "date": "26-03-2026",
+        "page": 95,
+        "note": "Subvención Módulo psico-social Deusto-San Ignacio"
+      }
+    ]
+  },
+  "49": {
+    "question": "¿Qué ocurrió en el pleno del 17-08-2012?",
+    "ground_truth": "El 17-08-2012 se celebró una sesión extraordinaria y urgente, presidida por el alcalde Iñaki Azkuna, con los 29 concejales presentes. Primero se aprobó por unanimidad la declaración de urgencia. Después, también por unanimidad, se acordó reducir en una catorceava parte las retribuciones anuales del alcalde y de los concejales con sueldo municipal. Se aplicaba así por solidaridad el régimen del Real Decreto-ley 20/2012, que suprimía la paga extra de diciembre, y la misma reducción se extendió al personal eventual de los grupos y a los órganos directivos. En el debate, el concejal de Bildu José María Azkuenaga recordó la enmienda que su grupo había presentado a los presupuestos sobre retribuciones. A continuación se aprobaron definitivamente varias modificaciones urbanísticas: la del PGOU para reajustar el sistema de comunicaciones y el equipamiento docente en la zona del colegio público Iruarteta, en Zabala (19 a favor, 10 abstenciones; Bildu apoyó ampliar Iruarteta pero rechazó «los parches»); la del PGOU para reordenar la calle Indautxu y la manzana entre Alameda de Urkijo, Doctor Areilza, Licenciado Poza y Gregorio de la Revilla (15 a favor, 14 abstenciones); la del Plan Especial del Área de Reparto 818 de Olabeaga (unanimidad); y la del Plan Especial del Área de Reparto 116 de Sarriko, en Lehendakari Aguirre con Benidorm, desestimando una alegación (25 a favor, 4 abstenciones).",
+    "sources": [
+      {
+        "date": "17-08-2012",
+        "page": 1,
+        "note": "Sesión extraordinaria urgente presidida por Iñaki Azkuna"
+      },
+      {
+        "date": "17-08-2012",
+        "page": 2,
+        "note": "Urgencia y propuesta de reducción de retribuciones (RDL 20/2012)"
+      },
+      {
+        "date": "17-08-2012",
+        "page": 5,
+        "note": "Acuerdo unánime de reducción de retribuciones"
+      },
+      {
+        "date": "17-08-2012",
+        "page": 6,
+        "note": "Modificación PGOU zona colegio Iruarteta (Zabala)"
+      },
+      {
+        "date": "17-08-2012",
+        "page": 10,
+        "note": "Modificación PGOU calle Indautxu y manzana Alameda Urkijo"
+      },
+      {
+        "date": "17-08-2012",
+        "page": 14,
+        "note": "Plan Especial AR 818 Olabeaga"
+      },
+      {
+        "date": "17-08-2012",
+        "page": 19,
+        "note": "Plan Especial AR 116 Sarriko"
+      }
+    ]
+  },
+  "50": {
+    "question": "¿Qué ocurrió en el pleno del 25-06-2019?",
+    "ground_truth": "El 25-06-2019 se celebró un pleno extraordinario organizativo al inicio del mandato 2019-2023, presidido por el alcalde Juan María Aburto, con 28 concejales presentes (se excusó Itziar Urtasun). Al comenzar, el alcalde leyó una declaración institucional firmada por los cinco grupos (EAJ-PNV, Socialistas Vascos, EH Bildu, Elkarrekin Bilbao y PP) que condenaba la agresión machista de la calle Iturribide. Luego se dio cuenta de las resoluciones organizativas del alcalde: delegaciones del alcalde y de la Junta de Gobierno, delegación para celebrar bodas, estructura de la administración, nombramiento de órganos directivos, personal eventual, Junta de Portavoces y régimen provisional de dedicaciones. Se aprobó por unanimidad el régimen de sesiones: pleno ordinario el último jueves de cada mes a las 9:00. Con 24 votos a favor y 4 abstenciones de EH Bildu se crearon las comisiones: las dos Comisiones Informativas Dictaminadoras, la Especial de Cuentas, la de Sugerencias y Reclamaciones y la de Información y Comparecencias. Se aprobó el régimen de dedicaciones y retribuciones de los corporativos (alcalde, 95.001,79 €; tenientes de alcalde, 86.562 €; delegados y portavoces, 73.540,08 €). Antes se rechazaron las enmiendas de EH Bildu y Elkarrekin Bilbao (7-21), y la votación final fue de 18 a favor, 7 en contra de EH Bildu y Elkarrekin y 3 abstenciones del PP. La asignación económica a los grupos se aprobó con 21 votos a favor, 4 en contra de EH Bildu y 3 abstenciones de Elkarrekin. La asignación de locales y medios a los grupos y la plantilla de personal eventual salieron con 18 votos a favor, 7 en contra y 3 abstenciones. Por último, se ampliaron en 3.953.500 € los créditos de compromiso para financiar el Centro Internacional de Emprendimiento, a medias con la Diputación (18 a favor, 7 en contra de EH Bildu y Elkarrekin, 3 abstenciones del PP).",
+    "sources": [
+      {
+        "date": "25-06-2019",
+        "page": 1,
+        "note": "Sesión extraordinaria presidida por Juan María Aburto"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 2,
+        "note": "Declaración institucional por la agresión de Iturribide; da cuenta de resoluciones"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 39,
+        "note": "Régimen de sesiones (unanimidad)"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 40,
+        "note": "Creación de comisiones del Pleno (24-0-4)"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 47,
+        "note": "Dedicaciones y retribuciones de los corporativos"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 60,
+        "note": "Acuerdo de retribuciones (18-7-3)"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 63,
+        "note": "Asignación económica a los grupos"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 64,
+        "note": "Locales y medios de los grupos"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 66,
+        "note": "Personal eventual"
+      },
+      {
+        "date": "25-06-2019",
+        "page": 69,
+        "note": "Créditos Centro Internacional de Emprendimiento"
+      }
+    ]
+  }
+}

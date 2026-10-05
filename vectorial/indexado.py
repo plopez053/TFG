@@ -2,8 +2,10 @@
 fragmentos de 1.200 caracteres, con metadatos (fecha, orador, grupo, tema,
 página y resultado de la votación), y se guarda en ChromaDB."""
 import glob
+import json
 import os
 import re
+import unicodedata
 from bisect import bisect_right
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -14,7 +16,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tqdm import tqdm
 
 from comun.grupos import normaliza_grupo as _normaliza_grupo_partido
-from comun.rutas import CHROMA_PATH, DATA_PATH
+from comun.rutas import CHROMA_PATH, DATA_PATH, dato_grafo
 
 
 _TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
@@ -113,6 +115,34 @@ _FIN_RESULTADO_RE = re.compile(
     r'\s*-{3,}\s*|\s+-\s+|\s*https?://|\s+Egiaztatzeko|\s+Verificaci|\s+Siendo\s+las\b')
 
 
+def _sin_tildes(texto: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", texto) if not unicodedata.combining(c))
+
+
+# 'DD-MM-YYYY' -> (año, mes, día), para comparar fechas
+def _clave_fecha(fecha: str) -> Tuple[int, int, int]:
+    d, m, a = fecha.split("-")
+    return int(a), int(m), int(d)
+
+
+# grupo del censo con el mismo nombre que usa el resto del índice (p. ej. GANEMOS -> GOAZEN BILBAO)
+def _grupo_canonico(grupo: str) -> str:
+    normalizado = _normaliza_grupo_partido(grupo)
+    return normalizado if normalizado != "Desconocido" else grupo
+
+
+_censo_cache: Optional[List[dict]] = None
+
+
+# concejales con su grupo y las fechas de sus actas (datos/grafo/concejales.jsonl)
+def _censo_concejales() -> List[dict]:
+    global _censo_cache
+    if _censo_cache is None:
+        with open(dato_grafo("concejales.jsonl"), encoding="utf-8") as f:
+            _censo_cache = [json.loads(linea) for linea in f if linea.strip()]
+    return _censo_cache
+
+
 # extrae la fecha del nombre del fichero (ej: '27-02-2025_...pdf')
 def _fecha_de_fichero(path: str) -> str:
     match = re.search(r'(\d{2}-\d{2}-\d{4})', os.path.basename(path))
@@ -195,34 +225,35 @@ def _extraer_tema(segment: str, is_old_format: bool) -> str:
 # métodos de RAGPipeline (vectorial/pipeline.py) para construir el índice
 class Indexado:
 
-    # nombres de concejales -> grupo, a partir de la lista de asistentes de las primeras páginas
-    def _get_party_mapping(self, pages: List[Any]) -> Dict[str, str]:
+    # apellido (o apellidos) del orador -> grupo, con el censo de concejales (concejales.jsonl)
+    # de los que están en activo en la fecha del acta. Si un apellido lo comparten concejales
+    # de grupos distintos, solo valen los que figuran en la cabecera del acta; si aun así
+    # queda ambiguo, el orador queda "Desconocido". Las cabeceras de las actas no dicen el
+    # grupo de cada concejal, así que no se pueden usar para esto
+    def _get_party_mapping(self, pages: List[Any], date: str) -> Dict[str, str]:
+        if not re.fullmatch(r"\d{2}-\d{2}-\d{4}", date):
+            return {}
+        clave = _clave_fecha(date)
+        activos = [c for c in _censo_concejales() if _clave_fecha(c["desde"]) <= clave <= _clave_fecha(c["hasta"])]
+        cabecera = re.sub(r"[^A-Z]", "", _sin_tildes("\n".join(p.page_content for p in pages[:10])).upper())
+
+        por_forma: Dict[str, list] = {}
+        for c in activos:
+            for forma in c["apellidos"]:
+                por_forma.setdefault(forma, []).append(c)
+
         party_mapping = {}
-        header_text = "\n".join([p.page_content for p in pages[:10]])
-        current_party = "Gobierno Local/Otros"
+        for forma, cs in por_forma.items():
+            if len({c["grupo"] for c in cs}) > 1:
+                cs = [c for c in cs if re.sub(r"[^A-Z]", "", max(c["apellidos"], key=len)) in cabecera]
+            grupos = {c["grupo"] for c in cs}
+            if len(grupos) == 1:
+                party_mapping[forma] = _grupo_canonico(grupos.pop())
 
-        for line in header_text.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-
-            re_esp = re.search(r"En representación del grupo municipal\s+([A-Z\s-]+)", line, re.IGNORECASE)
-            re_eus = re.search(r"([A-Z\s-]+)\s+udal talde politikoaren izenean", line, re.IGNORECASE)
-            if re_esp:
-                current_party = re_esp.group(1).strip().strip(':')
-                continue
-            if re_eus:
-                current_party = re_eus.group(1).strip().strip(':')
-                continue
-
-            re_member = re.search(r"^\d+\.-?\s*(?:DON|DOÑA|SR\.|SRA\.)?\s*([A-ZÁÉÍÓÚÑ]{4,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)", line, re.IGNORECASE)
-            if re_member:
-                name = re_member.group(1).strip()
-                paren = re.search(r'\(([^)]+)\)', line)
-                raw_party = paren.group(1).strip() if paren else current_party
-                normalized = _normaliza_grupo_partido(raw_party)
-                # si no se puede normalizar se conserva el texto original
-                party_mapping[name] = normalized if normalized != "Desconocido" else raw_party
+        alcaldes = {c["grupo"] for c in activos if c["es_alcalde"]}
+        if len(alcaldes) == 1:
+            for titulo in ("ALCALDE", "ALCALDESA", "ALKATE", "ALKATE JN"):
+                party_mapping[titulo] = _grupo_canonico(next(iter(alcaldes)))
 
         return party_mapping
 
@@ -230,7 +261,7 @@ class Indexado:
     def _process_single_pdf(self, path: str) -> List[Document]:
         date = _fecha_de_fichero(path)
         pages = PyPDFLoader(path).load()
-        party_map = self._get_party_mapping(pages)
+        party_map = self._get_party_mapping(pages, date)
 
         full_text = "\n".join(p.page_content for p in pages)
         page_starts, cursor = [], 0
@@ -260,11 +291,12 @@ class Indexado:
                 match = _SPEAKER_RE.search(chunk_text)
                 if match:
                     current_speaker = match.group(1).strip()
+                    # el grupo del orador anterior no vale para el nuevo: si no está en el censo
+                    # (o es ambiguo) se queda "Desconocido" (antes lo heredaba)
+                    current_party = "Desconocido"
                     if len(current_speaker) < 50:
-                        for kn, kp in party_map.items():
-                            if kn in current_speaker or current_speaker in kn:
-                                current_party = kp
-                                break
+                        current_party = party_map.get(re.sub(r"\s+", " ", _sin_tildes(current_speaker).upper()),
+                                                      "Desconocido")
 
                 if segment_offset != -1:
                     chunk_pos = segment.find(chunk_text[:60], chunk_search_start)

@@ -9,8 +9,8 @@ import threading
 
 from comun.proveedores import LLM_MODEL_GRAPHRAG
 from grafo.consulta import plantillas as _arm_g
-from grafo.consulta.guardas import (_mensaje_temas, _preparar_sparql, _temas_inexistentes, _variables_sin_enlazar,
-                                    _vocabulario_inexistente)
+from grafo.consulta.guardas import (_cos, _mensaje_temas, _preparar_sparql, _temas_inexistentes,
+                                    _variables_sin_enlazar, _vocabulario_inexistente)
 from grafo.consulta.pregunta import _preparar_asunto, analizar, cobertura
 from grafo.consulta.recursos import _ejecutar, _llm_invoke, _load_graph, _PREFIXES
 
@@ -246,13 +246,6 @@ def _nearest_examples_embed(pregunta, k=3):
             if _bank_embed_vecs is None:
                 _bank_embed_vecs = embedder.embed_documents([ex["q"] for ex in _EXAMPLE_BANK])
     qv = embedder.embed_query(pregunta)
-
-    def _cos(a, b):
-        dot = sum(x * y for x, y in zip(a, b))
-        na = sum(x * x for x in a) ** 0.5
-        nb = sum(y * y for y in b) ** 0.5
-        return dot / (na * nb + 1e-9)
-
     scored = [(_cos(qv, _bank_embed_vecs[i]), _EXAMPLE_BANK[i]) for i in range(len(_EXAMPLE_BANK))]
     scored.sort(key=lambda x: x[0], reverse=True)
     return [ex for _, ex in scored[:k]]

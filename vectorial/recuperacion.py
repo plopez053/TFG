@@ -19,7 +19,7 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
 from comun.grupos import extrae_grupo as _extrae_grupo_partido
-from comun.proveedores import COHERE_API_KEY, rerank as _cohere_rerank
+from comun.proveedores import rerank as _cohere_rerank
 from comun.rutas import CHROMA_PROPOSICIONES_PATH, DATA_PATH, ONTOLOGIA, TEMAS_SKOS
 from vectorial.indexado import _fecha_de_fichero
 
@@ -99,6 +99,8 @@ _STOPWORDS_ENUNCIADO = {
     "voto", "votaron", "votado", "votar", "aprobo", "aprobaron", "rechazo", "rechazaron",
     "presento", "presentaron", "trato", "trataron", "tratado", "tratar", "ultima", "ultimo",
     "ultimas", "ultimos", "reciente", "cuanto", "cuanta", "cuantos", "cuantas",
+    # "año(s)" no es un tema; antes no se buscaba porque su regex (sin ñ) no casaba con nada
+    "ano", "anos",
 }
 
 
@@ -124,14 +126,16 @@ def _extraer_keywords_literales(question: str) -> List[str]:
     return out
 
 
-_VOCAL_CLASE = {"a": "[aá]", "e": "[eé]", "i": "[ií]", "o": "[oó]", "u": "[uúü]"}
+# la ñ de la palabra buscada se marca con \x00 antes de quitar las tildes, para que case con "n" y con "ñ"
+# (solo si la escribe quien pregunta: "año" casa con "año" y "ano", pero "ano" no casa con "año")
+_VOCAL_CLASE = {"a": "[aá]", "e": "[eé]", "i": "[ií]", "o": "[oó]", "u": "[uúü]", "\x00": "[nñ]"}
 
 
 # regex para `$regex` de ChromaDB: palabra (o frase) completa, sin distinguir
 # mayúsculas ni tildes, en singular o plural; en una frase, espacios flexibles
 # y plural solo en la última palabra
 def _regex_literal(keyword: str) -> str:
-    *inicio, base = strip_accents(keyword.lower()).split()
+    *inicio, base = strip_accents(keyword.lower().replace("ñ", "\x00")).split()
     formas = {base}
     if base.endswith("es") and len(base) >= 6:
         formas.update({base[:-1], base[:-2]})
@@ -176,14 +180,14 @@ def _pide_reciente(question: str) -> bool:
 # grupo político mencionado en la pregunta; el primero que coincide gana,
 # por eso van de más a menos específico
 _PARTIDOS_PREGUNTA = [
-    (r'eh\s*bildu|euskal\s+herria\s+bildu|herri\s+batasuna|\bhb\b', "EH BILDU"),
-    (r'elkarrekin|bilbao\s+en\s+com[uú]n|\bpodemos\b', "ELKARREKIN BILBAO"),
+    (r'eh\s*bildu|euskal\s+herria\s+bildu|herri\s+batasuna|\bhb\b|\bbildu\b', "EH BILDU"),
+    (r'elkarrekin|bilbao\s+en\s+com[uú]n|\bpodemos\b(?!\s+\w+(?:ar|er|ir)\b)', "ELKARREKIN BILBAO"),
     (r'\bgoazen\b', "GOAZEN BILBAO"),
     (r'pse[\s\-]ee|\bsocialistas?\s+vascos?\b|\bpartido\s+socialista\b|\bpse\b', "PSE-EE"),
     (r'eaj[\s\-]pnv|\bpnv\b|\bnacionalistas?\s+vascos?\b', "EAJ-PNV"),
-    (r'\bpartido\s+popular\b|\bgrupo\s+(?:municipal\s+)?pp\b|\bel\s+pp\b|\bdel\s+pp\b|\bpopulares\b', "PP"),
+    (r'\bpartido\s+popular\b|\bgrupo\s+(?:municipal\s+)?pp\b|\bel\s+pp\b|\bdel\s+pp\b|\b(?:los|las)\s+populares\b', "PP"),
     (r'udalberri', "UDALBERRI"),
-    (r'\bciudadanos\b', "CIUDADANOS"),
+    (r'\b(?-i:Ciudadanos|Cs)\b', "CIUDADANOS"),
     (r'ezker\s+batua|izquierda\s+unida', "EZKER BATUA-IU"),
     (r'\baralar\b', "ARALAR"),
     (r'\bvox\b', "VOX"),
@@ -307,6 +311,15 @@ def _elegir_por_fecha(ids: List[str], metas: List[dict], k: int, reciente: bool)
     return [por_debate[c] for c in claves]
 
 
+# filtro de ChromaDB por fecha: una ($eq), varias ($in) o ninguna (None)
+def _filtro_fechas(valid_dates: list) -> Optional[dict]:
+    if len(valid_dates) == 1:
+        return {"date": {"$eq": valid_dates[0]}}
+    if valid_dates:
+        return {"date": {"$in": valid_dates}}
+    return None
+
+
 # métodos de RAGPipeline (vectorial/pipeline.py) para recuperar candidatos
 class Recuperacion:
 
@@ -323,8 +336,9 @@ class Recuperacion:
             self._known_dates = list(set(dates))
         return self._known_dates
 
-    # filtro de fechas: fecha exacta DD-MM-YYYY, o año con mes opcional
-    def _get_temporal_filter(self, question: str) -> Tuple[Optional[Dict[str, Any]], List[str]]:
+    # fechas de los plenos que pide la pregunta: una fecha exacta DD-MM-YYYY, o un año con mes
+    # o estación opcionales; [] si no pide ninguna
+    def _fechas_pedidas(self, question: str) -> List[str]:
         known_dates = self._fechas_conocidas()
 
         exact_match = re.search(r'\b(\d{2})-(\d{2})-(20\d{2})\b', question)
@@ -332,18 +346,18 @@ class Recuperacion:
             exact_date = exact_match.group(0)
             if exact_date in known_dates:
                 print(f"[*] Filtro fecha exacta: {exact_date}")
-                return {"date": {"$eq": exact_date}}, [exact_date]
+                return [exact_date]
             # si ese día no hubo pleno, se usa el mes
             target_pattern = f"{exact_match.group(2)}-{exact_match.group(3)}"
             valid_dates = [d for d in known_dates if target_pattern in d]
             if valid_dates:
                 print(f"[*] Filtro Temporal (mes-año): {target_pattern} ({len(valid_dates)} actas)")
-                return {"date": {"$in": valid_dates}}, valid_dates
-            return None, []
+                return valid_dates
+            return []
 
         year_match = re.search(r'(20\d{2})', question)
         if not year_match:
-            return None, []
+            return []
         q_low = question.lower()
         # \b: sin él "mayoría" activaba el filtro de mayo
         month_found = next((m for m in MESES_ES if re.search(rf'\b{m}\b', q_low)), None)
@@ -369,22 +383,21 @@ class Recuperacion:
                 target_pattern += f" + oct-dic {previo}"
         if valid_dates:
             print(f"[*] Filtro Temporal: {target_pattern} ({len(valid_dates)} actas detectadas)")
-            return {"date": {"$in": valid_dates}}, valid_dates
-        return None, []
+            return valid_dates
+        return []
 
     def _detect_party_in_question(self, question: str) -> Optional[str]:
-        q = question.lower()
-        return next((grupo for patron, grupo in _PARTIDOS_PREGUNTA if re.search(patron, q)), None)
+        return next((grupo for patron, grupo in _PARTIDOS_PREGUNTA if re.search(patron, question, re.I)), None)
 
     # MultiQuery: variantes de la pregunta para ampliar el recall (más la original)
     def _query_variations(self, question: str) -> List[str]:
         try:
             vars_txt = self.invoke_llm(MULTIQUERY_PROMPT.format(question=question)).content
-            variations = [v.strip() for v in vars_txt.split('\n') if v.strip()] + [question]
+            variations = [v.strip() for v in vars_txt.split('\n') if v.strip()][:5] + [question]
         except Exception as e:
             print(f"[!] MultiQuery falló, usando pregunta original: {e}", flush=True)
             variations = [question]
-        return variations[:6]
+        return variations
 
     # canal semántico: búsqueda por embeddings de cada variante
     def _initial_search(self, variations: List[str], valid_dates: list,
@@ -416,12 +429,7 @@ class Recuperacion:
         reciente = _pide_reciente(question)
 
         # una sola consulta por keyword con $in, no una por cada fecha
-        if len(valid_dates) == 1:
-            where = {"date": {"$eq": valid_dates[0]}}
-        elif valid_dates:
-            where = {"date": {"$in": valid_dates}}
-        else:
-            where = None
+        where = _filtro_fechas(valid_dates)
 
         # se buscan las 3 keywords más raras del corpus (menos fragmentos),
         # con desempate fijo; se consultan en paralelo porque cada $regex
@@ -500,13 +508,10 @@ class Recuperacion:
         store = self._indice_proposiciones()
         if store is None:
             return []
-        flt = None
-        if len(valid_dates) == 1:
-            flt = {"date": {"$eq": valid_dates[0]}}
-        elif valid_dates:
-            flt = {"date": {"$in": valid_dates}}
+        flt = _filtro_fechas(valid_dates)
         rondas = []
-        for v in variations[:4]:
+        # las 3 primeras variantes y la pregunta original, que es la última
+        for v in dict.fromkeys(variations[:3] + variations[-1:]):
             try:
                 res = store.similarity_search_with_score(v, k=k, filter=flt)
             except Exception as e:
@@ -560,12 +565,8 @@ class Recuperacion:
             {"$or": [{f"tf_{slug}": True}, {"tema_principal": {"$in": filter_values}}]}
             if slug else {"tema_principal": {"$in": filter_values}}
         )
-        clauses = [tema_clause]
-        if len(valid_dates) == 1:
-            clauses.append({"date": {"$eq": valid_dates[0]}})
-        elif valid_dates:
-            clauses.append({"date": {"$in": valid_dates}})
-        where = clauses[0] if len(clauses) == 1 else {"$and": clauses}
+        fechas = _filtro_fechas(valid_dates)
+        where = {"$and": [tema_clause, fechas]} if fechas else tema_clause
 
         # primero solo metadatos (un tema grande supera los 10.000 chunks); con
         # un pool_limit bajo se perdían los años más recientes de los temas grandes
@@ -662,7 +663,7 @@ class Recuperacion:
     # MultiQuery -> canales literal, temático y semántico -> filtro de grupo -> Cohere
     def _retrieve_and_rank(self, question: str, k: int) -> Tuple[List[Document], bool]:
         variations = self._query_variations(question)
-        _, valid_dates = self._get_temporal_filter(question)
+        valid_dates = self._fechas_pedidas(question)
         exact_date = len(valid_dates) == 1
         docs = self._initial_search(variations, valid_dates, exact_date, k)
         # máx. 22 por canal (24 el de proposiciones): el reranker solo reordena los primeros candidatos
@@ -673,8 +674,7 @@ class Recuperacion:
             + docs
         )
         docs = self._apply_party_filter(docs, question)
-        if COHERE_API_KEY:
-            docs = self._rerank_with_cohere(docs, question, top_n=50)
+        docs = self._rerank_with_cohere(docs, question, top_n=50)
         return docs, exact_date
 
 

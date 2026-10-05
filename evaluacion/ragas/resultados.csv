@@ -1,0 +1,51 @@
+﻿id,question,context_relevance,faithfulness,answer_relevancy,semantic_similarity
+1,¿Qué se dijo sobre la estabilización y la OPE del empleo público municipal del Ayuntamiento de Bilbao?,1.0,0.8333333333333334,0.7635493230051668,0.8589082051044509
+2,¿Qué iniciativas ha habido sobre las bibliotecas municipales y los equipamientos culturales de barrio?,1.0,1.0,0.6771981100528451,0.8440099203226642
+3,¿Qué propuestas se han hecho sobre la situación de las personas sin hogar en Bilbao?,1.0,1.0,0.6288901782448457,0.7847199322648453
+4,¿Qué se ha debatido sobre la memoria de las víctimas del terrorismo en el Pleno de Bilbao?,1.0,1.0,0.6012847673011213,0.8445952348281589
+5,¿Qué se debatió sobre el tranvía en Bilbao?,1.0,0.9090909090909091,0.7116477459630682,0.8114010536603459
+6,¿Qué propuso el Partido Popular sobre aparcamientos?,1.0,1.0,0.571605585283253,0.7804814309003546
+7,¿Qué ocurrió en el pleno del 26-01-2023?,1.0,0.9375,0.553265489506437,0.8227872088557682
+8,¿Qué se debatió sobre los desahucios en Bilbao?,1.0,1.0,0.623178462816783,0.7753349562227163
+9,¿Qué propuestas sobre vivienda social ha habido?,1.0,1.0,0.5111269374145279,0.8172437020325984
+10,¿Qué se ha debatido sobre la calidad del aire y la Zona de Bajas Emisiones en Bilbao?,1.0,0.972972972972973,0.6182696839547317,0.7833858403793204
+11,¿Qué iniciativas ha habido sobre la peatonalización de calles en Bilbao?,1.0,0.9523809523809523,0.6237256983565888,0.8590897644616241
+12,¿Qué se ha dicho sobre la empresa Tubacex en el Pleno de Bilbao?,1.0,1.0,0.6677546240461164,0.7837818886520816
+13,¿Qué se ha debatido sobre Petronor en Bilbao?,1.0,1.0,0.7276214110041596,0.7973354705204079
+14,¿Qué se ha debatido en el Pleno sobre el Tour de Francia en Bilbao?,1.0,0.9444444444444444,0.7843961075136129,0.8533908612766783
+15,¿Qué propuestas se han presentado sobre la pobreza energética?,1.0,1.0,0.7507582638239102,0.8855841315501951
+16,¿Qué se ha debatido sobre los patinetes eléctricos y los vehículos de movilidad personal?,1.0,1.0,0.6453745742698791,0.8040848431917841
+17,¿Qué iniciativas ha habido sobre el ruido y la contaminación acústica en Bilbao?,1.0,1.0,0.7720256197841951,0.7899859416186539
+18,¿Qué se ha debatido sobre la prostitución en Bilbao?,1.0,0.9629629629629629,0.8902514569518395,0.779356649133671
+19,¿Qué propuestas ha habido sobre el Mercado de la Ribera?,1.0,0.9166666666666666,0.7244686380870062,0.838343909905618
+20,¿Qué propuso el Partido Popular sobre la okupación de viviendas?,1.0,1.0,0.7370249022248205,0.7994615102273587
+21,¿Qué se ha debatido sobre la emergencia climática y el cambio climático?,1.0,1.0,0.5578947906130285,0.8609214794704136
+22,¿Qué se ha propuesto sobre la lucha contra la droga y las adicciones?,1.0,1.0,0.49844312128021234,0.7886574078845027
+23,¿Qué se ha debatido sobre las corridas de toros y la tauromaquia en Bilbao?,1.0,1.0,0.7722713914711733,0.8219781877554819
+24,¿Qué iniciativas ha habido sobre la acogida de personas refugiadas?,1.0,1.0,0.5181161067270134,0.9104299522728978
+25,¿Qué se ha debatido en el Pleno sobre Palestina y Gaza?,1.0,1.0,0.5875893788398822,0.8786691040729473
+26,¿Qué se ha debatido sobre la monarquía y la Casa Real en el Pleno de Bilbao?,1.0,1.0,0.6013612214755365,0.752200745178545
+27,¿Qué subvenciones o acuerdos ha habido relacionados con el Athletic Club?,1.0,1.0,0.7947672269452554,0.8401248338986531
+28,¿Qué se ha debatido sobre el servicio de bomberos de Bilbao?,1.0,1.0,0.6017105040253617,0.8291701010839276
+29,¿Qué propuestas ha habido sobre el arbolado urbano y la tala de árboles?,1.0,0.92,0.5183734579026918,0.8016166893452823
+30,¿Qué se ha debatido sobre la regulación de las terrazas de hostelería?,1.0,1.0,0.7996558444857493,0.8327723186414145
+31,¿Qué se ha debatido sobre el Museo Guggenheim en el Pleno?,1.0,1.0,0.6657231862214115,0.8501816445264704
+32,¿Qué propuestas ha habido sobre los polideportivos municipales?,1.0,1.0,0.6642059627003386,0.8379963799650759
+33,¿Qué propuso EH Bildu sobre los presos y la política de dispersión?,1.0,0.9375,0.5450834507932727,0.812820745978797
+34,¿Qué medidas se debatieron en el Pleno sobre la pandemia de COVID-19?,1.0,0.8571428571428571,0.6134113956209996,0.841178763888579
+35,¿Qué iniciativas ha habido en defensa de los derechos del colectivo LGTBI?,1.0,1.0,0.8367785384301994,0.8575126446540695
+36,¿Qué se ha debatido sobre el Teatro Arriaga?,1.0,1.0,0.6361012487682586,0.8033812668603535
+37,¿Qué propuestas ha habido sobre memoria histórica y símbolos franquistas?,1.0,1.0,0.5957861891634411,0.8514397497493492
+38,¿Qué se ha debatido sobre el Consorcio de Aguas Bilbao Bizkaia?,1.0,1.0,0.6677214154493077,0.8415714027621111
+39,¿Qué se ha debatido sobre los cementerios municipales?,1.0,0.9523809523809523,0.5513581068933169,0.8114625888408391
+40,¿Qué apoyo ha dado el Ayuntamiento de Bilbao al pueblo saharaui?,1.0,0.8461538461538461,0.7462944931802363,0.8099676922284469
+41,¿Qué propuestas se han hecho sobre el barrio de Otxarkoaga?,1.0,1.0,0.686197109314567,0.8169757277938028
+42,¿Qué se ha debatido sobre Azkuna Zentroa (antigua Alhóndiga)?,1.0,0.9230769230769231,0.6254640078861976,0.8334111489466344
+43,¿Qué propuso el Partido Popular sobre Aste Nagusia?,1.0,1.0,0.7051030804738999,0.8380882124667121
+44,¿Qué se ha propuesto sobre ascensores y elementos mecánicos para mejorar la accesibilidad en los barrios?,1.0,1.0,0.4854380185836545,0.779569965626539
+45,¿Qué iniciativas ha habido sobre energía solar y energías renovables?,1.0,1.0,0.6507435137795085,0.8120249717313612
+46,¿Qué se ha debatido sobre el sector del taxi en Bilbao?,1.0,1.0,0.7369951872748196,0.8385766762371052
+47,¿Qué propuestas ha habido sobre el servicio de Bizkaibus en Bilbao?,1.0,1.0,0.6473776352873263,0.8472762432036738
+48,¿Qué se ha propuesto sobre la salud mental en Bilbao?,1.0,0.9333333333333333,0.7677871105264128,0.9039251803044024
+49,¿Qué ocurrió en el pleno del 17-08-2012?,1.0,1.0,0.6849782926667306,0.8122401506450592
+50,¿Qué ocurrió en el pleno del 25-06-2019?,1.0,1.0,0.6061583517169256,0.8126769719983837

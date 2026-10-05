@@ -15,7 +15,6 @@ import time
 from typing import Any, List, Optional
 
 from langchain_chroma import Chroma
-from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 
 from comun.proveedores import (COHERE_API_KEY, EMBEDDING_MODEL, GROQ_API_KEY, LLM_MODEL_GROQ, LLM_MODEL_LOCAL,
@@ -45,7 +44,6 @@ class RAGPipeline(Indexado, Recuperacion, Seleccion, Contexto):
         self.vector_store = None
         self._llm_provider = LLMProvider(prefer="groq")
         self._known_dates: Optional[List[str]] = None
-        self.last_retrieved_docs: List[Document] = []
         self._indice_props = None
         self._indice_props_cargado = False
 
@@ -73,7 +71,9 @@ class RAGPipeline(Indexado, Recuperacion, Seleccion, Contexto):
         # si ni el mejor fragmento supera el umbral de Cohere, la pregunta no
         # trata de las actas y no se responde
         if COHERE_API_KEY and not exact_date and all_initial_docs:
-            rerank_scores = [d.metadata["_rerank_score"] for d in all_initial_docs if "_rerank_score" in d.metadata]
+            # sin las puntuaciones de relleno (_cerrar_ranking): no las ha dado el reordenador
+            rerank_scores = [d.metadata["_rerank_score"] for d in all_initial_docs
+                             if "_rerank_score" in d.metadata and not d.metadata.get("_rerank_relleno")]
             max_score = max(rerank_scores) if rerank_scores else None
             if max_score is not None and max_score < RELEVANCE_FLOOR:
                 print(f"[*] Relevancia máxima {max_score:.4f} < {RELEVANCE_FLOOR}: sin resultados.")

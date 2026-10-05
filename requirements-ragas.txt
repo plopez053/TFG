@@ -1,0 +1,8 @@
+# Entorno aislado para la evaluación RAGAS (fase 2):
+#   python -m venv .venv-ragas
+#   .venv-ragas\Scripts\pip install -r requirements-ragas.txt
+ragas==0.4.3
+instructor==1.17.0
+google-genai==2.25.0
+langchain-ollama==1.1.0
+python-dotenv==1.2.3

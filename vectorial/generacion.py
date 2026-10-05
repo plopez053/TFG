@@ -188,7 +188,6 @@ class Contexto:
 
     # contexto formateado y truncado + fechas en orden cronológico
     def _build_context(self, docs: List[Document], question: str) -> dict:
-        self.last_retrieved_docs = docs
         max_ctx = self._context_char_limit()
         formatted_context = self._format_context(docs, max_chars=max_ctx)
         if len(formatted_context) > max_ctx:
@@ -546,7 +545,6 @@ def build_sources_data(retrieved_docs, answer_text=None):
             pdf_name += f" ({rango})"
 
         topic = info["topics"][0] if info["topics"] else "Tema general"
-        short_topic = topic[:80] + "..." if len(topic) > 80 else topic
         vote_result = next(
             (d.metadata.get("vote_result") for d in docs_d if d.metadata.get("vote_result")), None
         )
@@ -554,8 +552,7 @@ def build_sources_data(retrieved_docs, answer_text=None):
         content_kw = _palabras_clave(contenido) - _STOP_PROCEDIMENTAL
 
         sources_data.append({
-            "date": date, "topic": topic, "pdf_path": pdf_path,
-            "url": url, "page": p_min or 1, "short_topic": short_topic,
+            "date": date, "topic": topic, "url": url,
             "pdf_name": pdf_name, "vote_result": vote_result, "content_kw": content_kw,
         })
 

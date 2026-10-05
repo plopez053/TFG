@@ -15,6 +15,7 @@ from grafo.construccion.build_rdf import (  # noqa: E402
     resultado_cruzado, normaliza_resultado, parse_votos,
     find_canonical, canon_theme_map, norm_label,
 )
+from grafo.construccion.enriquecer import _RESOLUCION_GOBIERNO, _n as _norm_titulo  # noqa: E402
 from grafo.construccion.texto_actas import load_jsonl, iter_jsonl  # noqa: E402
 from vectorial.pipeline import RAGPipeline  # noqa: E402
 
@@ -104,6 +105,11 @@ def build_derived_map():
         grupo = canon_grupo(grupo)
         if grupo == "Desconocido" and r.get("grupo") and r["grupo"] != "Desconocido":
             grupo = canon_grupo(r["grupo"])
+        # igual que en el grafo (enriquecer.clasificar_puntos): la propuesta del gobierno que
+        # resuelve las enmiendas de los grupos no es del primer grupo que nombra el título
+        if grupo not in ("Desconocido", "EQUIPO DE GOBIERNO") and _RESOLUCION_GOBIERNO.search(
+                _norm_titulo(r.get("topic", ""))[:200]):
+            grupo = "EQUIPO DE GOBIERNO"
         meta["grupo_proponente"] = grupo
 
         tp = norm_label(r.get("tema_principal") or "otros")

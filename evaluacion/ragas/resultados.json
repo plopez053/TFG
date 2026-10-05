@@ -1,0 +1,426 @@
+{
+  "por_pregunta": [
+    {
+      "id": "1",
+      "question": "¿Qué se dijo sobre la estabilización y la OPE del empleo público municipal del Ayuntamiento de Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.8333333333333334,
+      "answer_relevancy": 0.7635493230051668,
+      "semantic_similarity": 0.8589082051044509
+    },
+    {
+      "id": "2",
+      "question": "¿Qué iniciativas ha habido sobre las bibliotecas municipales y los equipamientos culturales de barrio?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6771981100528451,
+      "semantic_similarity": 0.8440099203226642
+    },
+    {
+      "id": "3",
+      "question": "¿Qué propuestas se han hecho sobre la situación de las personas sin hogar en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6288901782448457,
+      "semantic_similarity": 0.7847199322648453
+    },
+    {
+      "id": "4",
+      "question": "¿Qué se ha debatido sobre la memoria de las víctimas del terrorismo en el Pleno de Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6012847673011213,
+      "semantic_similarity": 0.8445952348281589
+    },
+    {
+      "id": "5",
+      "question": "¿Qué se debatió sobre el tranvía en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9090909090909091,
+      "answer_relevancy": 0.7116477459630682,
+      "semantic_similarity": 0.8114010536603459
+    },
+    {
+      "id": "6",
+      "question": "¿Qué propuso el Partido Popular sobre aparcamientos?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.571605585283253,
+      "semantic_similarity": 0.7804814309003546
+    },
+    {
+      "id": "7",
+      "question": "¿Qué ocurrió en el pleno del 26-01-2023?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9375,
+      "answer_relevancy": 0.553265489506437,
+      "semantic_similarity": 0.8227872088557682
+    },
+    {
+      "id": "8",
+      "question": "¿Qué se debatió sobre los desahucios en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.623178462816783,
+      "semantic_similarity": 0.7753349562227163
+    },
+    {
+      "id": "9",
+      "question": "¿Qué propuestas sobre vivienda social ha habido?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5111269374145279,
+      "semantic_similarity": 0.8172437020325984
+    },
+    {
+      "id": "10",
+      "question": "¿Qué se ha debatido sobre la calidad del aire y la Zona de Bajas Emisiones en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.972972972972973,
+      "answer_relevancy": 0.6182696839547317,
+      "semantic_similarity": 0.7833858403793204
+    },
+    {
+      "id": "11",
+      "question": "¿Qué iniciativas ha habido sobre la peatonalización de calles en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9523809523809523,
+      "answer_relevancy": 0.6237256983565888,
+      "semantic_similarity": 0.8590897644616241
+    },
+    {
+      "id": "12",
+      "question": "¿Qué se ha dicho sobre la empresa Tubacex en el Pleno de Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6677546240461164,
+      "semantic_similarity": 0.7837818886520816
+    },
+    {
+      "id": "13",
+      "question": "¿Qué se ha debatido sobre Petronor en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7276214110041596,
+      "semantic_similarity": 0.7973354705204079
+    },
+    {
+      "id": "14",
+      "question": "¿Qué se ha debatido en el Pleno sobre el Tour de Francia en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9444444444444444,
+      "answer_relevancy": 0.7843961075136129,
+      "semantic_similarity": 0.8533908612766783
+    },
+    {
+      "id": "15",
+      "question": "¿Qué propuestas se han presentado sobre la pobreza energética?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7507582638239102,
+      "semantic_similarity": 0.8855841315501951
+    },
+    {
+      "id": "16",
+      "question": "¿Qué se ha debatido sobre los patinetes eléctricos y los vehículos de movilidad personal?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6453745742698791,
+      "semantic_similarity": 0.8040848431917841
+    },
+    {
+      "id": "17",
+      "question": "¿Qué iniciativas ha habido sobre el ruido y la contaminación acústica en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7720256197841951,
+      "semantic_similarity": 0.7899859416186539
+    },
+    {
+      "id": "18",
+      "question": "¿Qué se ha debatido sobre la prostitución en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9629629629629629,
+      "answer_relevancy": 0.8902514569518395,
+      "semantic_similarity": 0.779356649133671
+    },
+    {
+      "id": "19",
+      "question": "¿Qué propuestas ha habido sobre el Mercado de la Ribera?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9166666666666666,
+      "answer_relevancy": 0.7244686380870062,
+      "semantic_similarity": 0.838343909905618
+    },
+    {
+      "id": "20",
+      "question": "¿Qué propuso el Partido Popular sobre la okupación de viviendas?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7370249022248205,
+      "semantic_similarity": 0.7994615102273587
+    },
+    {
+      "id": "21",
+      "question": "¿Qué se ha debatido sobre la emergencia climática y el cambio climático?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5578947906130285,
+      "semantic_similarity": 0.8609214794704136
+    },
+    {
+      "id": "22",
+      "question": "¿Qué se ha propuesto sobre la lucha contra la droga y las adicciones?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.49844312128021234,
+      "semantic_similarity": 0.7886574078845027
+    },
+    {
+      "id": "23",
+      "question": "¿Qué se ha debatido sobre las corridas de toros y la tauromaquia en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7722713914711733,
+      "semantic_similarity": 0.8219781877554819
+    },
+    {
+      "id": "24",
+      "question": "¿Qué iniciativas ha habido sobre la acogida de personas refugiadas?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5181161067270134,
+      "semantic_similarity": 0.9104299522728978
+    },
+    {
+      "id": "25",
+      "question": "¿Qué se ha debatido en el Pleno sobre Palestina y Gaza?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5875893788398822,
+      "semantic_similarity": 0.8786691040729473
+    },
+    {
+      "id": "26",
+      "question": "¿Qué se ha debatido sobre la monarquía y la Casa Real en el Pleno de Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6013612214755365,
+      "semantic_similarity": 0.752200745178545
+    },
+    {
+      "id": "27",
+      "question": "¿Qué subvenciones o acuerdos ha habido relacionados con el Athletic Club?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7947672269452554,
+      "semantic_similarity": 0.8401248338986531
+    },
+    {
+      "id": "28",
+      "question": "¿Qué se ha debatido sobre el servicio de bomberos de Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6017105040253617,
+      "semantic_similarity": 0.8291701010839276
+    },
+    {
+      "id": "29",
+      "question": "¿Qué propuestas ha habido sobre el arbolado urbano y la tala de árboles?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.92,
+      "answer_relevancy": 0.5183734579026918,
+      "semantic_similarity": 0.8016166893452823
+    },
+    {
+      "id": "30",
+      "question": "¿Qué se ha debatido sobre la regulación de las terrazas de hostelería?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7996558444857493,
+      "semantic_similarity": 0.8327723186414145
+    },
+    {
+      "id": "31",
+      "question": "¿Qué se ha debatido sobre el Museo Guggenheim en el Pleno?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6657231862214115,
+      "semantic_similarity": 0.8501816445264704
+    },
+    {
+      "id": "32",
+      "question": "¿Qué propuestas ha habido sobre los polideportivos municipales?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6642059627003386,
+      "semantic_similarity": 0.8379963799650759
+    },
+    {
+      "id": "33",
+      "question": "¿Qué propuso EH Bildu sobre los presos y la política de dispersión?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9375,
+      "answer_relevancy": 0.5450834507932727,
+      "semantic_similarity": 0.812820745978797
+    },
+    {
+      "id": "34",
+      "question": "¿Qué medidas se debatieron en el Pleno sobre la pandemia de COVID-19?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.8571428571428571,
+      "answer_relevancy": 0.6134113956209996,
+      "semantic_similarity": 0.841178763888579
+    },
+    {
+      "id": "35",
+      "question": "¿Qué iniciativas ha habido en defensa de los derechos del colectivo LGTBI?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8367785384301994,
+      "semantic_similarity": 0.8575126446540695
+    },
+    {
+      "id": "36",
+      "question": "¿Qué se ha debatido sobre el Teatro Arriaga?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6361012487682586,
+      "semantic_similarity": 0.8033812668603535
+    },
+    {
+      "id": "37",
+      "question": "¿Qué propuestas ha habido sobre memoria histórica y símbolos franquistas?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.5957861891634411,
+      "semantic_similarity": 0.8514397497493492
+    },
+    {
+      "id": "38",
+      "question": "¿Qué se ha debatido sobre el Consorcio de Aguas Bilbao Bizkaia?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6677214154493077,
+      "semantic_similarity": 0.8415714027621111
+    },
+    {
+      "id": "39",
+      "question": "¿Qué se ha debatido sobre los cementerios municipales?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9523809523809523,
+      "answer_relevancy": 0.5513581068933169,
+      "semantic_similarity": 0.8114625888408391
+    },
+    {
+      "id": "40",
+      "question": "¿Qué apoyo ha dado el Ayuntamiento de Bilbao al pueblo saharaui?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.8461538461538461,
+      "answer_relevancy": 0.7462944931802363,
+      "semantic_similarity": 0.8099676922284469
+    },
+    {
+      "id": "41",
+      "question": "¿Qué propuestas se han hecho sobre el barrio de Otxarkoaga?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.686197109314567,
+      "semantic_similarity": 0.8169757277938028
+    },
+    {
+      "id": "42",
+      "question": "¿Qué se ha debatido sobre Azkuna Zentroa (antigua Alhóndiga)?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9230769230769231,
+      "answer_relevancy": 0.6254640078861976,
+      "semantic_similarity": 0.8334111489466344
+    },
+    {
+      "id": "43",
+      "question": "¿Qué propuso el Partido Popular sobre Aste Nagusia?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7051030804738999,
+      "semantic_similarity": 0.8380882124667121
+    },
+    {
+      "id": "44",
+      "question": "¿Qué se ha propuesto sobre ascensores y elementos mecánicos para mejorar la accesibilidad en los barrios?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4854380185836545,
+      "semantic_similarity": 0.779569965626539
+    },
+    {
+      "id": "45",
+      "question": "¿Qué iniciativas ha habido sobre energía solar y energías renovables?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6507435137795085,
+      "semantic_similarity": 0.8120249717313612
+    },
+    {
+      "id": "46",
+      "question": "¿Qué se ha debatido sobre el sector del taxi en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.7369951872748196,
+      "semantic_similarity": 0.8385766762371052
+    },
+    {
+      "id": "47",
+      "question": "¿Qué propuestas ha habido sobre el servicio de Bizkaibus en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6473776352873263,
+      "semantic_similarity": 0.8472762432036738
+    },
+    {
+      "id": "48",
+      "question": "¿Qué se ha propuesto sobre la salud mental en Bilbao?",
+      "context_relevance": 1.0,
+      "faithfulness": 0.9333333333333333,
+      "answer_relevancy": 0.7677871105264128,
+      "semantic_similarity": 0.9039251803044024
+    },
+    {
+      "id": "49",
+      "question": "¿Qué ocurrió en el pleno del 17-08-2012?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6849782926667306,
+      "semantic_similarity": 0.8122401506450592
+    },
+    {
+      "id": "50",
+      "question": "¿Qué ocurrió en el pleno del 25-06-2019?",
+      "context_relevance": 1.0,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6061583517169256,
+      "semantic_similarity": 0.8126769719983837
+    }
+  ],
+  "resumen": {
+    "context_relevance": {
+      "media": 1.0,
+      "desviacion_tipica": 0.0,
+      "n": 50
+    },
+    "faithfulness": {
+      "media": 0.976,
+      "desviacion_tipica": 0.043,
+      "n": 50
+    },
+    "answer_relevancy": {
+      "media": 0.659,
+      "desviacion_tipica": 0.0931,
+      "n": 50
+    },
+    "semantic_similarity": {
+      "media": 0.8248,
+      "desviacion_tipica": 0.0333,
+      "n": 50
+    }
+  }
+}

@@ -116,7 +116,7 @@ language = "es-ES"
 confirm_new_chat = true
 
 # Description of the assistant. This is used for HTML tags.
-description = "Consulta los plenos del Ayuntamiento de Bilbao (2007-2025)"
+description = "Consulta los plenos del Ayuntamiento de Bilbao (2007-2026)"
 
 # Chain of Thought (CoT) display mode. Hidden = no mostrar pasos intermedios.
 cot = "hidden"

@@ -1,6 +1,6 @@
 ## 🏛️ Bienvenido al Buscador de Plenos de Bilbao
 
-Soy un asistente especializado en las actas del **Ayuntamiento de Bilbao** de los años **2007 a 2025** (228 plenos municipales).
+Soy un asistente especializado en las actas del **Ayuntamiento de Bilbao** de los años **2007 a 2026** (236 plenos municipales).
 
 Puedo responder preguntas sobre:
 - 📋 **Propuestas y debates** de los plenos

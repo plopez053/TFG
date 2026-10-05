@@ -24,7 +24,7 @@ _RESULT_INDIVIDUALS = ("bo:Aprobada", "bo:Rechazada", "bo:Decae", "bo:Retirada",
 # rdfs:label reales de los grupos (literales planos, sin lang tag).
 _GRUPO_LABELS = {
     "PP", "EH BILDU", "PSE-EE", "ELKARREKIN BILBAO", "GOAZEN BILBAO", "UDALBERRI",
-    "EZKER BATUA-IU", "EAJ-PNV", "CIUDADANOS", "EQUIPO DE GOBIERNO", "GRUPO MIXTO",
+    "EZKER BATUA-IU", "EAJ-PNV", "CIUDADANOS", "EQUIPO DE GOBIERNO", "GRUPO MIXTO", "VOX", "ARALAR",
 }
 
 
@@ -182,6 +182,14 @@ _LABEL_TOPLEVEL_NORM = {_strip_accents(k): v for k, v in _LABEL_TOPLEVEL.items()
 # (arXiv:2502.13369): recuperar las entidades reales del grafo en vez de
 # añadir una regla por cada invención.
 _THEMES_TTL = TEMAS_SKOS
+# similitud coseno entre dos embeddings
+def _cos(a, b):
+    dot = sum(x * y for x, y in zip(a, b))
+    na = sum(x * x for x in a) ** 0.5
+    nb = sum(y * y for y in b) ** 0.5
+    return dot / (na * nb + 1e-9)
+
+
 _tema_embed_cache = None
 _tema_embed_lock = threading.Lock()
 
@@ -219,13 +227,6 @@ def _fix_tema_uri_semantic(uri_slug: str, umbral: float = 0.70):
     try:
         textos, slugs, vecs, embedder = _tema_embed_index()
         qv = embedder.embed_query(uri_slug.replace("_", " ").replace("-", " "))
-
-        def _cos(a, b):
-            dot = sum(x * y for x, y in zip(a, b))
-            na = sum(x * x for x in a) ** 0.5
-            nb = sum(y * y for y in b) ** 0.5
-            return dot / (na * nb + 1e-9)
-
         mejor_sim, mejor_slug = -1.0, None
         for i, v in enumerate(vecs):
             s = _cos(qv, v)
@@ -434,11 +435,7 @@ _ALIAS_STOP = {"concejal", "concejala", "concejales", "sr", "sra", "don", "dona"
 
 def _alias_canon_grupo(raw: str):
     k = re.sub(r"[^a-z0-9]", "", raw.lower())
-    if k in _ALIAS_GRUPOS:
-        return "br:" + _ALIAS_GRUPOS[k]
-    if k.startswith("grupo"):
-        return "br:" + re.sub(r"^grupo_?", "grupo_", raw.lower())
-    return None
+    return "br:" + _ALIAS_GRUPOS[k] if k in _ALIAS_GRUPOS else None
 
 
 def _alias_tokens(uri: str):

@@ -119,6 +119,26 @@ def _grupos_votantes(q: str, a: Analisis) -> bool:
                          rf"(?:el\s+|la\s+|los\s+)?(?:grupo\s+(?:municipal\s+)?)?(?:{nombres})", q)
 
 
+# "¿cómo votó el PP la última proposición de Elkarrekin?": un grupo presenta y otro vota.
+# Devuelve (uris de quien presenta, uris de quienes votan), o None si no hay un único
+# grupo detrás de "la proposición del/presentada por"
+def _roles_votos(q: str, a: Analisis):
+    from grafo.consulta.pregunta import _GRUPOS
+    # solo sin tema ni asunto ("la última proposición de X"): con asunto, el filtro por menciones del
+    # debate devolvía proposiciones que solo nombran el asunto y se narraban como si lo trataran
+    if len(a.grupos) < 2 or a.temas or a.asunto or a.asunto_raices or a.asunto_temas \
+            or not re.search(r"\bcomo vot|\bvot\w*\s+(el|la|los)?\s*(grupo\s+)?\w+", q):
+        return None
+    patrones = {nombre: pat for pat, _, nombre in _GRUPOS}
+    presentan = [(uris, n) for uris, n in a.grupos if n in patrones and re.search(
+        rf"\b(mocion|propuesta|proposicion|iniciativa)\w*\s+(?:del?|presentad\w*(?:\s+por)?)\s+"
+        rf"(?:el\s+|la\s+|los\s+)?(?:grupo\s+(?:municipal\s+)?)?(?:{patrones[n]})", q)]
+    if len(presentan) != 1:
+        return None
+    votan = [(uris, n) for uris, n in a.grupos if (uris, n) != presentan[0]]
+    return sorted(set(presentan[0][0])), sorted({u for uris, _ in votan for u in uris})
+
+
 # una legislatura: de su pleno de constitución al de la siguiente
 def _filtro_fechas(a: Analisis) -> str:
     out = f'  FILTER(?d >= "{a.desde_fecha}"^^xsd:date)\n' if a.desde_fecha else ""
@@ -164,6 +184,11 @@ def _consulta_primer_pleno(q: str, a: Analisis):
 # Consulta para la pregunta, o None si no se puede montar con seguridad.
 # props_asunto: proposiciones del asunto; criterio: texto que explica al
 # narrador cómo se han elegido si no se pudieron exigir todas las palabras.
+# URIs de los grupos que nombra la pregunta, sin repetir y en orden fijo
+def _uris_grupos(a: Analisis) -> list:
+    return sorted({u for us, _ in a.grupos for u in us})
+
+
 def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: str = ""):
     q = _norm(pregunta)
     f = forma(q)
@@ -200,7 +225,9 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
     if f in ("ranking_grupo", "desglose_grupo") and a.grupos:
         return None
     # sin tema ni asunto, "existe", "contenido" y "votos" no tienen de qué tratar
-    if f in ("existe", "contenido", "votos") and not a.temas and not a.asunto_raices and not a.asunto_temas:
+    roles = _roles_votos(q, a) if f == "votos" else None
+    if f in ("existe", "contenido", "votos") and not a.temas and not a.asunto_raices and not a.asunto_temas \
+            and not roles:
         return None
     # en "¿qué opinó/votó el PP...?" el grupo es quien habla o vota, no quien presenta
     votantes = (f == "votos" and _grupos_votantes(q, a)) or f == "contenido" or f in _FORMAS_INTERV
@@ -216,8 +243,10 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
         cuerpo += _bloque_asunto(a.asunto_raices + [f"tema {t}" for t in a.asunto_temas], props_asunto)
     if criterio:
         cuerpo += f'  BIND("{criterio}" AS ?criterio)\n'
-    if a.grupos and not votantes:
-        uris = sorted({u for us, _ in a.grupos for u in us})
+    if roles:
+        cuerpo += f"  ?p bo:presentadaPor ?gf . VALUES ?gf {{ {' '.join('br:' + u for u in roles[0])} }}\n"
+    elif a.grupos and not votantes:
+        uris = _uris_grupos(a)
         cuerpo += f"  ?p bo:presentadaPor ?gf . VALUES ?gf {{ {' '.join('br:' + u for u in uris)} }}\n"
     if a.oposicion:
         cuerpo += f"  ?p bo:presentadaPor ?go . FILTER(?go NOT IN ({_GOBIERNO}))\n"
@@ -267,7 +296,7 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
         # los grupos de la pregunta son quien habla, no quien presenta el punto
         grupo_orador = ""
         if a.grupos:
-            uris = sorted({u for us, _ in a.grupos for u in us})
+            uris = _uris_grupos(a)
             grupo_orador = f"  ?i bo:grupoOrador ?_go . VALUES ?_go {{ {' '.join('br:' + u for u in uris)} }}\n"
         base = cuerpo + "  ?i bo:intervencionEn ?p .\n" + grupo_orador
         # "¿cuántas intervenciones hizo el alcalde...?": quien habla es el alcalde. Sin este
@@ -293,7 +322,7 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
         # (las 8 proposiciones más recientes del asunto)
         filtro = ""
         if a.grupos:
-            uris = sorted({u for us, _ in a.grupos for u in us})
+            uris = _uris_grupos(a)
             filtro = f"  ?i bo:grupoOrador ?_go . VALUES ?_go {{ {' '.join('br:' + u for u in uris)} }}\n"
         return (f"SELECT ?p ?fecha ?orador ?grupo ?postura ?resumen{crit} WHERE {{\n"
                 f"  {{ SELECT DISTINCT ?p ?d ?fecha{crit} WHERE {{\n{cuerpo}  }} ORDER BY DESC(?d) LIMIT 8 }}\n"
@@ -307,7 +336,7 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
                 "  ?p bo:importe ?importe ; bo:tituloTopic ?titulo .\n"
                 "  OPTIONAL { ?p bo:beneficiario ?beneficiario }\n"
                 "  OPTIONAL { ?p bo:tieneResultado ?r2 . BIND(STRAFTER(STR(?r2), \"#\") AS ?resultado) }\n"
-                f"}} ORDER BY DESC(?d) LIMIT 25")
+                "} ORDER BY DESC(?d) LIMIT 25")
     if f == "ranking_anio":
         if "?anio" not in cuerpo:
             cuerpo += "  ?p bo:anio ?anio .\n"
@@ -334,14 +363,33 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
                        '{ ?p bo:votoEnContraDe ?gv . BIND("en contra" AS ?sentido) }',
                        '{ ?p bo:seAbstuvo ?gv . BIND("abstención" AS ?sentido) }']
         filtro_votante = ""
-        if votantes:
-            uris = sorted({u for us, _ in a.grupos for u in us})
+        if votantes or roles:
+            uris = roles[1] if roles else _uris_grupos(a)
             filtro_votante = f" FILTER(?gv IN ({', '.join('br:' + u for u in uris)}))"
-        return (f"SELECT ?p ?fecha ?grupo ?resultado{rel}{crit} ?votacion ?grupoVoto ?sentido WHERE {{\n"
-                f"  {{ SELECT DISTINCT ?p ?d ?fecha{rel}{crit} WHERE {{\n{cuerpo}  }} ORDER BY DESC(?d) LIMIT 5 }}\n"
+        # "la última proposición de X": una sola; en un mismo pleno, la de número de punto más alto
+        # ("12. PROPUESTA...", "25. PROPOSICIÓN...": el título empieza por el número)
+        if roles and a.reciente:
+            sub = (f"  {{ SELECT DISTINCT ?p ?d ?fecha{rel}{crit} WHERE {{\n{cuerpo}"
+                   '  OPTIONAL { ?p bo:tituloTopic ?_tt . BIND(xsd:integer(STRBEFORE(STR(?_tt), ".")) AS ?num) }\n'
+                   "  } ORDER BY DESC(?d) DESC(?num) LIMIT 1 }\n")
+        else:
+            sub = f"  {{ SELECT DISTINCT ?p ?d ?fecha{rel}{crit} WHERE {{\n{cuerpo}  }} ORDER BY DESC(?d) LIMIT 5 }}\n"
+        # el voto del grupo puede estar solo en la votación decisiva (p. ej. la de la enmienda que
+        # hace decaer la proposición), no en la proposición: se añade su sentido y su objeto
+        decisiva = ""
+        if roles:
+            decisiva = ("  OPTIONAL { ?p bo:tieneVotacion ?_v . ?_v bo:esDecisiva true ; bo:objetoVotacion ?objetoVotacionDecisiva .\n"
+                        '    { ?_v bo:grupoVotaAFavor ?_gd . BIND("a favor" AS ?sentidoDecisiva) }\n'
+                        '    UNION { ?_v bo:grupoVotaEnContra ?_gd . BIND("en contra" AS ?sentidoDecisiva) }\n'
+                        '    UNION { ?_v bo:grupoSeAbstiene ?_gd . BIND("abstención" AS ?sentidoDecisiva) }\n'
+                        f"    FILTER(?_gd IN ({', '.join('br:' + u for u in roles[1])})) }}\n")
+        cols = " ?sentidoDecisiva ?objetoVotacionDecisiva" if roles else ""
+        return (f"SELECT ?p ?fecha ?grupo ?resultado{rel}{crit} ?votacion ?grupoVoto ?sentido{cols} WHERE {{\n"
+                f"{sub}"
                 f"{extra}"
                 "  OPTIONAL { ?p bo:votacionRegistrada ?votacion }\n"
                 f"  OPTIONAL {{ {' UNION '.join(sentido)} ?gv rdfs:label ?grupoVoto .{filtro_votante} }}\n"
+                f"{decisiva}"
                 "} ORDER BY DESC(?d)")
     # "la última vez": las 3 más recientes que TRATAN del asunto y las 3 que solo
     # lo mencionan. Con las 5 más recientes a secas salían solo menciones y el
@@ -351,6 +399,6 @@ def consulta_directa(pregunta: str, a: Analisis, props_asunto=None, criterio: st
                          f"  FILTER(?relacion = \"{r}\") }} ORDER BY DESC(?d) LIMIT 3 }}\n")
         return (f"SELECT DISTINCT ?p ?fecha ?grupo ?resultado ?relacion{crit} WHERE {{\n"
                 f"{{\n{sub('trata')}}} UNION {{\n{sub('menciona')}}}\n{extra}}} ORDER BY DESC(?d)")
-    limite = {"ultima": 5, "existe": 10, "contenido": 15}.get(f, 40)
+    limite = {"ultima": 5, "existe": 10}.get(f, 40)
     return (f"SELECT DISTINCT ?p ?fecha ?grupo ?resultado{rel}{crit} WHERE {{\n{cuerpo}{extra}}} "
             f"ORDER BY DESC(?d) LIMIT {limite}")

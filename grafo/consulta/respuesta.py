@@ -136,7 +136,8 @@ def _augment_ratios(rows: list, pregunta: str) -> str:
         if not isinstance(r, dict):
             continue
         nums = [(k, int(v)) for k, v in r.items()
-                if isinstance(v, str) and re.fullmatch(r"\d+", v)]
+                if isinstance(v, str) and re.fullmatch(r"\d+", v)
+                and not re.match(r"(?:anio|ano|year|fecha|mes|orden)", k.lower())]
         if len(nums) < 2:
             continue
         nums.sort(key=lambda kv: kv[1])
@@ -269,7 +270,12 @@ def _nota_fecha_sin_pleno(g, fecha: str) -> str:
     except Exception:
         return ""
     return (f"\nNOTA: no consta ningún pleno el {fecha} en las actas. Los plenos más cercanos son el "
-            f"{r.get('antes') or '—'} (anterior) y el {r.get('despues') or '—'} (posterior). Dilo así.")
+            f"{_valor(r.get('antes')) or '—'} (anterior) y el {_valor(r.get('despues')) or '—'} (posterior). Dilo así.")
+
+
+# valor de una fila, o None si no se enlazó ("None" es como llega una variable sin valor)
+def _valor(x):
+    return None if x in (None, "", "None") else x
 
 
 # Todas las votaciones que el acta registra de cada proposición de las filas
@@ -304,7 +310,8 @@ def _votaciones_del_acta(g, rows) -> str:
         fecha = (_ejecutar(g, _PREFIXES + f"SELECT ?f WHERE {{ <{p}> bo:fecha ?f }}") or [{}])[0].get("f", "")
         out += f"\nVOTACIONES DEL ACTA de la proposición del {fecha}:"
         for v in vs:
-            cifras = f"{v.get('f') or '?'} a favor, {v.get('c') or 0} en contra, {v.get('a') or 0} abstenciones"
+            cifras = (f"{_valor(v.get('f')) or '?'} a favor, {_valor(v.get('c')) or 0} en contra, "
+                      f"{_valor(v.get('a')) or 0} abstenciones")
             grupos = "; ".join(f"{k}: {v[k]}" for k in ("favor", "contra", "abst") if v.get(k) not in (None, "", "None"))
             out += (f"\n  - votación {v['o']} ({v['obj']}{', la que decide' if v.get('dc') in ('true', 'True') else ''}): "
                     f"{v['desc'][:160]} -> {cifras}" + (f" [{grupos}]" if grupos else "")
@@ -528,7 +535,7 @@ def _sin_resultado(rows) -> bool:
         return True
     if len(rows) == 1:
         vals = [str(v) for k, v in rows[0].items() if k != "criterio" and v is not None]
-        return all(v in ("0", "") for v in vals)
+        return all(v in ("0", "", "None") for v in vals)
     return False
 
 
@@ -629,35 +636,36 @@ def _responder(pregunta: str, verbose=True, sparql_provider: str = "ollama") -> 
     rows = _fix_degenerate_groupby(rows, sparql)
     filas = _filas_para_narrar(g, rows)
     filas += _augment_ratios(rows, pregunta)
-    if faltan:
-        filas += ("\nAVISO: la consulta NO ha podido filtrar por " + "; ".join(faltan)
-                  + ". Dilo claramente en la respuesta y no presentes las cifras como si respondieran a eso.")
     if directa:
-        f_dir = forma(_norm_q(pregunta))
-        if f_dir == "contenido" and rows and "resumen" in rows[0]:
+        if f_q == "contenido" and rows and "resumen" in rows[0]:
             filas += ("\nNOTA: cada fila es una intervención de un orador en un punto: resumen de lo que dice y su "
                       "postura (a_favor, en_contra, abstencion, neutra) ante la propuesta. Organiza la respuesta por "
                       "punto y por grupo, cita la fecha, y no añadas nada que no esté en los resúmenes. Si faltan "
                       "intervenciones de algún grupo, di que no constan.")
-        elif f_dir == "contenido":
+        elif f_q == "contenido":
             filas += ("\nAVISO: el grafo no guarda lo que se dijo ni las opiniones de los grupos; estas son "
                       "las proposiciones sobre el asunto (quién las presentó y su resultado). Dilo, descríbelas "
                       "y recomienda el perfil RAG Vectorial para conocer el contenido del debate.")
-        elif f_dir == "votos":
+        elif f_q == "votos":
             filas += ("\nNOTA: una proposición sin grupoVoto no tiene voto por grupo registrado en el grafo "
                       "(solo lo tiene algo más de la mitad); no lo interpretes como que nadie votó así.")
             if any(str(r.get("votacion")) == "enmienda" for r in rows):
                 filas += ("\nNOTA: en las filas con votacion = enmienda, el voto registrado es el de una enmienda a "
                           "esa proposición, no el de la proposición: dilo así.")
+            if any(r.get("objetoVotacionDecisiva") not in (None, "None") for r in rows):
+                filas += ("\nNOTA: sentidoDecisiva es el voto de ese grupo en la votación decisiva del punto "
+                          "(objetoVotacionDecisiva: si es una enmienda, no la proposición; si la proposición decae, "
+                          "es la votación de la enmienda que la sustituye). Si no hay fila de voto del grupo, "
+                          "no consta cómo votó.")
             filas += _votaciones_del_acta(g, rows)
-        elif f_dir == "ultima" and any(r.get("relacion") == "trata" for r in rows) \
+        elif f_q == "ultima" and any(r.get("relacion") == "trata" for r in rows) \
                 and any(r.get("relacion") == "menciona" for r in rows):
             # en la octava evaluación se encabezó con una proposición sobre el tranvía que solo
             # nombraba Zabalburu, como si fuera "la última vez que se habló de la plaza"
             filas += ("\nNOTA: hay filas que TRATAN del asunto y filas que solo lo MENCIONAN. Responde primero con "
                       "la fecha de la última proposición que lo trata (es la respuesta a la pregunta) y después, "
                       "aparte, la mención más reciente, diciendo de qué trataba esa proposición.")
-        elif f_dir == "existe" and not rows:
+        elif f_q == "existe" and not rows:
             filas += "\nNOTA: ninguna proposición del grafo trata ni menciona ese asunto: la respuesta es que no consta."
         if analisis.fecha and not rows:
             filas += _nota_fecha_sin_pleno(g, analisis.fecha)

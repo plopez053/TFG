@@ -38,9 +38,9 @@ datos/                  datos generados: grafo/ (RDF, JSONL y cachés)
 chroma_db/              índice vectorial de fragmentos (no se versiona; se regenera)
 chroma_db_proposiciones/  índice de resúmenes de proposiciones
 scripts/                descarga de las actas e índices vectoriales
-evaluacion/             regresión, RAGAS, evaluación independiente, diagnóstico y estudio SPARQL
+evaluacion/             regresión, RAGAS y estudio SPARQL
 memoria/                memoria del TFG (LaTeX) y registro de decisiones técnicas
-docs/                   guía de reconstrucción (RUNBOOK.md) y notas de desarrollo
+docs/                   guía de reconstrucción (RUNBOOK.md)
 _archivo/               copias y código retirado, fuera del sistema
 ```
 
@@ -64,7 +64,6 @@ python -m grafo.consulta.respuesta "..."          # GraphRAG desde la consola
 python evaluacion/regresion.py [graph|vector]     # 35 casos con resultado verificado contra las actas
 python evaluacion/ragas/generar.py                # RAGAS, fase 1 (entorno principal)
 .venv-ragas\Scripts\python.exe evaluacion\ragas\puntuar.py   # RAGAS, fase 2 (entorno de RAGAS)
-python evaluacion/independiente/ejecutar.py ...   # evaluación con preguntas nuevas (ver su docstring)
 ```
 
 Para reconstruir los datos desde cero: `docs/RUNBOOK.md`.

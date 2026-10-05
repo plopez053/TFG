@@ -34,8 +34,10 @@ def normaliza_grupo(p: str) -> str:
         return "EH BILDU"
     if "SOCIALIST" in d or "PSE" in d or "PSOE" in d:
         return "PSE-EE"
-    # Sozialista Abertzaleak (nombre histórico en euskera de los socialistas)
-    if "SOZIALISTAK" in d or "SOZIALIST" in d or "ABERTZALEAK" in d:
+    # Euskal Sozialistak, Sozialista Abertzaleak (nombre histórico en euskera de los socialistas).
+    # "Abertzaleak" solo NO basta: lo llevan también "Gazte Abertzaleak" y otros nombres que no
+    # son del PSE-EE.
+    if "SOZIALIST" in d:
         return "PSE-EE"
     if "PNV" in d or "EAJ" in d or "NACIONALIST" in d or "JELTZALE" in d:
         return "EAJ-PNV"
@@ -151,7 +153,7 @@ _PARTIDO_DIRECTO_RE = re.compile(
 # real: acta 28-11-2007, punto 10 ("Se da cuenta de la resolución de la
 # Alcaldía..."), que el heurístico de texto completo atribuía a EAJ-PNV
 # solo porque esa página incluye el censo de Consejos de Distrito.
-_DA_CUENTA_RE = re.compile(r"^\s*\d+[.\-]?\s*se\s+da\s+cuenta", re.IGNORECASE)
+_DA_CUENTA_RE = re.compile(r"^\s*-?\s*\d+[.\-]?\s*se\s+da\s+cuenta", re.IGNORECASE)
 # Sobre texto despaciado (mismo truco que arriba, tolera cortes de OCR tipo
 # "Al cald�a" -> "ALCALD�A" al quitar espacios).
 _DA_CUENTA_EJECUTIVO_RE = re.compile(
@@ -350,6 +352,6 @@ def es_grupo_disfrazado(nombre_entidad: str) -> bool:
         m = rex.search(nom)
         if m and (m.end() - m.start()) / len(nom) > 0.4:
             grupo_texto = m.group(1) if rex is not _PARTIDO_DIRECTO_RE else m.group(0)
-            if normaliza_grupo(grupo_texto) != "Desconocido":
+            if canon_grupo(grupo_texto) != "Desconocido":
                 return True
     return False

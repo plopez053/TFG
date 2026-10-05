@@ -12,12 +12,36 @@ from vectorial.pipeline import RAGPipeline
 from langchain_chroma import Chroma
 
 
-def run_full_rebuild(year_limit=None):
+# purga de la DB los fragmentos de las actas dadas (la ruta se guardó con las dos barras)
+def _purgar_actas(rag, pdf_files):
+    for pdf_path in pdf_files:
+        abs_path = os.path.abspath(pdf_path)
+        for source in (abs_path, abs_path.replace("\\", "/")):
+            try:
+                rag.vector_store.delete(where={"source": source})
+            except Exception:
+                pass
+
+
+def run_full_rebuild(year_limit=None, actas=None):
     print("=== SISTEMA DE RECONSTRUCCIÓN ESCALABLE DE BILBAO ===")
 
     rag = RAGPipeline()
 
-    if year_limit:
+    if actas:
+        # actas sueltas por fecha (DD-MM-YYYY): se purgan y se vuelven a indexar solo esas
+        pdf_files = sorted(p for fecha in actas
+                           for p in glob.glob(os.path.join(DATA_PATH, "**", f"{fecha}_*.pdf"), recursive=True))
+        faltan = [f for f in actas if not any(os.path.basename(p).startswith(f) for p in pdf_files)]
+        if faltan:
+            print(f"[!] Sin PDF para: {', '.join(faltan)}")
+            return
+        print(f"[*] Reconstrucción de {len(pdf_files)} actas concretas en {CHROMA_PATH}...")
+        rag.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=rag.embeddings)
+        _purgar_actas(rag, pdf_files)
+        print("[+] Purga completada.")
+        grupos = [("actas seleccionadas", pdf_files)]
+    elif year_limit:
         print(f"[*] Reconstrucción quirúrgica activa: SOLO el año {year_limit}.")
         print(f"[*] Cargando base de datos existente en {CHROMA_PATH}...")
         rag.vector_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=rag.embeddings)
@@ -26,16 +50,7 @@ def run_full_rebuild(year_limit=None):
         if os.path.exists(year_dir):
             pdf_files = glob.glob(os.path.join(year_dir, "*.pdf"))
             print(f"[*] Purgando fragmentos antiguos de {len(pdf_files)} actas de {year_limit} en la DB...")
-            for pdf_path in pdf_files:
-                abs_path = os.path.abspath(pdf_path)
-                try:
-                    rag.vector_store.delete(where={"source": abs_path})
-                except Exception:
-                    pass
-                try:
-                    rag.vector_store.delete(where={"source": abs_path.replace("\\", "/")})
-                except Exception:
-                    pass
+            _purgar_actas(rag, pdf_files)
             print("[+] Purga completada.")
     else:
         if os.path.exists(CHROMA_PATH):
@@ -43,44 +58,43 @@ def run_full_rebuild(year_limit=None):
             shutil.rmtree(CHROMA_PATH)
             print("[+] Limpieza completada.")
 
-    if year_limit:
-        years = [str(year_limit)]
-    else:
-        if not os.path.exists(DATA_PATH):
-            print(f"[!] No se encontró la ruta de datos: {DATA_PATH}")
+    if not actas:
+        if year_limit:
+            years = [str(year_limit)]
+        else:
+            if not os.path.exists(DATA_PATH):
+                print(f"[!] No se encontró la ruta de datos: {DATA_PATH}")
+                return
+            years = sorted([d for d in os.listdir(DATA_PATH) if os.path.isdir(os.path.join(DATA_PATH, d))])
+
+        if not years:
+            print("[!] No se encontraron carpetas de años para procesar.")
             return
-        years = sorted([d for d in os.listdir(DATA_PATH) if os.path.isdir(os.path.join(DATA_PATH, d))])
 
-    if not years:
-        print("[!] No se encontraron carpetas de años para procesar.")
-        return
+        print(f"[*] DATA_PATH: {DATA_PATH}")
+        print(f"[*] Años a procesar: {years}")
+        grupos = [(f"AÑO {year}", glob.glob(os.path.join(DATA_PATH, year, "*.pdf"))) for year in years]
 
-    print(f"[*] DATA_PATH: {DATA_PATH}")
-    print(f"[*] Años a procesar: {years}")
-
-    for year in years:
-        year_dir = os.path.join(DATA_PATH, year)
-        pdf_files = glob.glob(os.path.join(year_dir, "*.pdf"))
-
+    for year, pdf_files in grupos:
         if not pdf_files:
-            print(f"[-] Año {year}: No hay PDFs. Saltando...")
+            print(f"[-] {year}: No hay PDFs. Saltando...")
             continue
 
         print(f"\n{'='*50}")
-        print(f"[*] PROCESANDO AÑO: {year} ({len(pdf_files)} actas)")
+        print(f"[*] PROCESANDO {year} ({len(pdf_files)} actas)")
         print("="*50)
 
         try:
             from tqdm import tqdm
             chunks = []
-            for path in tqdm(pdf_files, desc=f"Año {year}", unit="pdf"):
+            for path in tqdm(pdf_files, desc=year, unit="pdf"):
                 try:
                     chunks.extend(rag._process_single_pdf(path))
                 except Exception as e:
                     print(f"[!] Error cargando {path}: {e}")
 
             if chunks:
-                print(f"[*] Año {year}: {len(chunks)} fragmentos generados. Integrando en la DB...")
+                print(f"[*] {year}: {len(chunks)} fragmentos generados. Integrando en la DB...")
 
                 # Lotes pequeños (100, no 1000): Ollama sirve los embeddings a través de
                 # un proceso "runner" interno con puerto dinámico; con peticiones muy
@@ -114,12 +128,12 @@ def run_full_rebuild(year_limit=None):
                             else:
                                 raise
 
-                print(f"[+] Año {year} integrado con éxito.")
+                print(f"[+] {year} integrado con éxito.")
             else:
-                print(f"[!] Año {year}: No se generaron fragmentos.")
+                print(f"[!] {year}: No se generaron fragmentos.")
 
         except Exception as e:
-            print(f"[ERROR] Fallo crítico procesando el año {year}: {e}")
+            print(f"[ERROR] Fallo crítico procesando {year}: {e}")
 
     print(f"\n{'='*50}")
     print("[¡PROCESO COMPLETADO!]")
@@ -150,5 +164,6 @@ def run_full_rebuild(year_limit=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Reconstrucción escalable de base de datos vectorial.")
     parser.add_argument("--year", type=int, help="Año específico a procesar (omite para reconstruir todo)")
+    parser.add_argument("--actas", help="Actas concretas por fecha DD-MM-YYYY, separadas por comas (solo se reindexan esas)")
     args = parser.parse_args()
-    run_full_rebuild(year_limit=args.year)
+    run_full_rebuild(year_limit=args.year, actas=args.actas.split(",") if args.actas else None)

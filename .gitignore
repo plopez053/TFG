@@ -1,73 +1,35 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 
 # Entornos virtuales
 .venv/
 .venv-ragas/
-venv/
-env/
 
-# OS
+# Sistema e IDE
 Thumbs.db
-.DS_Store
-
-# IDE
 .vscode/
-.idea/
 
-# API keys — nunca subir al repo
+# Claves
 .env
 gen-lang-client-*.json
 
-# Datos pesados — no caben en GitHub (transferir por USB/nube)
+# Datos pesados (no caben en GitHub)
 chroma_db/
 chroma_db_proposiciones/
-chroma_db.rar
 chroma_db.bak*/
 actas/
-
-# Copias, logs y código retirado (solo local)
-_archivo/
-
-# Chainlit: archivos subidos por usuarios en el chat (caché temporal)
-.files/
-frontend/.files/
-*.sqlite
-
-# Logs y salidas de depuración
-*.log
-*.bak
-*.bak[0-9]
-*.bak_*
-debug_context.txt
-frontend/debug_context.txt
-
-
-# Notas de trabajo / informes locales (regenerables, no forman parte del proyecto)
-docs/desarrollo/code_review_findings.txt
-docs/desarrollo/pruebas_16_preguntas.txt
-docs/desarrollo/revision_codigo_y_ontologia.txt
-
-# Datos intermedios pesados del pipeline (regenerables con grafo.construccion;
-# se transfieren por nube junto con chroma_db/actas) y cachés del grafo
 datos/grafo/proposals.jsonl
 datos/grafo/cache/
 
-# Chainlit: traducciones i18n por defecto (las regenera Chainlit al arrancar)
+# Chainlit
+.files/
+frontend/.files/
+*.sqlite
 .chainlit/translations/
 frontend/.chainlit/translations/
 
-# Estudio de generación de SPARQL: resultados y cachés, el código sí se versiona
-evaluacion/estudio_sparql/study_*.jsonl
-evaluacion/estudio_sparql/phase1_*.json
-evaluacion/estudio_sparql/_realvocab.json
-evaluacion/estudio_sparql/_bank_embeds.json
-
-# Baterías crudas / borradores de trabajo (los informes finales sí se versionan)
-docs/desarrollo/bateria_comparativa_cruda_*.md
-
-# Memorias de referencia de otras personas (solo consulta local, no es contenido propio)
-docs/referencias/
+# Registros y copias
+*.log
+*.bak
+*.bak_*

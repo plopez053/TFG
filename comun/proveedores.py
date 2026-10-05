@@ -202,7 +202,9 @@ def _cerrar_ranking(reranked: list, candidatos: list) -> list:
     en_top = {id(d) for d in reranked}
     for d in candidatos:
         if d.metadata.get("_kw") and id(d) not in en_top:
-            d.metadata.setdefault("_rerank_score", 0.02)
+            if "_rerank_score" not in d.metadata:
+                d.metadata["_rerank_score"] = 0.02
+                d.metadata["_rerank_relleno"] = True   # puntuación puesta aquí, no del reordenador
             reranked.append(d)
     return reranked
 

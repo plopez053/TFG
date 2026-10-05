@@ -34,19 +34,8 @@ def _load_graph():
                 # (construccion/enriquecer.py); antes se hacía aquí, en memoria
                 if (None, bo.enriquecido, None) not in g:
                     print("[!] El grafo no está enriquecido: reconstrúyelo con python -m grafo.construccion.build_rdf", flush=True)
-                for p, copia in g.subject_objects(bo.copiaEuskera):
-                    COPIA_DE[str(copia)] = str(p).rsplit("prop_", 1)[-1]
                 _graph = g
     return _graph
-
-
-# prop_id de una copia en euskera quitada del grafo (enriquecer.py) -> prop_id
-# de su versión en castellano: los fragmentos del texto apuntan a la copia
-COPIA_DE: dict = {}
-
-
-def prop_canonica(pid):
-    return COPIA_DE.get(pid, pid)
 
 
 # Esquema compacto + 3 ejemplos elegidos por parecido a la pregunta. Según el
@@ -170,7 +159,11 @@ def _llm_invoke(prompt: str, prefer: str = "ollama") -> str:
                 continue
             try:
                 print(f"[~] GraphRAG usando Groq ({'preferido' if prefer=='groq' else 'fallback'})...", flush=True)
-                return _get_llm("groq").invoke(prompt).content
+                texto = _get_llm("groq").invoke(prompt).content
+                # gpt-oss-120b puede agotar el límite de salida razonando y devolver vacío
+                if not str(texto).strip():
+                    raise ValueError("respuesta vacía")
+                return texto
             except Exception as e:
                 print(f"[!] GraphRAG Groq también falló — {type(e).__name__}: {e}", flush=True)
                 errores.append(str(e))

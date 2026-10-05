@@ -99,10 +99,20 @@ _GRUPOS = [  # (patrón sobre el texto normalizado, [uris aceptadas], nombre)
     (r"eaj[ -]?pnv|\bpnv\b|nacionalistas? vascos?", ["grupo_eaj_pnv"], "EAJ-PNV"),
     (r"\bciudadanos\b", ["grupo_ciudadanos"], "Ciudadanos"),
     (r"\bvox\b", ["grupo_vox"], "Vox"),
+    (r"\baralar\b", ["grupo_aralar"], "Aralar"),
     (r"ezker batua|izquierda unida", ["grupo_ezker_batua_iu"], "Ezker Batua-IU"),
     (r"equipo de gobierno|gobierno municipal", ["grupo_equipo_de_gobierno"], "Equipo de Gobierno"),
     (r"grupo mixto", ["grupo_grupo_mixto"], "Grupo Mixto"),
 ]
+
+# Nombres de grupo que también son palabras corrientes: solo cuentan como grupo en su uso de
+# grupo ("los populares", "Podemos" que no es el verbo, "Ciudadanos" con mayúscula). El segundo
+# valor dice si se comprueba sobre la pregunta tal cual (mayúsculas) o normalizada.
+_USO_DE_GRUPO = {
+    "PP": (r"partido popular|\bpp\b|\b(?:los|las)\s+populares\b", False),
+    "Podemos (Elkarrekin/Udalberri)": (r"\bpodemos\b(?!\s+\w+(?:ar|er|ir)\b)", False),
+    "Ciudadanos": (r"\b(?-i:Ciudadanos|Cs)\b", True),
+}
 
 # palabra de la etiqueta real de cada grupo, por si la consulta filtra por nombre
 _ETIQUETA_GRUPO = {
@@ -294,6 +304,9 @@ def analizar(pregunta: str) -> Analisis:
 
     for patron, uris, nombre in _GRUPOS:
         if re.search(patron, q):
+            uso, original = _USO_DE_GRUPO.get(nombre, (None, False))
+            if uso and not re.search(uso, pregunta if original else q, re.I if original else 0):
+                continue
             a.grupos.append((uris, nombre))
 
     # solo años dentro del periodo de las actas: en "Bilbao Ría 2000" el número
@@ -350,6 +363,9 @@ def analizar(pregunta: str) -> Analisis:
         a.resultado = "decae"
     elif re.search(r"\bretirad", q):
         a.resultado = "retirada"
+    elif re.search(r"\brechaz", q) and re.search(r"\baprob", q):
+        # "¿fue aprobada o rechazada?" pregunta el resultado, no pide filtrar por uno
+        a.resultado = None
     elif re.search(r"\brechaz", q):
         a.resultado = "rechazada"
     elif re.search(r"\baprob", q):

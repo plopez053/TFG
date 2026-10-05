@@ -1,0 +1,33 @@
+{
+  "inicio": "2026-10-05 13:33",
+  "codigo": {
+    "comun/grupos.py": "759fa9f8ff2415e0",
+    "comun/proveedores.py": "46e64aa55f0f2de9",
+    "comun/rutas.py": "2af1295d982df0e3",
+    "frontend/app.py": "7e113916c9cdf1be",
+    "grafo/construccion/build_graph.py": "48a31fe0c39ddeeb",
+    "grafo/construccion/build_rdf.py": "178d508c719d93be",
+    "grafo/construccion/debates.py": "a228af6a34703636",
+    "grafo/construccion/enriquecer.py": "ac8afdc8013393a0",
+    "grafo/construccion/extraer.py": "5665201a18f4b58f",
+    "grafo/construccion/texto_actas.py": "4c2d1d36db3c02e3",
+    "grafo/construccion/validate_shapes.py": "73d56a27d8c81e79",
+    "grafo/construccion/votos.py": "acbc1a68dda335c0",
+    "grafo/consulta/consulta_directa.py": "b1feef2f8ff0b105",
+    "grafo/consulta/generacion.py": "b5bbfe0670daf781",
+    "grafo/consulta/guardas.py": "d033919cae8c9fba",
+    "grafo/consulta/plantillas.py": "a60b586ec78a5291",
+    "grafo/consulta/pregunta.py": "d30a6f38553a091a",
+    "grafo/consulta/recursos.py": "9118279d88130d66",
+    "grafo/consulta/respuesta.py": "998e6563dc89ceba",
+    "vectorial/generacion.py": "56cfad51cdec3e49",
+    "vectorial/indexado.py": "1cb5a19442f57d1a",
+    "vectorial/pipeline.py": "67b0df35bf7c793c",
+    "vectorial/recuperacion.py": "d56cced9ee3c8150",
+    "datos/grafo/ontology.ttl": "8e6adcb0380277b9",
+    "datos/grafo/themes_skos.ttl": "ef1911465817fb27",
+    "datos/grafo/bilbao_reasoned.ttl": "4d6ea3ce54501404",
+    "git_commit": "27831d7"
+  },
+  "narrador": "Gemini/gemini-3.5-flash-lite"
+}
