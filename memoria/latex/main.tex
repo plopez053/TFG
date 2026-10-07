@@ -146,7 +146,7 @@
 	}}}
 	\\[0.5\baselineskip]
 	\begin{center}
-		\parbox{13cm}{\centering\LARGE{\calibrifont\bfseries\MakeUppercase{Conversión de actas del Ayuntamiento de Bilbao a Knowledge Graphs (RDF, OWL, SPARQL, SHACL) y vectorial mediante LLMs, ofreciendo funcionalidad RAG. Interfaz web: visual, consultas, conversacional}}}
+		\parbox{13cm}{\centering\LARGE{\calibrifont\bfseries\MakeUppercase{Sistema de consulta de las actas del Pleno del Ayuntamiento de Bilbao mediante RAG sobre Knowledge Graph e índice vectorial}}}
 	\end{center}
 	\vspace{0.3\baselineskip}
 	\begin{center}
@@ -197,7 +197,7 @@
 	recupera los fragmentos de texto más afines a la consulta y está orientado a
 	preguntas sobre el contenido de un debate, como la posición defendida por un grupo
 	político ante una proposición determinada. El segundo, un sistema GraphRAG,
-	traduce la consulta a SPARQL sobre un grafo de conocimiento RDF/OWL y está
+	traduce la consulta a SPARQL sobre un Knowledge Graph RDF/OWL y está
 	concebido para preguntas que exigen recorrer el corpus completo, como el número de
 	proposiciones presentadas sobre una materia o el grupo que más iniciativas ha
 	registrado en un mandato. Ambos sistemas se integran en una misma interfaz
@@ -208,7 +208,7 @@
 	vectorial, mientras que este último presenta una tasa de respuestas erróneas
 	inferior.
 
-	\textbf{Palabras Clave:} GraphRAG, RAG vectorial, grafo de conocimiento, SPARQL,
+	\textbf{Palabras Clave:} GraphRAG, RAG vectorial, Knowledge Graph, SPARQL,
 	LLM, datos abiertos municipales.
 
 	\bigskip
@@ -281,6 +281,7 @@
 	\addcontentsline{toc}{chapter}{Lista de acrónimos}
 
 	\begin{description}
+		\item [KG] Knowledge Graph
 		\item [LLM] Large Language Model
 		\item [RAG] Retrieval Augmented Generation
 		\item [GraphRAG] Graph Retrieval Augmented Generation
@@ -302,7 +303,7 @@
 	\chapter*{Empleo de Inteligencia Artificial (IA)}
 	\addcontentsline{toc}{chapter}{Empleo de Inteligencia Artificial (IA)}
 
-	En este trabajo se ha utilizado un asistente de inteligencia artificial
+	En este trabajo se ha utilizado un asistente de Inteligencia Artificial
 	generativa como herramienta de apoyo en el desarrollo del software, en la
 	evaluación del sistema y en la redacción de la memoria. Su uso ha tenido
 	carácter auxiliar y no ha sustituido el trabajo de análisis, diseño y toma
@@ -331,15 +332,14 @@
 	\chapter{Introducción}
 	\label{ch:introduccion}
 
-	El Ayuntamiento de Bilbao publica en su portal web, para cada sesión del Pleno
-	celebrada desde 2007, el orden del día, los extractos, un resumen y el acta
-	completa. Este trabajo se basa en el acta, por ser el único de esos documentos
-	que recoge de forma íntegra las proposiciones, el debate y el resultado de
-	cada votación. El corpus empleado reúne las 236 actas publicadas entre 2007 y
-	2026, de las cuales 135 corresponden a sesiones ordinarias y 101 a sesiones
-	extraordinarias, y suma cerca de 30.000 páginas. Sobre ese corpus se
-	desarrollan y se comparan dos sistemas de consulta en lenguaje natural: un RAG
-	vectorial y un sistema GraphRAG.
+	Este trabajo se enmarca en el ámbito de la consulta de documentación pública
+	municipal mediante modelos de lenguaje de gran tamaño (LLM). El Ayuntamiento
+	de Bilbao publica en su portal web, para cada sesión del Pleno celebrada desde
+	2007, el orden del día, los extractos, un resumen y el acta completa. De esos
+	documentos se toma el acta, por ser el único que recoge de forma íntegra las
+	proposiciones, el debate y el resultado de cada votación. Sobre las actas
+	publicadas entre 2007 y 2026 se desarrollan y se comparan dos sistemas de
+	consulta en lenguaje natural: un RAG vectorial y un sistema GraphRAG.
 
 	Este capítulo presenta la motivación que ha llevado al desarrollo del
 	proyecto, los objetivos planteados, su relación con los Objetivos de
@@ -347,8 +347,9 @@
 
 	\section{Motivación}
 
-	Las actas del Pleno son documentos públicos, pero consultarlas es costoso.
-	Cada acta puede superar el centenar de páginas, y en ella las proposiciones, su
+	Las actas del Pleno del Ayuntamiento de Bilbao son documentos públicos, pero
+	consultarlas es costoso. Cada acta puede superar el centenar de páginas, y en
+	ella las proposiciones, su
 	debate y sus votaciones aparecen mezclados con abundante contenido de trámite
 	administrativo. Separar lo uno de lo otro forma parte del problema que aborda
 	este trabajo.
@@ -362,7 +363,7 @@
 	preguntas en lenguaje natural y obtener una respuesta verificable en el
 	documento original.
 
-	Los modelos de lenguaje actuales permiten plantear preguntas en lenguaje
+	Los LLM actuales permiten plantear preguntas en lenguaje
 	natural sobre un conjunto de documentos propio, mediante la generación aumentada por
 	recuperación (RAG), en la que el modelo responde
 	a partir de los pasajes que el sistema localiza en esos documentos. Este
@@ -380,12 +381,19 @@
 	investigadores disponen de un corpus estructurado para estudiar la actividad
 	plenaria de casi dos décadas.
 
-	\section{Objetivos y alcance}
+	\section{Objetivos del trabajo}
 
-	El objetivo general de este trabajo es desarrollar un sistema que permita
-	consultar en lenguaje natural el contenido de las actas del Pleno del
-	Ayuntamiento de Bilbao y que responda con datos verificables, enlazados a la
-	página del documento de origen.
+	\subsection{Objetivo general y alcance}
+	\label{sec:alcance}
+
+	El objetivo general de este trabajo es desarrollar y comparar dos sistemas que
+	permitan consultar en lenguaje natural el contenido de las actas del Pleno del
+	Ayuntamiento de Bilbao y que respondan con datos verificables, enlazados a la
+	página del documento de origen. Los dos parten de los mismos documentos y los
+	organizan en dos estructuras de datos distintas, un índice vectorial y un
+	Knowledge Graph, con el fin de determinar cuál de las dos es más adecuada para
+	un corpus de este tipo. El trabajo abarca la totalidad de las actas publicadas
+	entre 2007 y 2026.
 
 	\subsection{Objetivos específicos}
 	\label{sec:objetivos-especificos}
@@ -397,7 +405,7 @@
 		proposiciones de cada sesión con su fecha, el grupo que las presenta, el
 		tema, las entidades mencionadas y el resultado de la votación
 		(Capítulo~\ref{ch:corpus}).
-		\item Construir un grafo de conocimiento RDF/OWL que modele las
+		\item Construir un Knowledge Graph RDF/OWL que modele las
 		proposiciones, los grupos políticos, los concejales y los temas, y que
 		admita razonamiento automático sobre la jerarquía de temas
 		(Capítulo~\ref{ch:solucion}).
@@ -414,18 +422,6 @@
 		determinar en qué tipo de preguntas es más adecuada cada arquitectura
 		(Capítulo~\ref{ch:resultados}).
 	\end{enumerate}
-
-	\subsection{Alcance del sistema desarrollado}
-	\label{sec:alcance}
-
-	El trabajo abarca la totalidad de las actas del Pleno publicadas entre 2007 y
-	2026. Queda fuera de su alcance el enlazado del grafo con fuentes externas como
-	Wikidata. Se valoró para completar los datos de los concejales, pero aportaba
-	poca información, ya que la mayor parte de ellos, en torno a tres de cada
-	cuatro, no figura en Wikidata. Su aplicación a los temas y a las entidades se
-	recoge como trabajo futuro en el Capítulo~\ref{ch:conclusiones}. Quedan fuera
-	también la distinción entre concejales con el mismo apellido en el voto
-	nominal, más allá de la que ya se aplica, y la evaluación con usuarios reales.
 
 	\section{Conexión con los Objetivos de Desarrollo Sostenible}
 
@@ -485,8 +481,7 @@
 	Este capítulo sitúa el trabajo en su contexto. Expone el marco de
 	transparencia administrativa en el que se publican las actas e introduce los
 	conceptos técnicos en los que se apoya el
-	sistema: los modelos de lenguaje de gran tamaño, la generación aumentada por
-	recuperación, los grafos de conocimiento y GraphRAG. Por último, se describe
+	sistema: los LLM, RAG, los Knowledge Graphs y GraphRAG. Por último, se describe
 	el Pleno del Ayuntamiento de Bilbao, cuya documentación es el objeto del trabajo.
 
 	\section{Transparencia y digitalización de la administración pública}
@@ -505,15 +500,15 @@
 	del Pleno de Bilbao, la información está publicada, pero localizar un dato concreto exige una búsqueda manual que limita en la práctica
 	quién puede utilizarla.
 
-	Las técnicas de inteligencia artificial que permiten consultar documentación
+	Las técnicas de Inteligencia Artificial que permiten consultar documentación
 	extensa en lenguaje natural ofrecen un medio para reducir esa distancia entre
 	publicación y acceso efectivo. Este trabajo las aplica a un caso concreto de
 	documentación administrativa pública.
 
-	\section{Modelos de lenguaje de gran tamaño}
+	\section{Large Language Models}
 
-	Un modelo de lenguaje de gran tamaño, o LLM por las siglas de \textit{Large
-	Language Model}, es una red neuronal entrenada con grandes volúmenes de texto
+	Un LLM, siglas de \textit{Large Language Model} o modelo de lenguaje de gran
+	tamaño, es una red neuronal entrenada con grandes volúmenes de texto
 	para predecir la continuación más probable de una secuencia. Tras un ajuste
 	posterior orientado a seguir instrucciones, estos modelos resuelven tareas
 	diversas a partir de una instrucción en lenguaje natural, el \textit{prompt}, entre ellas responder preguntas, resumir documentos o
@@ -532,10 +527,10 @@
 	limitaciones hacen necesario complementar el modelo con una fuente documental
 	externa.
 
-	\section{Generación aumentada por recuperación}
+	\section{Retrieval Augmented Generation}
 
-	La generación aumentada por recuperación, o RAG por las siglas de
-	\textit{Retrieval-Augmented Generation}~\cite{lewis2020-rag}, consiste en
+	RAG, siglas de \textit{Retrieval-Augmented Generation} o generación aumentada
+	por recuperación~\cite{lewis2020-rag}, consiste en
 	proporcionar al LLM, junto con la pregunta, información recuperada de una base
 	de conocimiento externa, para que la respuesta se apoye en ella y no solo en
 	lo aprendido durante el entrenamiento.
@@ -557,7 +552,7 @@
 	RAG}~\cite{gao2023-rag-survey} añaden mejoras en alguna de sus fases, como la
 	reformulación de la consulta o la reordenación de los fragmentos recuperados.
 	Otras aproximaciones sustituyen el almacén de fragmentos por una base de
-	conocimiento estructurada, como un grafo de conocimiento, lo que da lugar a
+	conocimiento estructurada, como un Knowledge Graph, lo que da lugar a
 	GraphRAG~\cite{edge2024-graphrag}, que se describe en las
 	Secciones~\ref{sec:grafos} y~\ref{sec:graphrag}.
 
@@ -566,10 +561,11 @@
 	reordenación de resultados, y un sistema GraphRAG. Ambos se comparan sobre las
 	mismas preguntas en el Capítulo~\ref{ch:resultados}.
 
-	\section{Grafos de conocimiento}
+	\section{Knowledge Graphs}
 	\label{sec:grafos}
 
-	Un grafo de conocimiento representa la información como un conjunto de
+	Un Knowledge Graph, o grafo de conocimiento, representa la información como un
+	conjunto de
 	entidades y de relaciones entre ellas, en lugar de como texto
 	libre~\cite{hogan2021-knowledge-graphs}. El estándar empleado en este trabajo
 	es RDF, \textit{Resource Description Framework}~\cite{w3c-rdf11}, que expresa
@@ -590,7 +586,7 @@
 	\label{sec:graphrag}
 
 	GraphRAG es la variante de RAG en la que la información se recupera de un
-	grafo de conocimiento y no de un almacén de fragmentos de texto. En el sistema
+	Knowledge Graph y no de un almacén de fragmentos de texto. En el sistema
 	de este trabajo, la pregunta se traduce a una consulta SPARQL, que el propio
 	programa compone para los tipos de pregunta previstos y que genera un LLM en
 	los demás casos. El motor de grafos ejecuta la consulta y devuelve datos
@@ -602,9 +598,8 @@
 	fragmentos de texto no puede responderlas con precisión, ya que exigen contar
 	y cruzar datos de todo el corpus y no localizar un pasaje concreto.
 
-	En esta memoria el término GraphRAG se emplea en sentido amplio, como
-	generación aumentada por recuperación en la que lo recuperado procede de un
-	grafo de conocimiento. No designa el método que Edge et al.\ publicaron con
+	En esta memoria el término GraphRAG se emplea en sentido amplio, como RAG en
+	el que lo recuperado procede de un Knowledge Graph. No designa el método que Edge et al.\ publicaron con
 	ese nombre~\cite{edge2024-graphrag}, en el que un LLM extrae del texto un
 	grafo de entidades y relaciones, agrupa sus nodos en comunidades y redacta un
 	resumen de cada una, y las preguntas globales se responden combinando esos
@@ -617,7 +612,7 @@
 	\section{El Pleno del Ayuntamiento de Bilbao}
 
 	Este trabajo se ha desarrollado sobre la documentación pública del Pleno del
-	Ayuntamiento de Bilbao (Figura~\ref{fig:ayuntamiento-bilbao}), órgano superior de gobierno y control del municipio,
+	Ayuntamiento de Bilbao, órgano superior de gobierno y control del municipio,
 	integrado por la alcaldía y los concejales elegidos en cada mandato. En sus
 	sesiones, ordinarias o extraordinarias, los grupos políticos y la alcaldía
 	presentan proposiciones que se debaten y se someten a votación. El resultado
@@ -630,14 +625,6 @@
 	con el resto de la documentación de cada sesión. Ese archivo, de 236 actas de casi veinte años, forma el corpus de este trabajo. Su
 	descripción y el proceso que lo transforma en datos estructurados se recogen
 	en el Capítulo~\ref{ch:corpus}.
-
-	\begin{figure}[H]
-		\centering
-		\includegraphics[width=7cm]{ayuntamiento_bilbao.jpg}
-		\caption{Fachada del Ayuntamiento de Bilbao}
-		\label{fig:ayuntamiento-bilbao}
-		{\small Fuente: Wikimedia Commons, licencia CC0 (dominio público).}
-	\end{figure}
 
 	\chapter{Descripción de requerimientos y análisis del estado del arte}
 	\label{ch:estadodelarte}
@@ -655,7 +642,10 @@
 	\subsection{Requisitos funcionales}
 
 	La Tabla~\ref{tab:requisitos-funcionales} recoge los requisitos funcionales,
-	que describen lo que el sistema debe hacer.
+	que describen lo que el sistema debe hacer. Los tres primeros corresponden a
+	la preparación de los datos, RF4 y RF5 a los dos sistemas de consulta que se
+	comparan, RF6 y RF7 a la forma en la que ambos se ofrecen al usuario, y los
+	dos últimos a la comprobación del trabajo.
 
 	\begin{table}[H]
 		\centering
@@ -670,7 +660,7 @@
 			votación y la página de origen. \\
 			\hline
 			\rowcolor{fila-alterna}
-			RF2 & \textbf{Grafo de conocimiento.} Construir un grafo RDF/OWL que
+			RF2 & \textbf{Knowledge Graph.} Construir un grafo RDF/OWL que
 			modele proposiciones, grupos políticos, concejales y temas, con
 			razonamiento automático sobre la jerarquía de temas definida en SKOS.
 			\\
@@ -714,7 +704,10 @@
 	\subsection{Requisitos no funcionales}
 
 	La Tabla~\ref{tab:requisitos-no-funcionales} recoge los requisitos no
-	funcionales, que fijan las condiciones en las que debe hacerlo.
+	funcionales, que fijan las condiciones en las que debe hacerlo. Los dos
+	primeros responden a la naturaleza institucional del corpus, en el que cada
+	dato debe poder comprobarse en el acta, y los tres restantes, a las
+	condiciones del proyecto.
 
 	\begin{table}[H]
 		\centering
@@ -733,8 +726,8 @@
 			de forma explícita en lugar de generar una respuesta verosímil sin
 			respaldo en el corpus. \\
 			\hline
-			RNF3 & \textbf{Coste.} El sistema debe poder funcionar con modelos de
-			lenguaje locales o con servicios en la nube gratuitos o de bajo
+			RNF3 & \textbf{Coste.} El sistema debe poder funcionar con LLM
+			locales o con servicios en la nube gratuitos o de bajo
 			coste, sin depender de un presupuesto de inferencia elevado. \\
 			\hline
 			\rowcolor{fila-alterna}
@@ -771,15 +764,17 @@
 	que los representa por separado. Esta técnica se propuso para la recuperación
 	de pasajes con BERT~\cite{nogueira2019-bert-rerank} y se ha generalizado como
 	medio para mejorar la precisión de los primeros resultados de un motor de
-	recuperación semántica. En este trabajo se aplica mediante el servicio de
-	reordenación de Cohere a los candidatos obtenidos por los cuatro canales de
-	búsqueda del RAG vectorial, que se describen en el Capítulo~\ref{ch:solucion}.
+	recuperación semántica. En este trabajo se aplica a los candidatos obtenidos
+	por los cuatro canales de búsqueda del RAG vectorial, que se describen en el
+	Capítulo~\ref{ch:solucion}. Para ello se emplea el servicio de reordenación de
+	Cohere\footnote{\url{https://cohere.com/rerank}}, una empresa que ofrece
+	modelos de lenguaje a través de una API en la nube.
 
 	\subsection{Fiabilidad de la generación de SPARQL con LLM}
 	\label{sec:estado-arte-sparql}
 
 	La traducción de lenguaje natural a consultas formales mediante LLM es un área
-	de investigación activa, tanto para SPARQL sobre grafos de conocimiento, el
+	de investigación activa, tanto para SPARQL sobre Knowledge Graphs, el
 	caso del sistema GraphRAG de este trabajo, como para SQL sobre bases de datos
 	relacionales, un problema de la misma estructura. A continuación se
 	resume lo que recoge la literatura sobre los cuatro aspectos que han
@@ -797,7 +792,7 @@
 	(\textit{few-shot})~\cite{giuliani2026-sparql-llm}.
 
 	Lo habitual es buscar los ejemplos que más se parecen a cada pregunta, aunque
-	no es la única opción. Un trabajo sobre un grafo de conocimiento de
+	no es la única opción. Un trabajo sobre un Knowledge Graph de
 	accidentes de aviación emplea tres ejemplos fijos, escritos a mano, junto con
 	información del grafo relacionada con la pregunta, y mejora en un 6\,\% el
 	resultado del trabajo de partida sin necesitar un conjunto de preguntas
@@ -1095,8 +1090,8 @@
 			\rowcolor{fila-alterna}
 			Predecesores & 2.2. Análisis de alternativas tecnológicas \\
 			\hline
-			Entregables/salidas & Sistema completo: corpus estructurado, grafo de
-			conocimiento, RAG vectorial, GraphRAG e interfaz web. \\
+			Entregables/salidas & Sistema completo: corpus estructurado, Knowledge
+			Graph, RAG vectorial, GraphRAG e interfaz web. \\
 			\hline
 		\end{tabularx}
 		\caption{Paquete de trabajo: 3. Desarrollo del sistema}
@@ -1169,7 +1164,7 @@
 			\rowcolor{fila-alterna}
 			Predecesores & 3.1. Extracción y preprocesado del corpus y 3.2. RAG vectorial \\
 			\hline
-			Entregables/salidas & Grafo de conocimiento y sistema GraphRAG funcional. \\
+			Entregables/salidas & Knowledge Graph y sistema GraphRAG funcional. \\
 			\hline
 		\end{tabularx}
 		\caption{Paquete de trabajo: 3.3. GraphRAG}
@@ -1778,19 +1773,21 @@
 	Este capítulo analiza las principales alternativas tecnológicas consideradas
 	antes de fijar la arquitectura del sistema. Para cada decisión se exponen las
 	ventajas y los inconvenientes de las opciones valoradas y la elección
-	adoptada. Las tres primeras secciones tratan los modelos de lenguaje, el
+	adoptada. Las tres primeras secciones tratan los LLM, el
 	almacenamiento del grafo y la recuperación vectorial. La última presenta el
 	estudio comparativo realizado para elegir el modelo y la forma del
 	\textit{prompt} en la generación de SPARQL.
 
-	\section{Modelos de lenguaje: ejecución local frente a API en la nube}
+	\section{LLM: ejecución local frente a API en la nube}
 
-	El sistema emplea modelos de lenguaje en dos situaciones distintas. La
+	El sistema emplea LLM en dos situaciones distintas. La
 	generación interactiva produce una respuesta por cada pregunta del usuario, en
 	tiempo real. El enriquecimiento por lotes clasifica una sola vez, sin
 	supervisión, todos los puntos del orden del día del corpus. Para ambas se
-	valoraron tres opciones: modelos locales servidos con Ollama, la API de Groq
-	en su nivel gratuito y la API de pago de Gemini.
+	valoraron tres opciones: modelos locales servidos con
+	Ollama\footnote{\url{https://ollama.com}}, la API de
+	Groq\footnote{\url{https://groq.com}} en su nivel gratuito y la API de pago de
+	Gemini\footnote{\url{https://ai.google.dev}}.
 
 	\subsection{Puntos positivos}
 
@@ -1840,9 +1837,14 @@
 
 	\section{Almacenamiento del grafo: librería en memoria frente a base de grafos dedicada}
 
-	El grafo de conocimiento, de unos 660.000 triples tras el razonamiento OWL-RL,
-	puede almacenarse y consultarse con una librería en memoria, como rdflib junto
-	con owlrl, o con un motor de grafos desplegado como servicio, como GraphDB, Apache Jena Fuseki o Blazegraph.
+	El Knowledge Graph, de unos 660.000 triples una vez materializados los que
+	deduce el razonador OWL-RL, puede almacenarse y consultarse con una librería en memoria, como
+	rdflib\footnote{\url{https://rdflib.readthedocs.io}} junto con
+	owlrl\footnote{\url{https://owl-rl.readthedocs.io}}, o con un motor de grafos
+	desplegado como servicio, como
+	GraphDB\footnote{\url{https://graphdb.ontotext.com}}, Apache Jena
+	Fuseki\footnote{\url{https://jena.apache.org/documentation/fuseki2/}} o
+	Blazegraph\footnote{\url{https://blazegraph.com}}.
 
 	\subsection{Puntos positivos}
 
@@ -1868,7 +1870,7 @@
 
 	\subsection{Conclusión}
 
-	Se descarta la base de grafos dedicada porque el volumen del grafo no la justifica y rdflib con owlrl satisface los requisitos RF2 y RF8 sin coste adicional de
+	Se descarta la base de grafos dedicada porque el volumen del grafo no la justifica y rdflib\footnote{\url{https://rdflib.readthedocs.io}} con owlrl\footnote{\url{https://owl-rl.readthedocs.io}} satisface los requisitos RF2 y RF8 sin coste adicional de
 	infraestructura. Un motor dedicado pasaría a ser preferible si el corpus
 	creciera en varios órdenes de magnitud o si el sistema tuviera que atender
 	consultas concurrentes de muchos usuarios con baja latencia.
@@ -1878,7 +1880,8 @@
 
 	El RAG vectorial puede limitarse a la búsqueda semántica por
 	\textit{embeddings} o combinarla con otros canales de recuperación sobre el
-	mismo almacén, que en este trabajo es ChromaDB.
+	mismo almacén, que en este trabajo es
+	ChromaDB\footnote{\url{https://www.trychroma.com}}.
 
 	\subsection{Puntos positivos}
 
@@ -2077,7 +2080,7 @@
 	\label{ch:solucion}
 
 	Este capítulo describe el sistema desarrollado: su arquitectura general, la
-	construcción del grafo de conocimiento, los dos sistemas de recuperación de
+	construcción del Knowledge Graph, los dos sistemas de recuperación de
 	información, la generación de las respuestas, la interfaz web y las
 	principales decisiones de configuración. La obtención y la preparación del
 	corpus sobre el que opera se describen en el Capítulo~\ref{ch:corpus}.
@@ -2089,7 +2092,7 @@
 	y comparten varias piezas intermedias, pero almacenan la información en
 	dos estructuras de datos distintas. El RAG vectorial conserva el texto de las
 	actas dividido en fragmentos y los recupera por su similitud con la pregunta.
-	El GraphRAG conserva en un grafo de conocimiento los hechos extraídos de las
+	El GraphRAG conserva en un Knowledge Graph los hechos extraídos de las
 	actas y los consulta con SPARQL. El hecho de que ambos partan de los mismos
 	documentos y de los mismos datos de enriquecimiento es lo que permite
 	compararlos en el Capítulo~\ref{ch:resultados}.
@@ -2125,7 +2128,7 @@
 	\end{figure}
 
 	El código sigue la misma división. Un módulo común reúne lo que utilizan los
-	dos sistemas: las rutas de los datos, el acceso a los modelos de lenguaje con
+	dos sistemas: las rutas de los datos, el acceso a los LLM con
 	sus respaldos y la normalización de los nombres de los grupos políticos. Cada
 	sistema tiene su propio módulo, organizado por etapas. En el RAG vectorial son
 	tres: del PDF a los fragmentos, de la pregunta a los fragmentos y de los
@@ -2133,7 +2136,7 @@
 	interfaz se limita a enviar la pregunta al sistema elegido y a mostrar lo que
 	este devuelve.
 
-	\section{Construcción del grafo de conocimiento}
+	\section{Construcción del Knowledge Graph}
 	\label{sec:construccion-grafo}
 
 	El grafo se construye a partir de los puntos del orden del día extraídos y
@@ -2188,7 +2191,7 @@
 
 	\textbf{Taxonomía de temas.} Los temas se organizan en una taxonomía SKOS de dos niveles con 58 conceptos: 19 temas generales, como vivienda, movilidad y transporte o presupuestos y fiscalidad, y sus subtemas, como desahucios, bicicleta o impuestos. Cada concepto incluye sus sinónimos en castellano y en euskera. Es la misma taxonomía que emplea el canal temático del RAG vectorial.
 
-	\textbf{Razonamiento.} Sobre el grafo se ejecuta una sola vez, al construirlo, un razonador OWL-RL que añade los hechos que se deducen de la ontología. El más útil es la herencia temática, por la cual una proposición clasificada en el subtema de los desahucios pasa a tratar también del tema general de la vivienda, de modo que una pregunta sobre vivienda la incluye sin que la consulta tenga que enumerar los subtemas. El grafo resultante tiene unos 660.000 triples, como recoge la Tabla~\ref{tab:corpus-estructurado}.
+	\textbf{Razonamiento.} Sobre el grafo se ejecuta una sola vez, al construirlo, un razonador OWL-RL que añade los hechos que se deducen de la ontología. El más útil es la herencia temática, por la cual una proposición clasificada en el subtema de los desahucios pasa a tratar también del tema general de la vivienda, de modo que una pregunta sobre vivienda la incluye sin que la consulta tenga que enumerar los subtemas. Los hechos deducidos se materializan en el grafo como nuevos triples y se guardan con él, de modo que las consultas no requieren razonar de nuevo. El grafo pasa así de unos 562.000 triples afirmados a unos 660.000, una vez descartadas las deducciones triviales del razonador, como la identidad de cada recurso consigo mismo. La cifra final se recoge en la Tabla~\ref{tab:corpus-estructurado}.
 
 	\textbf{Validación.} Un conjunto de restricciones SHACL, independiente del código que construye el grafo, comprueba su integridad, tal como exige el requisito RF8. Verifica, entre otras condiciones, que toda proposición tenga una fecha, un título y un único grupo proponente, que su resultado sea uno de los seis valores previstos, que son los cinco resultados posibles de una votación y la ausencia de resultado, y que quien vota sea un grupo o un concejal del censo. La versión entregada no presenta ninguna violación.
 
@@ -2204,10 +2207,8 @@
 	\textbf{Texto de los debates.} El grafo no almacena el texto íntegro de las
 	intervenciones, sino un resumen de cada una y la postura del orador. Se trata de una decisión de diseño. El texto de los debates, de unos 95 millones de caracteres, ya está en el índice vectorial, y copiarlo al grafo habría
 	duplicado ese índice en lugar de ofrecer una estructura distinta con la que
-	compararlo. Además, una consulta SPARQL localiza un texto por coincidencia de
-	palabras, y no por significado, de manera que almacenarlo no habría permitido
-	encontrarlo cuando la pregunta emplea otras palabras, y habría más que
-	duplicado el tamaño de un grafo que se carga completo en memoria. La otra
+	compararlo. Además, habría más que duplicado el tamaño de un grafo que se
+	carga completo en memoria. La otra
 	posibilidad, convertir en datos estructurados todo lo que se dice en cada
 	intervención, habría exigido que un LLM extrajera muchos más datos, y cada
 	dato extraído por un LLM, que no es determinista, es una posible fuente de
@@ -2222,34 +2223,54 @@
 	La Figura~\ref{fig:rdf-ejemplo} muestra el resultado para una proposición
 	concreta, la misma cuyo comienzo en el acta reproduce la
 	Figura~\ref{fig:formato-actas}. Los triples recogen el pleno y la legislatura
-	en los que se debatió, el grupo que la presentó, sus temas, el voto de cada
-	grupo y la página del acta en la que comienza. La proposición decae, ya que el Pleno aprobó una enmienda que la sustituye.
+	en los que se debatió, el grupo que la presentó, sus temas, el voto de tres
+	de los grupos y la página del acta en la que comienza. Las flechas
+	discontinuas señalan los dos triples que materializa el razonador, el de la
+	legislatura, que se deduce del pleno, y el del tema general de la cultura, que
+	se deduce del subtema de los museos. La proposición decae, ya que el Pleno aprobó una enmienda que la sustituye.
 
 	\begin{figure}[H]
 		\centering
-		\begin{minipage}{0.92\linewidth}
-		\small
-\begin{verbatim}
-br:prop_44a5d37fdbda5164 a bo:Proposicion ;
-    bo:fechaISO "2025-09-25"^^xsd:date ;
-    bo:enPleno br:pleno_25_09_2025 ;
-    bo:enLegislatura br:legislatura_2023_2027 ;
-    bo:tipoPunto "proposicion_grupo" ;
-    bo:presentadaPor br:grupo_eh_bildu ;
-    bo:resumen "Se insta a realizar un inventario de los refugios
-                antiaéreos de la Guerra Civil en Bilbao [...]" ;
-    bo:trataSobre br:t_memoriahistorica, br:t_museos ;
-    bo:tieneResultado bo:Decae ;
-    bo:tieneEnmienda br:enmienda_44a5d37fdbda5164 ;
-    bo:tieneVotacion br:votacion_44a5d37fdbda5164_1 ;
-    bo:votoAFavorDe br:grupo_eaj_pnv, br:grupo_eh_bildu,
-                    br:grupo_elkarrekin_bilbao, br:grupo_pse_ee ;
-    bo:seAbstuvo br:grupo_pp ;
-    bo:votosFavor 25 ;
-    bo:pagina 217 .
-\end{verbatim}
-		\end{minipage}
-		\caption{Selección de los triples de una proposición del grafo, en sintaxis Turtle}
+		\resizebox{\linewidth}{!}{%
+		\begin{tikzpicture}[
+			font=\small,
+			recurso/.style={draw, rounded corners, align=center, text width=2.7cm, minimum height=0.9cm},
+			central/.style={recurso, fill=fila-alterna, text width=3.3cm},
+			literal/.style={draw, align=center, minimum height=0.7cm, font=\small\ttfamily, inner xsep=6pt},
+			rel/.style={-stealth, thick},
+			inf/.style={-stealth, thick, dashed},
+			et/.style={font=\scriptsize\itshape, sloped, fill=white, inner sep=1.5pt},
+		]
+			\node[central] (prop) at (0,0) {\textbf{Proposición}\\{\scriptsize inventario de los refugios antiaéreos}};
+			\node[recurso] (pleno) at (-6.5,0) {Pleno\\{\scriptsize 25-09-2025}};
+			\node[recurso] (leg) at (-6.5,3) {Legislatura\\{\scriptsize 2023--2027}};
+			\node[recurso] (mem) at (-2.2,3) {Tema\\{\scriptsize memoria histórica}};
+			\node[recurso] (mus) at (2.2,3) {Tema\\{\scriptsize museos}};
+			\node[recurso] (cul) at (6.5,3) {Tema\\{\scriptsize cultura}};
+			\node[recurso] (bildu) at (6.5,0) {Grupo político\\{\scriptsize EH Bildu}};
+			\node[recurso] (pnv) at (6.5,-3) {Grupo político\\{\scriptsize EAJ-PNV}};
+			\node[recurso] (pp) at (2.2,-3) {Grupo político\\{\scriptsize PP}};
+			\node[recurso] (res) at (-2.2,-3) {Resultado\\{\scriptsize decae}};
+			\node[literal] (pag) at (-6.5,-3) {217};
+			\node[literal] (fecha) at (-6.5,-1.5) {2025-09-25};
+
+			\draw[rel] (prop) -- node[et] {enPleno} (pleno);
+			\draw[rel] (pleno) -- node[font=\scriptsize\itshape, left] {enLegislatura} (leg);
+			\draw[inf] (prop) -- node[et, pos=0.6] {enLegislatura} (leg);
+			\draw[rel] (prop) -- node[et] {trataSobre} (mem);
+			\draw[rel] (prop) -- node[et] {trataSobre} (mus);
+			\draw[rel] (mus) -- node[et] {skos:broader} (cul);
+			\draw[inf] (prop) -- node[et, pos=0.62] {trataTemaAmplio} (cul);
+			\draw[rel] (prop) to[bend left=10] node[et, pos=0.55] {presentadaPor} (bildu);
+			\draw[rel] (prop) to[bend right=10] node[et, pos=0.55] {votoAFavorDe} (bildu);
+			\draw[rel] (prop) -- node[et, pos=0.6] {votoAFavorDe} (pnv);
+			\draw[rel] (prop) -- node[et] {seAbstuvo} (pp);
+			\draw[rel] (prop) -- node[et] {tieneResultado} (res);
+			\draw[rel] (prop) -- node[et, pos=0.72] {pagina} (pag);
+			\draw[rel] (prop) -- node[et, pos=0.55] {fechaISO} (fecha);
+		\end{tikzpicture}%
+		}
+		\caption[Selección de los triples de una proposición del grafo]{Selección de los triples de una proposición del grafo. Las flechas discontinuas son triples materializados por el razonador y los rectángulos, valores literales}
 		\label{fig:rdf-ejemplo}
 	\end{figure}
 
@@ -3215,7 +3236,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 
 	El generador local mostró, además, un fallo más grave. Ante un contexto con
 	varias proposiciones parecidas del mismo día, Qwen2.5-7B entró en un bucle de
-	repetición, un fallo conocido de los modelos de lenguaje con decodificación
+	repetición, un fallo conocido de los LLM con decodificación
 	determinista~\cite{holtzman2020-degeneration}, y continuó generando durante 50
 	minutos, con más de 52.000 \textit{tokens}. Se fijó un límite de 4.096
 	\textit{tokens} de salida, que impide que el fallo bloquee la aplicación, pero
@@ -3535,7 +3556,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	al contexto en una de cada tres preguntas, y con la configuración completa, en
 	tres de cada cuatro, como recoge la Tabla~\ref{tab:diag-recuperacion}.
 
-	\section{Límites del grafo de conocimiento}
+	\section{Límites del Knowledge Graph}
 	\label{sec:limites-grafo}
 
 	El planteamiento del trabajo es la comparación de dos estructuras de datos,
@@ -3706,7 +3727,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	preguntas sobre las actas del Pleno del Ayuntamiento de Bilbao del periodo
 	2007--2026. Los dos parten de los mismos documentos y de la misma información,
 	organizada en dos estructuras de datos distintas: un índice vectorial de
-	fragmentos de texto y un grafo de conocimiento RDF consultado con SPARQL. La
+	fragmentos de texto y un Knowledge Graph RDF consultado con SPARQL. La
 	cuestión de fondo era cuál de las dos estructuras es más adecuada para un corpus de este tipo. Los resultados
 	obtenidos permiten tres conclusiones, sobre la estructura más adecuada, la
 	limitación del grafo y los modelos empleados.
@@ -3747,9 +3768,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	Lo que el grafo de este trabajo no contiene es el texto íntegro de los
 	debates. Las intervenciones figuran como un resumen de la postura de cada orador, sin sus palabras literales. El texto completo no se incorporó porque
 	habría duplicado el índice vectorial en lugar de ofrecer una estructura
-	distinta con la que compararlo, y porque una consulta SPARQL busca por
-	coincidencia de palabras y no por significado, como se expone en la
-	Sección~\ref{sec:construccion-grafo}. Un grafo enlazado con el texto de
+	distinta con la que compararlo, y porque habría más que duplicado el tamaño
+	del grafo, como se expone en la Sección~\ref{sec:construccion-grafo}. Un grafo enlazado con el texto de
 	las actas, en el que el grafo localice las proposiciones y el texto aporte lo
 	que se dijo, podría responder con un único sistema a los dos tipos de
 	pregunta, y es la principal línea de continuación de este trabajo. Su límite
@@ -3786,7 +3806,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		las 236 actas se han extraído 3.840 puntos del orden del día con su
 		fecha, el grupo que los presenta, el tema, las entidades, el resultado y
 		la página, como describe el Capítulo~\ref{ch:corpus}.
-		\item \textbf{Grafo de conocimiento RDF/OWL con razonamiento.} Cumplido:
+		\item \textbf{Knowledge Graph RDF/OWL con razonamiento.} Cumplido:
 		el grafo, de unos 660.000 triples, se valida con SHACL sin violaciones y
 		deriva con un razonador la herencia entre temas, como describe el
 		Capítulo~\ref{ch:solucion}.
@@ -3807,7 +3827,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		Sección~\ref{sec:resultados-independiente}.
 	\end{enumerate}
 
-	Queda fuera, como se fijó en el alcance, la evaluación con usuarios reales.
+	No se ha realizado una evaluación con usuarios reales, que se recoge como
+	trabajo futuro en la Sección~\ref{sec:trabajo-futuro}.
 
 	\section{Conclusiones sobre las pruebas realizadas}
 
@@ -3919,7 +3940,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		y las entidades, como empresas, equipamientos o barrios, con Wikidata, lo
 		que aportaría, por ejemplo, las coordenadas necesarias para situar las
 		proposiciones en un mapa. Es una ventaja de la estructura de grafo que el índice vectorial no ofrece, ya que sus fragmentos son texto sin identidad
-		propia.
+		propia. Durante el proyecto se valoró ese enlace para completar los datos
+		de los concejales y se descartó, ya que en torno a tres de cada cuatro no
+		figuran en Wikidata.
 	\end{itemize}
 
 	\cleardoublepage
