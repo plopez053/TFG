@@ -386,14 +386,14 @@
 	\subsection{Objetivo general y alcance}
 	\label{sec:alcance}
 
-	El objetivo general de este trabajo es desarrollar y comparar dos sistemas que
-	permitan consultar en lenguaje natural el contenido de las actas del Pleno del
-	Ayuntamiento de Bilbao y que respondan con datos verificables, enlazados a la
-	página del documento de origen. Los dos parten de los mismos documentos y los
-	organizan en dos estructuras de datos distintas, un índice vectorial y un
-	Knowledge Graph, con el fin de determinar cuál de las dos es más adecuada para
-	un corpus de este tipo. El trabajo abarca la totalidad de las actas publicadas
-	entre 2007 y 2026.
+	El objetivo general de este trabajo es desarrollar un sistema que permita
+	consultar en lenguaje natural el contenido de las actas del Pleno del
+	Ayuntamiento de Bilbao y que responda con datos verificables, enlazados a la
+	página del documento de origen. Para ello se construyen dos sistemas que
+	parten de los mismos documentos y los organizan en dos estructuras de datos
+	distintas, un índice vectorial y un Knowledge Graph, y se comparan con el fin
+	de determinar cuál de las dos es más adecuada para un corpus de este tipo. El
+	trabajo abarca la totalidad de las actas publicadas entre 2007 y 2026.
 
 	\subsection{Objetivos específicos}
 	\label{sec:objetivos-especificos}
@@ -444,6 +444,7 @@
 		\includegraphics[width=4cm]{ODS16.png}
 		\caption{Icono del Objetivo 16: Paz, justicia e instituciones sólidas}
 		\label{fig:ods16}
+		{\small Fuente: Naciones Unidas.}
 	\end{figure}
 
 	De forma complementaria, el trabajo se relaciona con el Objetivo 11,
@@ -457,6 +458,7 @@
 		\includegraphics[width=4cm]{ODS11.png}
 		\caption{Icono del Objetivo 11: Ciudades y comunidades sostenibles}
 		\label{fig:ods11}
+		{\small Fuente: Naciones Unidas.}
 	\end{figure}
 
 	\section{Estructura de la memoria}
@@ -580,7 +582,10 @@
 	Frente al texto libre, este modelo admite razonamiento automático, ya que un motor de inferencia deriva hechos que no figuran de forma explícita pero se siguen de
 	la ontología. Por ejemplo, una proposición clasificada en el tema de los
 	desahucios queda asociada también al tema de la vivienda, del que aquel
-	depende, sin necesidad de registrar esa relación en cada proposición.
+	depende, sin necesidad de registrar esa relación en cada proposición. Esos
+	hechos pueden deducirse al ejecutar cada consulta o calcularse de antemano y
+	guardarse en el grafo, que es la opción adoptada en este trabajo, como
+	describe la Sección~\ref{sec:construccion-grafo}.
 
 	\section{GraphRAG}
 	\label{sec:graphrag}
@@ -662,7 +667,7 @@
 			\rowcolor{fila-alterna}
 			RF2 & \textbf{Knowledge Graph.} Construir un grafo RDF/OWL que
 			modele proposiciones, grupos políticos, concejales y temas, con
-			razonamiento automático sobre la jerarquía de temas definida en SKOS.
+			razonamiento automático sobre la jerarquía de temas definida en SKOS~\cite{w3c-skos}.
 			\\
 			\hline
 			RF3 & \textbf{Votos y resultados.} Derivar el resultado de la votación
@@ -689,7 +694,7 @@
 			\hline
 			\rowcolor{fila-alterna}
 			RF8 & \textbf{Validación del grafo.} Validar la integridad estructural
-			del grafo mediante restricciones SHACL, de forma independiente del
+			del grafo mediante restricciones SHACL~\cite{w3c-shacl}, de forma independiente del
 			código que lo construye. \\
 			\hline
 			RF9 & \textbf{Evaluación.} Evaluar de forma comparativa ambos sistemas
@@ -767,8 +772,8 @@
 	recuperación semántica. En este trabajo se aplica a los candidatos obtenidos
 	por los cuatro canales de búsqueda del RAG vectorial, que se describen en el
 	Capítulo~\ref{ch:solucion}. Para ello se emplea el servicio de reordenación de
-	Cohere\footnote{\url{https://cohere.com/rerank}}, una empresa que ofrece
-	modelos de lenguaje a través de una API en la nube.
+	Cohere~\cite{cohere-rerank}, una empresa que ofrece LLM y modelos de
+	reordenación a través de una API en la nube.
 
 	\subsection{Fiabilidad de la generación de SPARQL con LLM}
 	\label{sec:estado-arte-sparql}
@@ -1555,7 +1560,7 @@
 
 	\subsection{Costes en software}
 
-	Las herramientas de software empleadas son de código abierto o se han utilizado en su nivel gratuito: ChromaDB, LangChain, Chainlit, Ollama, Groq y el plan de prueba de Cohere. El único servicio de pago es Gemini, que se emplea en el enriquecimiento del corpus, como generador de respaldo y como juez en la evaluación con RAGAS. Su consumo, cuya partida principal fueron unos 5~€ en el enriquecimiento del corpus, quedó cubierto por los créditos gratuitos de bienvenida de Google Cloud y no supuso ningún desembolso, como recoge la Tabla~\ref{tab:coste-software}.
+	Las herramientas de software empleadas son de código abierto o se han utilizado en su nivel gratuito: ChromaDB, LangChain~\cite{langchain}, Chainlit, Ollama, Groq y el plan de prueba de Cohere. El único servicio de pago es Gemini, que se emplea en el enriquecimiento del corpus, como generador de respaldo y como juez en la evaluación con RAGAS. Su consumo, cuya partida principal fueron unos 5~€ en el enriquecimiento del corpus, quedó cubierto por los créditos gratuitos de bienvenida de Google Cloud y no supuso ningún desembolso, como recoge la Tabla~\ref{tab:coste-software}.
 
 	\begin{table}[H]
 		\centering
@@ -1729,7 +1734,7 @@
 			\rowcolor{fila-alterna}
 			Plan de prevención & Seguimiento semanal del avance respecto al diagrama de Gantt de la Figura~\ref{fig:gantt} y prioridad de los requisitos funcionales de la Tabla~\ref{tab:requisitos-funcionales} frente a las mejoras no esenciales. \\
 			\hline
-			Plan de contingencia & Reducción del alcance dentro de lo delimitado en la Sección~\ref{sec:alcance}, por ejemplo del tamaño de la batería de preguntas de referencia, antes que renunciar a la trazabilidad o a la corrección de los datos. \\
+			Plan de contingencia & Reducción del alcance del trabajo, por ejemplo del tamaño de la batería de preguntas de referencia, antes que renunciar a la trazabilidad o a la corrección de los datos. \\
 			\hline
 			\rowcolor{fila-alterna}
 			Probabilidad & Media. \\
@@ -1785,9 +1790,9 @@
 	tiempo real. El enriquecimiento por lotes clasifica una sola vez, sin
 	supervisión, todos los puntos del orden del día del corpus. Para ambas se
 	valoraron tres opciones: modelos locales servidos con
-	Ollama\footnote{\url{https://ollama.com}}, la API de
-	Groq\footnote{\url{https://groq.com}} en su nivel gratuito y la API de pago de
-	Gemini\footnote{\url{https://ai.google.dev}}.
+	Ollama~\cite{ollama}, la API de
+	Groq~\cite{groq} en su nivel gratuito y la API de pago de
+	Gemini~\cite{gemini-api}.
 
 	\subsection{Puntos positivos}
 
@@ -1795,7 +1800,7 @@
 		\item \textbf{Ollama, en local.} No tiene coste por token ni límite de
 		cuota, y el procesamiento no depende de un tercero.
 		\item \textbf{Groq.} Su nivel gratuito ofrece una inferencia muy rápida,
-		que permite servir respuestas interactivas con el modelo gpt-oss-120b sin
+		que permite servir respuestas interactivas con el modelo gpt-oss-120b~\cite{gpt-oss} sin
 		disponer de GPU propia.
 		\item \textbf{Gemini.} El modelo Gemini 3.5 Flash-Lite tiene un coste bajo
 		y predecible, de 0,30~\$ por millón de tokens de entrada y 2,50~\$ por
@@ -1839,12 +1844,12 @@
 
 	El Knowledge Graph, de unos 660.000 triples una vez materializados los que
 	deduce el razonador OWL-RL, puede almacenarse y consultarse con una librería en memoria, como
-	rdflib\footnote{\url{https://rdflib.readthedocs.io}} junto con
-	owlrl\footnote{\url{https://owl-rl.readthedocs.io}}, o con un motor de grafos
+	rdflib~\cite{rdflib} junto con
+	owlrl~\cite{owlrl}, o con un motor de grafos
 	desplegado como servicio, como
-	GraphDB\footnote{\url{https://graphdb.ontotext.com}}, Apache Jena
-	Fuseki\footnote{\url{https://jena.apache.org/documentation/fuseki2/}} o
-	Blazegraph\footnote{\url{https://blazegraph.com}}.
+	GraphDB~\cite{graphdb}, Apache Jena
+	Fuseki~\cite{jena-fuseki} o
+	Blazegraph~\cite{blazegraph}.
 
 	\subsection{Puntos positivos}
 
@@ -1852,7 +1857,8 @@
 		\item \textbf{rdflib y owlrl.} No requieren desplegar ni mantener un servicio aparte, ya que el grafo es un fichero que se carga en memoria al
 		arrancar, lo que simplifica la instalación y responde al requisito de
 		coste RNF3. El razonamiento OWL-RL se ejecuta una sola vez, al construir
-		el grafo, y no en cada consulta.
+		el grafo, a diferencia de los motores que razonan al ejecutar cada
+		consulta.
 		\item \textbf{Base de grafos dedicada.} Ofrece índices optimizados para
 		consultas SPARQL sobre grafos de gran tamaño, gestión de la concurrencia
 		entre usuarios y herramientas de administración y de inspección visual.
@@ -1870,7 +1876,7 @@
 
 	\subsection{Conclusión}
 
-	Se descarta la base de grafos dedicada porque el volumen del grafo no la justifica y rdflib\footnote{\url{https://rdflib.readthedocs.io}} con owlrl\footnote{\url{https://owl-rl.readthedocs.io}} satisface los requisitos RF2 y RF8 sin coste adicional de
+	Se descarta la base de grafos dedicada porque el volumen del grafo no la justifica y rdflib~\cite{rdflib} con owlrl~\cite{owlrl} satisface los requisitos RF2 y RF8 sin coste adicional de
 	infraestructura. Un motor dedicado pasaría a ser preferible si el corpus
 	creciera en varios órdenes de magnitud o si el sistema tuviera que atender
 	consultas concurrentes de muchos usuarios con baja latencia.
@@ -1881,7 +1887,7 @@
 	El RAG vectorial puede limitarse a la búsqueda semántica por
 	\textit{embeddings} o combinarla con otros canales de recuperación sobre el
 	mismo almacén, que en este trabajo es
-	ChromaDB\footnote{\url{https://www.trychroma.com}}.
+	ChromaDB~\cite{chromadb}.
 
 	\subsection{Puntos positivos}
 
@@ -1962,7 +1968,7 @@
 		\begin{tabularx}{\linewidth}{|>{\raggedright\arraybackslash}X|c|c|}
 			\hline
 			\rowcolor{tabla-header}
-			\textbf{Forma del \textit{prompt}} & \textbf{Qwen2.5-7B} & \textbf{Gemini 3.5 Flash-Lite} \\
+			\textbf{Forma del \textit{prompt}} & \textbf{Qwen2.5-7B}~\cite{qwen25} & \textbf{Gemini 3.5 Flash-Lite} \\
 			\hline
 			Solo el esquema del grafo & 30\,\% & 61\,\% \\
 			\hline
@@ -2035,7 +2041,7 @@
 
 	La selección de los ejemplos por similitud solo beneficia a
 	los modelos capaces de aprovecharla. Mejora los resultados de Gemini, del
-	86\,\% al 96\,\%, y de Qwen3, del 83\,\% al 91\,\%, pero no los del modelo de
+	86\,\% al 96\,\%, y de Qwen3~\cite{qwen3}, del 83\,\% al 91\,\%, pero no los del modelo de
 	7B, que se mantiene o empeora ligeramente respecto a los ejemplos fijos, del
 	76\,\% al 71--73\,\%. En la evaluación de Gao et al., en cambio, esa
 	selección mejora los cuatro modelos probados~\cite{gao2024-dailsql}.
@@ -2191,7 +2197,7 @@
 
 	\textbf{Taxonomía de temas.} Los temas se organizan en una taxonomía SKOS de dos niveles con 58 conceptos: 19 temas generales, como vivienda, movilidad y transporte o presupuestos y fiscalidad, y sus subtemas, como desahucios, bicicleta o impuestos. Cada concepto incluye sus sinónimos en castellano y en euskera. Es la misma taxonomía que emplea el canal temático del RAG vectorial.
 
-	\textbf{Razonamiento.} Sobre el grafo se ejecuta una sola vez, al construirlo, un razonador OWL-RL que añade los hechos que se deducen de la ontología. El más útil es la herencia temática, por la cual una proposición clasificada en el subtema de los desahucios pasa a tratar también del tema general de la vivienda, de modo que una pregunta sobre vivienda la incluye sin que la consulta tenga que enumerar los subtemas. Los hechos deducidos se materializan en el grafo como nuevos triples y se guardan con él, de modo que las consultas no requieren razonar de nuevo. El grafo pasa así de unos 562.000 triples afirmados a unos 660.000, una vez descartadas las deducciones triviales del razonador, como la identidad de cada recurso consigo mismo. La cifra final se recoge en la Tabla~\ref{tab:corpus-estructurado}.
+	\textbf{Razonamiento.} Sobre el grafo se ejecuta una sola vez, al construirlo, un razonador OWL-RL que añade los hechos que se deducen de la ontología. El más útil es la herencia temática, por la cual una proposición clasificada en el subtema de los desahucios pasa a tratar también del tema general de la vivienda, de modo que una pregunta sobre vivienda la incluye sin que la consulta tenga que enumerar los subtemas. El razonador deduce también la legislatura de cada punto a partir de su pleno, el distrito a partir del barrio y la relación inversa entre un punto y sus intervenciones. El razonamiento no se aplica al ejecutar cada consulta, ya que rdflib evalúa las consultas sobre los triples presentes en el grafo. Se realiza por \textit{forward chaining}, estrategia en la que las reglas de OWL-RL se aplican sobre los datos hasta que no se deduce ningún hecho nuevo. Los hechos deducidos se materializan, de modo que se añaden al grafo como nuevos triples y se guardan con él. El grafo pasa así de unos 562.000 triples afirmados a unos 660.000, una vez descartada una parte de las deducciones triviales del razonador, como la identidad de cada recurso consigo mismo. La cifra final se recoge en la Tabla~\ref{tab:corpus-estructurado}.
 
 	\textbf{Validación.} Un conjunto de restricciones SHACL, independiente del código que construye el grafo, comprueba su integridad, tal como exige el requisito RF8. Verifica, entre otras condiciones, que toda proposición tenga una fecha, un título y un único grupo proponente, que su resultado sea uno de los seis valores previstos, que son los cinco resultados posibles de una votación y la ausencia de resultado, y que quien vota sea un grupo o un concejal del censo. La versión entregada no presenta ninguna violación.
 
@@ -2223,54 +2229,18 @@
 	La Figura~\ref{fig:rdf-ejemplo} muestra el resultado para una proposición
 	concreta, la misma cuyo comienzo en el acta reproduce la
 	Figura~\ref{fig:formato-actas}. Los triples recogen el pleno y la legislatura
-	en los que se debatió, el grupo que la presentó, sus temas, el voto de tres
-	de los grupos y la página del acta en la que comienza. Las flechas
-	discontinuas señalan los dos triples que materializa el razonador, el de la
-	legislatura, que se deduce del pleno, y el del tema general de la cultura, que
-	se deduce del subtema de los museos. La proposición decae, ya que el Pleno aprobó una enmienda que la sustituye.
+	en los que se debatió, el grupo que la presentó, sus temas, una de las
+	entidades que menciona, el voto de cada grupo y la página del acta en la que
+	comienza. Las flechas discontinuas señalan los dos triples que materializa el
+	razonador, el de la legislatura, que se deduce del pleno, y el del tema
+	general de la vivienda, que se deduce del subtema del alquiler. La proposición, que
+	pide definir como gran tenedor a quien posea cinco o más inmuebles
+	residenciales, se aprobó con el voto en contra de un grupo.
 
 	\begin{figure}[H]
 		\centering
-		\resizebox{\linewidth}{!}{%
-		\begin{tikzpicture}[
-			font=\small,
-			recurso/.style={draw, rounded corners, align=center, text width=2.7cm, minimum height=0.9cm},
-			central/.style={recurso, fill=fila-alterna, text width=3.3cm},
-			literal/.style={draw, align=center, minimum height=0.7cm, font=\small\ttfamily, inner xsep=6pt},
-			rel/.style={-stealth, thick},
-			inf/.style={-stealth, thick, dashed},
-			et/.style={font=\scriptsize\itshape, sloped, fill=white, inner sep=1.5pt},
-		]
-			\node[central] (prop) at (0,0) {\textbf{Proposición}\\{\scriptsize inventario de los refugios antiaéreos}};
-			\node[recurso] (pleno) at (-6.5,0) {Pleno\\{\scriptsize 25-09-2025}};
-			\node[recurso] (leg) at (-6.5,3) {Legislatura\\{\scriptsize 2023--2027}};
-			\node[recurso] (mem) at (-2.2,3) {Tema\\{\scriptsize memoria histórica}};
-			\node[recurso] (mus) at (2.2,3) {Tema\\{\scriptsize museos}};
-			\node[recurso] (cul) at (6.5,3) {Tema\\{\scriptsize cultura}};
-			\node[recurso] (bildu) at (6.5,0) {Grupo político\\{\scriptsize EH Bildu}};
-			\node[recurso] (pnv) at (6.5,-3) {Grupo político\\{\scriptsize EAJ-PNV}};
-			\node[recurso] (pp) at (2.2,-3) {Grupo político\\{\scriptsize PP}};
-			\node[recurso] (res) at (-2.2,-3) {Resultado\\{\scriptsize decae}};
-			\node[literal] (pag) at (-6.5,-3) {217};
-			\node[literal] (fecha) at (-6.5,-1.5) {2025-09-25};
-
-			\draw[rel] (prop) -- node[et] {enPleno} (pleno);
-			\draw[rel] (pleno) -- node[font=\scriptsize\itshape, left] {enLegislatura} (leg);
-			\draw[inf] (prop) -- node[et, pos=0.6] {enLegislatura} (leg);
-			\draw[rel] (prop) -- node[et] {trataSobre} (mem);
-			\draw[rel] (prop) -- node[et] {trataSobre} (mus);
-			\draw[rel] (mus) -- node[et] {skos:broader} (cul);
-			\draw[inf] (prop) -- node[et, pos=0.62] {trataTemaAmplio} (cul);
-			\draw[rel] (prop) to[bend left=10] node[et, pos=0.55] {presentadaPor} (bildu);
-			\draw[rel] (prop) to[bend right=10] node[et, pos=0.55] {votoAFavorDe} (bildu);
-			\draw[rel] (prop) -- node[et, pos=0.6] {votoAFavorDe} (pnv);
-			\draw[rel] (prop) -- node[et] {seAbstuvo} (pp);
-			\draw[rel] (prop) -- node[et] {tieneResultado} (res);
-			\draw[rel] (prop) -- node[et, pos=0.72] {pagina} (pag);
-			\draw[rel] (prop) -- node[et, pos=0.55] {fechaISO} (fecha);
-		\end{tikzpicture}%
-		}
-		\caption[Selección de los triples de una proposición del grafo]{Selección de los triples de una proposición del grafo. Las flechas discontinuas son triples materializados por el razonador y los rectángulos, valores literales}
+		\includegraphics[width=\linewidth]{grafo_proposicion.pdf}
+		\caption[Selección de los triples de una proposición del grafo]{Selección de los triples de una proposición del grafo. Las flechas discontinuas son triples materializados por el razonador y los rectángulos grises, valores literales}
 		\label{fig:rdf-ejemplo}
 	\end{figure}
 
@@ -2386,7 +2356,7 @@
 
 	\section{Interfaz web del sistema}
 
-	La interfaz es una aplicación web conversacional construida con Chainlit. El
+	La interfaz es una aplicación web conversacional construida con Chainlit~\cite{chainlit}. El
 	usuario elige uno de los dos perfiles, RAG Vectorial o GraphRAG (SPARQL), y escribe su pregunta o selecciona una de las preguntas de ejemplo
 	que se ofrecen al inicio. Mientras se prepara la respuesta, la interfaz
 	muestra los pasos en curso, desde la búsqueda en las actas hasta la localización de las fuentes, y permite desplegarlos para consultar su
@@ -2601,7 +2571,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	numeran los puntos con la forma ``- 21 -'', que es también la marca que
 	emplean para el número de página. Desde febrero de 2021 se redactan a dos columnas, con el texto en euskera a la izquierda y en
 	castellano a la derecha, y las más recientes agrupan los puntos en apartados y
-	los numeran con la forma ``31.''. Cambian también la manera de nombrar al
+	los numeran con la forma ``9.''. Cambian también la manera de nombrar al
 	grupo que presenta una proposición y la fórmula de la votación. Cuatro actas
 	del periodo 2022--2026 están, además, escaneadas y carecen de capa de texto. La
 	Figura~\ref{fig:formato-actas} muestra el comienzo de una proposición en un acta de cada
@@ -2625,10 +2595,11 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		\end{minipage}\hfill
 		\begin{minipage}[t]{0.48\linewidth}
 			\centering
-			\fbox{\includegraphics[width=0.98\linewidth]{acta_formato_2025.png}}
+			\fbox{\includegraphics[width=0.98\linewidth]{acta_formato_2026.png}}
 		\end{minipage}
-		\caption{Comienzo de una proposición en el acta del 18 de junio de 2008, a la izquierda, y en la del 25 de septiembre de 2025, a la derecha}
+		\caption{Comienzo de una proposición en el acta del 18 de junio de 2008, a la izquierda, y en la del 29 de enero de 2026, a la derecha}
 		\label{fig:formato-actas}
+		{\small Fuente: Ayuntamiento de Bilbao.}
 	\end{figure}
 
 	\section{Esquema general del preprocesado}
@@ -2780,7 +2751,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	fragmento aislado mantenga el contexto de lo que se debate.
 
 	Los fragmentos se convierten en vectores con el modelo de \textit{embeddings}
-	nomic-embed-text, ejecutado en local, y se almacenan en ChromaDB, con un total
+	nomic-embed-text~\cite{nomic-embed-text}, ejecutado en local, y se almacenan en ChromaDB, con un total
 	de 97.217. A cada uno se le añaden después los datos de su proposición obtenidos en el preprocesado del grafo, descrito en
 	la sección siguiente: el tema, el resultado y el grupo proponente. Con esos mismos datos se construye un segundo índice, de menor
 	tamaño, con un documento breve por cada proposición con resumen, que contiene su título, su
@@ -3936,8 +3907,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		que formulen sus propias preguntas.
 		\item \textbf{Enlace con datos abiertos enlazados.} Al ser RDF estándar,
 		el grafo puede enlazarse con fuentes externas: los temas, con el tesauro
-		EuroVoc de la Unión Europea, concebido para documentos del sector público,
-		y las entidades, como empresas, equipamientos o barrios, con Wikidata, lo
+		EuroVoc~\cite{eurovoc} de la Unión Europea, concebido para documentos del sector público,
+		y las entidades, como empresas, equipamientos o barrios, con Wikidata~\cite{wikidata}, lo
 		que aportaría, por ejemplo, las coordenadas necesarias para situar las
 		proposiciones en un mapa. Es una ventaja de la estructura de grafo que el índice vectorial no ofrece, ya que sus fragmentos son texto sin identidad
 		propia. Durante el proyecto se valoró ese enlace para completar los datos
@@ -4017,10 +3988,27 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		2013.
 		\url{https://www.w3.org/TR/sparql11-query/}
 
+		\bibitem{w3c-skos}
+		W3C.
+		\textit{SKOS Simple Knowledge Organization System Reference}. W3C
+		Recommendation, 18 de agosto de 2009.
+		\url{https://www.w3.org/TR/skos-reference/}
+
+		\bibitem{w3c-shacl}
+		W3C.
+		\textit{Shapes Constraint Language (SHACL)}. W3C Recommendation, 20 de
+		julio de 2017.
+		\url{https://www.w3.org/TR/shacl/}
+
 		\bibitem{nogueira2019-bert-rerank}
 		Nogueira, R., y Cho, K.
 		\textit{Passage Re-ranking with BERT}. arXiv:1901.04085, 2019.
 		\url{https://arxiv.org/pdf/1901.04085}
+
+		\bibitem{cohere-rerank}
+		Cohere.
+		\textit{Rerank}. Consultado el 7 de octubre de 2026.
+		\url{https://cohere.com/rerank}
 
 		\bibitem{giuliani2026-sparql-llm}
 		Giuliani, A., Manca, M.~M., Piano, L., Podda, A.~S., Pompianu, L., y
@@ -4096,6 +4084,81 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		Estado (BOE-A-2026-9024), 2026.
 		\url{https://www.boe.es/boe/dias/2026/04/24/pdfs/BOE-A-2026-9024.pdf}
 
+		\bibitem{langchain}
+		LangChain.
+		\textit{LangChain}. Consultado el 8 de octubre de 2026.
+		\url{https://www.langchain.com}
+
+		\bibitem{ollama}
+		Ollama.
+		\textit{Ollama}. Consultado el 7 de octubre de 2026.
+		\url{https://ollama.com}
+
+		\bibitem{groq}
+		Groq.
+		\textit{Groq}. Consultado el 7 de octubre de 2026.
+		\url{https://groq.com}
+
+		\bibitem{gemini-api}
+		Google.
+		\textit{Gemini API}. Consultado el 7 de octubre de 2026.
+		\url{https://ai.google.dev}
+
+		\bibitem{gpt-oss}
+		OpenAI.
+		\textit{gpt-oss-120b}. Consultado el 8 de octubre de 2026.
+		\url{https://huggingface.co/openai/gpt-oss-120b}
+
+		\bibitem{rdflib}
+		RDFLib.
+		\textit{rdflib}. Consultado el 7 de octubre de 2026.
+		\url{https://rdflib.readthedocs.io}
+
+		\bibitem{owlrl}
+		RDFLib.
+		\textit{OWL-RL}. Consultado el 7 de octubre de 2026.
+		\url{https://owl-rl.readthedocs.io}
+
+		\bibitem{graphdb}
+		Ontotext.
+		\textit{GraphDB}. Consultado el 7 de octubre de 2026.
+		\url{https://graphdb.ontotext.com}
+
+		\bibitem{jena-fuseki}
+		Apache Software Foundation.
+		\textit{Apache Jena Fuseki}. Consultado el 7 de octubre de 2026.
+		\url{https://jena.apache.org/documentation/fuseki2/}
+
+		\bibitem{blazegraph}
+		Blazegraph.
+		\textit{Blazegraph Database}. Consultado el 7 de octubre de 2026.
+		\url{https://blazegraph.com}
+
+		\bibitem{chromadb}
+		Chroma.
+		\textit{Chroma}. Consultado el 7 de octubre de 2026.
+		\url{https://www.trychroma.com}
+
+		\bibitem{qwen25}
+		Alibaba Cloud.
+		\textit{Qwen2.5}. Consultado el 8 de octubre de 2026.
+		\url{https://ollama.com/library/qwen2.5}
+
+		\bibitem{qwen3}
+		Alibaba Cloud.
+		\textit{Qwen3}. Consultado el 8 de octubre de 2026.
+		\url{https://ollama.com/library/qwen3}
+
+		\bibitem{chainlit}
+		Chainlit.
+		\textit{Chainlit}. Consultado el 8 de octubre de 2026.
+		\url{https://chainlit.io}
+
+		\bibitem{nomic-embed-text}
+		Nomic AI.
+		\textit{nomic-embed-text}. Consultado el 8 de octubre de 2026.
+		\url{https://ollama.com/library/nomic-embed-text}
+
 		\bibitem{ragas-library}
 		Es, S., James, J., Espinosa-Anke, L., y Schockaert, S.
 		\textit{RAGAs: Automated Evaluation of Retrieval Augmented
@@ -4139,6 +4202,17 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		Augmented Generation for Efficient Information Extraction}.
 		arXiv:2408.04948, 2024.
 		\url{https://arxiv.org/pdf/2408.04948}
+
+		\bibitem{eurovoc}
+		Oficina de Publicaciones de la Unión Europea.
+		\textit{EuroVoc}. Consultado el 8 de octubre de 2026.
+		\url{https://op.europa.eu/en/web/eu-vocabularies/eurovoc}
+
+		\bibitem{wikidata}
+		Wikimedia Foundation.
+		\textit{Wikidata}. Consultado el 8 de octubre de 2026.
+		\url{https://www.wikidata.org}
+
 	\end{thebibliography}
 
 \end{document}
