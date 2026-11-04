@@ -150,29 +150,20 @@
 	\end{center}
 	\vspace{0.3\baselineskip}
 	\begin{center}
+		\includegraphics[height=9cm]{ayuntamiento_bilbao.jpg}\nocite{foto-ayuntamiento}
+	\end{center}
+	\vspace{0.3\baselineskip}
+	\begin{center}
 		\includegraphics[width=1.6cm]{ODS16.png}\hspace{0.6cm}\includegraphics[width=1.6cm]{ODS11.png}
 	\end{center}
-	\renewcommand{\baselinestretch}{1.25}
-	\begin{tikzpicture}[remember picture, overlay]
-		\node (C) at ([yshift=-9.15cm, xshift=9.7cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=64pt, align=left]{};
-		\node (D) [right=0.2cm of C.west, anchor=west, align=left]
-		{\small{\textbf{Alumno: }Lopez Sanchez, Peio}\\
-			\small{\textbf{Director: }Egaña Aranguren, Mikel}
-			};
-		\draw[line width=0.5pt] (C.south west) -- (C.south east);
-	\end{tikzpicture}
-	\renewcommand{\baselinestretch}{1}
-	\begin{tikzpicture}[remember picture, overlay]
-		\node (E) at ([yshift=-10.65cm, xshift=8.5cm]current page.west) [inner sep=10pt, minimum width=13.34cm, minimum height=27pt, align=left]{};
-		\node (F) [right=1.4cm of E.west, anchor=west]
-		{\small{\textbf{Curso: }2026-2027}};
-		\draw[line width=0.5pt] (E.south west) -- (E.south east);
-	\end{tikzpicture}
-	\begin{tikzpicture}[remember picture, overlay]
-		\node (G) at ([yshift=-12.05cm, xshift=13.4cm]current page.west) [inner sep=10pt, minimum width=7.93cm, minimum height=27pt, align=left]{};
-		\node (H) [left=0.2cm of G.east, anchor=east]
-		{\small{\textbf{Fecha: }Bilbao, 5 de octubre de 2026}};
-		\draw[line width=0.5pt] (G.south west) -- (G.south east);
+	\begin{tikzpicture}[remember picture, overlay, shift={(current page.north west)}]
+		\node[anchor=west, inner sep=0pt] at (2.76cm,-24.8cm) {\small{\textbf{Alumno: }Lopez Sanchez, Peio}};
+		\draw[line width=0.5pt] (2.76cm,-25.15cm) -- (18.29cm,-25.15cm);
+		\node[anchor=west, inner sep=0pt] at (2.76cm,-26.05cm) {\small{\textbf{Director: }Egaña Aranguren, Mikel}};
+		\draw[line width=0.5pt] (2.76cm,-27.86cm) -- (9.87cm,-27.86cm);
+		\draw[line width=0.5pt] (11.1cm,-27.86cm) -- (18.29cm,-27.86cm);
+		\node[anchor=west, inner sep=0pt] at (2.76cm,-28.3cm) {\small{\textbf{Curso: }2026-2027}};
+		\node[anchor=east, inner sep=0pt] at (18.29cm,-28.3cm) {\small{\textbf{Fecha: }Bilbao, 3 de noviembre de 2026}};
 	\end{tikzpicture}
 }
 
@@ -205,10 +196,9 @@
 	ha verificado en las actas. Los resultados muestran que las dos arquitecturas
 	no son intercambiables: el sistema GraphRAG resuelve las preguntas de recuento y de
 	ordenación sobre el corpus completo, que quedan fuera del alcance del RAG
-	vectorial, mientras que este último presenta una tasa de respuestas erróneas
-	inferior.
+	vectorial, mientras que este último tiende a ser más honesto en sus respuestas.
 
-	\textbf{Palabras Clave:} GraphRAG, RAG vectorial, Knowledge Graph, SPARQL,
+	\textbf{Palabras clave:} GraphRAG, RAG vectorial, Knowledge Graph, SPARQL,
 	LLM, datos abiertos municipales.
 
 	\bigskip
@@ -231,8 +221,8 @@
 	aktetan egiaztatu zaien galdera multzo baten gainean egin da. Emaitzek
 	erakusten dute bi arkitekturak ez direla elkarren ordezko: GraphRAG sistemak corpus osoaren
 	gaineko zenbaketa- eta ordenatze-galderak ebazten ditu, RAG bektorialaren
-	irismenetik kanpo geratzen direnak, eta azken horrek, berriz, erantzun okerren
-	tasa txikiagoa du.
+	irismenetik kanpo geratzen direnak, eta azken horrek, berriz, erantzunetan
+	zintzoagoa izateko joera du.
 
 	\textbf{Gako-hitzak:} GraphRAG, RAG bektoriala, ezagutza-grafoa, SPARQL, LLM, udal datu irekiak.
 
@@ -247,7 +237,7 @@
 	closely related to the query and is aimed at questions about the content of a
 	debate, such as the position defended by a political group on a given proposal.
 	The second, a GraphRAG system, translates the query into SPARQL over an RDF/OWL
-	knowledge graph and is designed for questions that require traversing the entire
+	Knowledge Graph and is designed for questions that require traversing the entire
 	corpus, such as the number of proposals submitted on a given subject or the group
 	that registered the most initiatives during a term of office. Both systems are
 	integrated into a single conversational interface and indicate the page of the
@@ -255,9 +245,9 @@
 	on a set of questions whose answers have been verified against the minutes. The
 	results show that the two architectures are not interchangeable: the GraphRAG system answers
 	counting and ranking questions over the entire corpus, which lie beyond the reach
-	of the vector RAG, whereas the latter exhibits a lower rate of erroneous answers.
+	of the vector RAG, whereas the latter tends to be more honest in its answers.
 
-	\textbf{Keywords:} GraphRAG, vector RAG, knowledge graph, SPARQL, LLM, open municipal data.
+	\textbf{Keywords:} GraphRAG, vector RAG, Knowledge Graph, SPARQL, LLM, open municipal data.
 	\end{itshape}
 
 	\pagebreak
@@ -281,23 +271,28 @@
 	\addcontentsline{toc}{chapter}{Lista de acrónimos}
 
 	\begin{description}
-		\item [KG] Knowledge Graph
-		\item [LLM] Large Language Model
-		\item [RAG] Retrieval Augmented Generation
-		\item [GraphRAG] Graph Retrieval Augmented Generation
-		\item [RDF] Resource Description Framework
-		\item [OWL] Web Ontology Language
-		\item [SPARQL] SPARQL Protocol and RDF Query Language
-		\item [SKOS] Simple Knowledge Organization System
-		\item [SHACL] Shapes Constraint Language
 		\item [API] Application Programming Interface
-		\item [IA] Inteligencia Artificial
-		\item [SQL] Structured Query Language
-		\item [GPU] Graphics Processing Unit
-		\item [VRAM] Video Random Access Memory
+		\item [BERT] Bidirectional Encoder Representations from Transformers
+		\item [ECTS] European Credit Transfer and Accumulation System
 		\item [EDT] Estructura de Desglose del Trabajo
+		\item [GPU] Graphics Processing Unit
+		\item [GraphRAG] Graph Retrieval-Augmented Generation
+		\item [IA] Inteligencia Artificial
+		\item [LLM] Large Language Model
+		\item [OWL] Web Ontology Language
 		\item [PDF] Portable Document Format
+		\item [RAG] Retrieval-Augmented Generation
+		\item [RAGAS] Retrieval-Augmented Generation Assessment
+		\item [RAM] Random Access Memory
+		\item [RDF] Resource Description Framework
+		\item [RF] Requisito Funcional
+		\item [RNF] Requisito No Funcional
+		\item [SHACL] Shapes Constraint Language
+		\item [SKOS] Simple Knowledge Organization System
+		\item [SPARQL] SPARQL Protocol and RDF Query Language
+		\item [SQL] Structured Query Language
 		\item [TFG] Trabajo Fin de Grado
+		\item [VRAM] Video Random Access Memory
 	\end{description}
 
 	\chapter*{Empleo de Inteligencia Artificial (IA)}
@@ -333,7 +328,7 @@
 	\label{ch:introduccion}
 
 	Este trabajo se enmarca en el ámbito de la consulta de documentación pública
-	municipal mediante modelos de lenguaje de gran tamaño (LLM). El Ayuntamiento
+	municipal mediante \textit{Large Language Models} (LLM). El Ayuntamiento
 	de Bilbao publica en su portal web, para cada sesión del Pleno celebrada desde
 	2007, el orden del día, los extractos, un resumen y el acta completa. De esos
 	documentos se toma el acta, por ser el único que recoge de forma íntegra las
@@ -364,15 +359,14 @@
 	documento original.
 
 	Los LLM actuales permiten plantear preguntas en lenguaje
-	natural sobre un conjunto de documentos propio, mediante la generación aumentada por
-	recuperación (RAG), en la que el modelo responde
+	natural sobre un conjunto de documentos propio, mediante \textit{Retrieval-Augmented Generation} (RAG), en la que el modelo responde
 	a partir de los pasajes que el sistema localiza en esos documentos. Este
 	trabajo aplica dos variantes de esa técnica al corpus de actas y las compara.
 
 	\subsection{A quién beneficia el sistema}
 	\label{sec:beneficiarios}
 
-	El sistema desarrollado es útil para distintos perfiles. La
+	El sistema desarrollado está pensado para distintos perfiles. La
 	ciudadanía puede conocer el resultado de una propuesta concreta sin saber en
 	qué acta figura. Los periodistas pueden comparar la actividad de los grupos
 	políticos, por ejemplo mediante el número de iniciativas presentadas por cada
@@ -529,7 +523,7 @@
 	limitaciones hacen necesario complementar el modelo con una fuente documental
 	externa.
 
-	\section{Retrieval Augmented Generation}
+	\section{Retrieval-Augmented Generation}
 
 	RAG, siglas de \textit{Retrieval-Augmented Generation} o generación aumentada
 	por recuperación~\cite{lewis2020-rag}, consiste en
@@ -687,7 +681,7 @@
 			\rowcolor{fila-alterna}
 			RF6 & \textbf{Cita de la fuente.} Indicar, para cada dato mostrado por
 			cualquiera de los dos sistemas, el documento y la página del PDF de
-			origen. \\
+			origen, cuando el dato procede de un acta concreta. \\
 			\hline
 			RF7 & \textbf{Interfaz.} Ofrecer ambos sistemas mediante una interfaz
 			web conversacional común. \\
@@ -709,7 +703,7 @@
 	\subsection{Requisitos no funcionales}
 
 	La Tabla~\ref{tab:requisitos-no-funcionales} recoge los requisitos no
-	funcionales, que fijan las condiciones en las que debe hacerlo. Los dos
+	funcionales, que fijan las condiciones en las que debe operar el sistema. Los dos
 	primeros responden a la naturaleza institucional del corpus, en el que cada
 	dato debe poder comprobarse en el acta, y los tres restantes, a las
 	condiciones del proyecto.
@@ -752,9 +746,9 @@
 	\section{Estado del arte de las tecnologías utilizadas}
 
 	Los conceptos generales de LLM, RAG y GraphRAG se han presentado en el
-	Capítulo~\ref{ch:contexto}. Esta sección se centra en dos líneas de
-	investigación más específicas en las que se apoya el trabajo: la reordenación
-	de resultados en sistemas RAG y la generación de consultas formales a partir de lenguaje natural. Esta última es el componente más crítico del sistema
+	Capítulo~\ref{ch:contexto}. Esta sección se centra en la reordenación
+	de resultados en sistemas RAG y en la generación de consultas formales a partir de lenguaje natural,
+	dos líneas de investigación más específicas en las que se apoya el trabajo. La generación de consultas formales es el componente más crítico del sistema
 	GraphRAG, ya que una consulta errónea no produce un fallo visible, sino una
 	cifra incorrecta que se presenta como un dato del grafo.
 
@@ -788,17 +782,16 @@
 	plantillas de consulta.
 
 	En cuanto al uso de ejemplos, la generación sin ellos, o \textit{zero-shot},
-	no basta para las consultas complejas. En una evaluación de catorce modelos
-	a los que no se proporciona ninguna consulta de referencia, varios superan
-	el 80\,\% de acierto en las consultas sencillas, pero se quedan entre el
-	30\,\% y el 70\,\% en las complejas. Los autores señalan como vía de
+	no basta para las consultas complejas. En una evaluación de varios modelos
+	a los que no se proporciona ninguna consulta de referencia, el acierto es
+	alto en las consultas sencillas, pero cae de forma notable en las complejas. Los autores señalan como vía de
 	mejora la inclusión en el \textit{prompt} de preguntas ya resueltas con su
 	consulta, que sirven de ejemplo al modelo
 	(\textit{few-shot})~\cite{giuliani2026-sparql-llm}.
 
 	Lo habitual es buscar los ejemplos que más se parecen a cada pregunta, aunque
 	no es la única opción. Un trabajo sobre un Knowledge Graph de
-	accidentes de aviación emplea tres ejemplos fijos, escritos a mano, junto con
+	accidentes de aviación emplea ejemplos fijos, escritos a mano, junto con
 	información del grafo relacionada con la pregunta, y mejora en un 6\,\% el
 	resultado del trabajo de partida sin necesitar un conjunto de preguntas
 	resueltas del que elegirlos~\cite{hernandez2025-aviation-sparql}. En
@@ -806,14 +799,13 @@
 	elegirlos por su similitud con la pregunta y con la consulta supera a la
 	elección al azar en los cuatro modelos probados~\cite{gao2024-dailsql}. Por ello,
 	en este trabajo se ha comparado esa selección con el uso de los mismos
-	ejemplos en todas las preguntas, y el resultado solo ha mejorado en los
-	modelos más capaces (Capítulo~\ref{ch:alternativas}).
+	ejemplos en todas las preguntas. La selección por similitud ha mejorado
+	claramente a los modelos más capaces, y en los modelos pequeños su efecto
+	depende de la forma del \textit{prompt} (Capítulo~\ref{ch:alternativas}).
 
 	Respecto al tamaño del modelo, un modelo mayor no garantiza mejores
 	consultas, ya que la construcción del \textit{prompt} influye tanto o más
-	que el número de parámetros. En la misma evaluación, un modelo anterior con
-	ejemplos bien elegidos supera a GPT-4 sin
-	ejemplos~\cite{gao2024-dailsql}, y modelos de entre 1.000 y 15.000
+	que el número de parámetros. Así, modelos de entre 1.000 y 15.000
 	millones de parámetros ajustados a la tarea pueden superar a modelos mucho
 	mayores sin ese ajuste~\cite{li2024-codes}.
 
@@ -831,7 +823,7 @@
 	et al.\ almacenan las plantillas en una base de datos vectorial, recuperan
 	por similitud las más próximas a la pregunta y se las proporcionan al LLM
 	como contexto, junto con la ontología del grafo. En su evaluación, prescindir
-	de las plantillas reduce del 100\,\% al 79,2\,\% la proporción de
+	de las plantillas reduce al 79,2\,\% la proporción de
 	consultas que se ejecutan sin error y empeora la exactitud de los
 	resultados~\cite{arazzi2025-sparqllm}. El sistema GraphRAG de este trabajo
 	adopta también un planteamiento híbrido, aunque dispuesto de otro modo: las
@@ -1010,8 +1002,9 @@
 			\rowcolor{fila-alterna}
 			Predecesores & - \\
 			\hline
-			Entregables/salidas & Capítulos de Contexto y Análisis de alternativas
-			de la memoria. \\
+			Entregables/salidas & Capítulos de Contexto, de Descripción de
+			requerimientos y análisis del estado del arte y de Análisis de
+			alternativas de la memoria. \\
 			\hline
 		\end{tabularx}
 		\caption{Paquete de trabajo: 2. Investigación y estudio previo}
@@ -1036,8 +1029,8 @@
 			\rowcolor{fila-alterna}
 			Predecesores & - \\
 			\hline
-			Entregables/salidas & Capítulo de Contexto y estado del arte de la
-			memoria. \\
+			Entregables/salidas & Capítulos de Contexto y de Descripción de
+			requerimientos y análisis del estado del arte de la memoria. \\
 			\hline
 		\end{tabularx}
 		\caption{Paquete de trabajo: 2.1. Estudio del estado del arte}
@@ -1447,14 +1440,14 @@
 		\label{tab:horas}
 	\end{table}
 
-	La desviación, del 13\,\% sobre lo estimado, se concentra en la evaluación y, en menor medida, en el desarrollo, y en ambos casos tiene la misma causa. La planificación preveía una única evaluación comparativa al final del proyecto. En la práctica, la evaluación tuvo que repetirse varias veces con preguntas distintas, ya que cada una reveló fallos que hubo que corregir y volver a medir, como recoge la Sección~\ref{sec:resultados-independiente}, y varias de esas correcciones obligaron a ampliar y reconstruir el grafo.
+	La desviación, del 13\,\% sobre lo estimado, se concentra sobre todo en la evaluación, y en menor medida en el desarrollo, con la misma causa en ambos casos. La planificación preveía una única evaluación comparativa al final del proyecto. En la práctica, la evaluación tuvo que repetirse varias veces con preguntas distintas, ya que cada una reveló fallos que hubo que corregir y volver a medir, como recoge la Sección~\ref{sec:resultados-independiente}, y varias de esas correcciones obligaron a ampliar y reconstruir el grafo.
 	El coste de mano de obra de la Sección~\ref{sec:costes-hardware} se calcula sobre las horas reales.
 
 	\subsection{Diagrama de Gantt}
 	\label{sec:gantt}
 
 	La Figura~\ref{fig:gantt} muestra la planificación temporal del proyecto,
-	desde el inicio del trabajo, el 22 de enero de 2026, hasta la entrega de la memoria, a mediados de octubre de 2026. Las 420 horas estimadas en la EDT se reparten en 38 semanas. La dedicación al proyecto ha sido parcial, de forma que las horas de cada paquete se distribuyen a lo largo de varias semanas y algunos paquetes se solapan. Las tareas de gestión y la documentación técnica se desarrollan de forma continua, en paralelo al resto.
+	desde el inicio del trabajo, el 22 de enero de 2026, hasta la entrega prevista de la memoria, a mediados de octubre de 2026. La revisión final de la memoria se prolongó hasta comienzos de noviembre. Las 420 horas estimadas en la EDT se reparten en 38 semanas. La dedicación al proyecto ha sido parcial, de forma que las horas de cada paquete se distribuyen a lo largo de varias semanas y algunos paquetes se solapan. Las tareas de gestión y la documentación técnica se desarrollan de forma continua, en paralelo al resto.
 
 	\begin{figure}[H]
 		\centering
@@ -1503,14 +1496,14 @@
 
 	\section{Metodología de desarrollo}
 
-	El desarrollo ha seguido un enfoque iterativo, en el que cada componente se implementa, se prueba con preguntas reales y se corrige antes de abordar el siguiente, en lugar de evaluar el sistema completo solo al final. Cada iteración se apoya en dos verificaciones complementarias: una batería de regresión automática, que se ejecuta tras cualquier cambio relevante en la recuperación o en la generación de SPARQL, y una validación manual de las respuestas con el texto original de las actas, que detecta fallos que la regresión no puede advertir, como la mezcla de contenido de dos proposiciones distintas en un bloque de respuesta bien formado. Los hallazgos y las correcciones de cada iteración se han registrado en un documento de decisiones técnicas, que ha servido de base para el Capítulo~\ref{ch:solucion}.
+	El desarrollo ha seguido un enfoque iterativo, en el que cada componente se implementa, se prueba con preguntas reales y se corrige antes de abordar el siguiente, en lugar de evaluar el sistema completo solo al final. Cada iteración se apoya en una batería de regresión automática, que se ejecuta tras cualquier cambio relevante en la recuperación o en la generación de SPARQL, y en una validación manual de las respuestas con el texto original de las actas, que detecta fallos que la regresión no puede advertir, como la mezcla de contenido de dos proposiciones distintas en un bloque de respuesta bien formado. Los hallazgos y las correcciones de cada iteración se han registrado en un documento de decisiones técnicas, que ha servido de base para el Capítulo~\ref{ch:solucion}.
 
 	\section{Evaluación económica}
 	\label{sec:costes-hardware}
 
 	\subsection{Costes por mano de obra}
 
-	El coste de mano de obra se calcula a partir de las horas reales de dedicación, recogidas en la Tabla~\ref{tab:horas}, valoradas con la tarifa de un ingeniero sin experiencia previa. Como referencia se toma el XIX Convenio colectivo estatal de empresas de consultoría, tecnologías de la información y estudios de mercado y de la opinión pública~\cite{boe2025-convenio-consultoria}, que establece una jornada anual de 1.800 horas en su artículo 20. Su tabla salarial para 2026~\cite{boe2026-tablas-salariales} fija en 29.949,83 € anuales el salario de la categoría de titulado de grado superior, correspondiente a un grado universitario de 240 créditos ECTS. La tarifa resultante es de 16,64 € por hora, con la que se obtiene el coste de la Tabla~\ref{tab:coste-mano-obra}.
+	El coste de mano de obra se calcula a partir de las horas reales de dedicación, recogidas en la Tabla~\ref{tab:horas}, valoradas con la tarifa de un ingeniero sin experiencia previa. Como referencia se toma el XIX Convenio colectivo estatal de empresas de consultoría, tecnologías de la información y estudios de mercado y de la opinión pública~\cite{boe2025-convenio-consultoria}, que establece una jornada anual de 1.800 horas en su artículo 20. Su tabla salarial para 2026~\cite{boe2026-tablas-salariales} fija en 29.949,83 € anuales el salario de la categoría de titulado de grado superior, que se toma como equivalente a un grado universitario de 240 créditos ECTS. La tarifa resultante es de 16,64 € por hora, con la que se obtiene el coste de la Tabla~\ref{tab:coste-mano-obra}.
 
 	\begin{table}[H]
 		\centering
@@ -1533,7 +1526,7 @@
 
 	\subsection{Costes en hardware}
 
-	El proyecto se ha desarrollado con dos equipos propios. El ordenador de sobremesa ha sido el equipo principal, y en él se han realizado el desarrollo, la evaluación y la documentación, que suman 380 horas de trabajo, y 65 horas de procesos de cómputo sin supervisión, que comprenden las primeras versiones del enriquecimiento del corpus, realizadas con modelos locales, y el estudio comparativo de modelos para la generación de SPARQL, descrito en la Sección~\ref{sec:estudio-sparql}. El portátil se ha empleado en las 95 horas de gestión y de estudio previo. Ambos equipos se amortizan de forma proporcional a las horas dedicadas al proyecto, sobre una vida útil estimada de cuatro años, equivalente a unas 7.000 horas de uso, como recoge la Tabla~\ref{tab:coste-hardware}.
+	El proyecto se ha desarrollado con dos equipos propios. El ordenador de sobremesa ha sido el equipo principal, y en él se han realizado el desarrollo, la evaluación y la documentación, que suman 380 horas de trabajo, junto con 65 horas de procesos de cómputo sin supervisión (primeras versiones del enriquecimiento del corpus con modelos locales y el estudio comparativo de SPARQL descrito en la Sección~\ref{sec:estudio-sparql}). El portátil se ha empleado en las 95 horas de gestión y de estudio previo. Conviene señalar que las 65 horas de cómputo desatendido no computan como dedicación del autor en la Tabla~\ref{tab:horas} ($380 + 95 = 475$~horas de trabajo humano), pero sí se imputan a la amortización del equipo al haber estado este en funcionamiento. Ambos equipos se amortizan de forma proporcional a las horas de uso dedicadas al proyecto, sobre una vida útil estimada de cuatro años, equivalente a unas 7.000 horas de uso, como recoge la Tabla~\ref{tab:coste-hardware}.
 
 	\begin{table}[H]
 		\centering
@@ -1560,7 +1553,7 @@
 
 	\subsection{Costes en software}
 
-	Las herramientas de software empleadas son de código abierto o se han utilizado en su nivel gratuito: ChromaDB, LangChain~\cite{langchain}, Chainlit, Ollama, Groq y el plan de prueba de Cohere. El único servicio de pago es Gemini, que se emplea en el enriquecimiento del corpus, como generador de respaldo y como juez en la evaluación con RAGAS. Su consumo, cuya partida principal fueron unos 5~€ en el enriquecimiento del corpus, quedó cubierto por los créditos gratuitos de bienvenida de Google Cloud y no supuso ningún desembolso, como recoge la Tabla~\ref{tab:coste-software}.
+	Las herramientas de software empleadas son de código abierto o se han utilizado en su nivel gratuito: ChromaDB, LangChain~\cite{langchain}, Chainlit, Ollama, Groq y el plan de prueba de Cohere. El único servicio de pago es Gemini, que se emplea en el enriquecimiento del corpus, como generador de respaldo y como juez en la evaluación con RAGAS. La partida principal de su consumo, unos 5~€ en el enriquecimiento del corpus, quedó cubierta por los créditos gratuitos de bienvenida de Google Cloud, al igual que los procesos posteriores que requirieron la API, de modo que no supuso ningún desembolso, como recoge la Tabla~\ref{tab:coste-software}.
 
 	\begin{table}[H]
 		\centering
@@ -1643,7 +1636,7 @@
 
 	\section{Análisis de riesgos}
 
-	Se han identificado cinco riesgos. Para cada uno se indican su descripción, las medidas de prevención y de contingencia previstas, su probabilidad y su impacto, en las Tablas~\ref{tab:riesgo-groq} a~\ref{tab:riesgo-nombres}.
+	Se han identificado cinco riesgos. Para cada uno se indica su descripción, las medidas de prevención y de contingencia previstas, su probabilidad y su impacto, en las Tablas~\ref{tab:riesgo-groq} a~\ref{tab:riesgo-nombres}.
 
 	\begin{table}[H]
 		\centering
@@ -1660,7 +1653,7 @@
 			Plan de prevención & Vigilar el consumo de cuota antes de lanzar
 			baterías de pruebas extensas. \\
 			\hline
-			Plan de contingencia & Paso automático a Gemini y, en último término, a un modelo local servido con Ollama cuando Groq no responde o se agota la cuota. \\
+			Plan de contingencia & Paso automático a Gemini cuando Groq no responde o se agota la cuota, y a un modelo local servido con Ollama si Gemini también falla. \\
 			\hline
 			\rowcolor{fila-alterna}
 			Probabilidad & Media \\
@@ -1797,14 +1790,14 @@
 	\subsection{Puntos positivos}
 
 	\begin{itemize}
-		\item \textbf{Ollama, en local.} No tiene coste por token ni límite de
+		\item \textbf{Ollama, en local.} No tiene coste por \textit{token} ni límite de
 		cuota, y el procesamiento no depende de un tercero.
 		\item \textbf{Groq.} Su nivel gratuito ofrece una inferencia muy rápida,
 		que permite servir respuestas interactivas con el modelo gpt-oss-120b~\cite{gpt-oss} sin
 		disponer de GPU propia.
 		\item \textbf{Gemini.} El modelo Gemini 3.5 Flash-Lite tiene un coste bajo
-		y predecible, de 0,30~\$ por millón de tokens de entrada y 2,50~\$ por
-		millón de tokens de salida. El enriquecimiento de la primera extracción,
+		y predecible, de 0,30~\$ por millón de \textit{tokens} de entrada y 2,50~\$ por
+		millón de \textit{tokens} de salida. El enriquecimiento de la primera extracción,
 		de unos 3.400 registros, consumió unos 5~€, cubiertos por los créditos
 		gratuitos de bienvenida.
 	\end{itemize}
@@ -1812,13 +1805,13 @@
 	\subsection{Puntos negativos}
 
 	\begin{itemize}
-		\item \textbf{Ollama, en local.} Sin GPU, la generación es inviable en los procesos por lotes, pues a unos 200 segundos por proposición en un portátil con
-		6~GB de RAM, el corpus completo habría requerido más de 180 horas. Exige
+		\item \textbf{Ollama, en local.} Sin GPU, la generación es inviable en los procesos por lotes, pues a unos 200 segundos por proposición en un portátil,
+		la extracción de los 3.400 registros de la primera versión habría requerido más de 180 horas. Exige
 		un equipo con GPU, que en este proyecto ha sido el ordenador de sobremesa
 		(Sección~\ref{sec:costes-hardware}).
 		\item \textbf{Groq.} El nivel gratuito limita el consumo del modelo
 		empleado a 200.000 \textit{tokens} al día. La cuota está asociada a la cuenta, por lo que no se evita cambiando de equipo ni de clave, y no basta para enriquecer el corpus completo de una vez.
-		\item \textbf{Gemini.} Es de pago desde el primer token, lo que obliga a
+		\item \textbf{Gemini.} Es de pago desde el primer \textit{token}, lo que obliga a
 		controlar el gasto, y los modelos disponibles para una misma clave cambian con el tiempo, hasta el punto de que dos de los previstos inicialmente dejaron de estar
 		disponibles durante el desarrollo.
 	\end{itemize}
@@ -1869,8 +1862,8 @@
 	\begin{itemize}
 		\item \textbf{rdflib y owlrl.} El grafo completo se carga en memoria en cada arranque, lo que tarda unos 20 segundos, y las consultas complejas son más lentas que con un motor dotado de índices persistentes. Además, rdflib no permite cancelar una consulta en curso, por lo que el sistema limita a 20 segundos el tiempo de cada una. Con el volumen actual, las consultas habituales se resuelven en menos de un segundo, pero es una solución que no escala indefinidamente.
 		\item \textbf{Base de grafos dedicada.} Añade una pieza de infraestructura
-		que instalar, configurar y mantener y, en las opciones no libres, un coste
-		de licencia o de alojamiento, para un proyecto con un único desarrollador
+		que instalar, configurar y mantener, con un coste de licencia o de
+		alojamiento en las opciones no libres, para un proyecto con un único desarrollador
 		y un grafo que cabe en memoria.
 	\end{itemize}
 
@@ -1948,7 +1941,7 @@
 
 	Se compararon diez modelos y varias formas de construir el \textit{prompt}, de
 	menor a mayor información: solo el esquema del grafo; el esquema con el
-	vocabulario real, es decir, los identificadores de los temas y de los grupos;
+	vocabulario real, formado por los identificadores de los temas y de los grupos;
 	el \textit{prompt} completo, con reglas y ejemplos fijos o elegidos para cada
 	pregunta; y un \textit{prompt} compacto con tres ejemplos elegidos para cada
 	pregunta, por coincidencia de
@@ -1988,7 +1981,7 @@
 			Completo, con ejemplos por coincidencia de palabras y corrección posterior & 80\,\% & -- \\
 			\hline
 		\end{tabularx}
-		\caption{Consultas correctas según la forma del \textit{prompt} (35 preguntas, tres repeticiones)}
+		\caption[Consultas correctas según la forma del \textit{prompt}]{Consultas correctas según la forma del \textit{prompt} (35 preguntas, tres repeticiones). Las celdas con -- corresponden a configuraciones no medidas con ese modelo}
 		\label{tab:sparql-prompt}
 	\end{table}
 
@@ -2039,9 +2032,10 @@
 	insuficiente incluso para el mejor modelo, que se queda en el 61\,\%, en línea
 	con lo que recoge la literatura~\cite{giuliani2026-sparql-llm}.
 
-	La selección de los ejemplos por similitud solo beneficia a
-	los modelos capaces de aprovecharla. Mejora los resultados de Gemini, del
-	86\,\% al 96\,\%, y de Qwen3~\cite{qwen3}, del 83\,\% al 91\,\%, pero no los del modelo de
+	La selección de los ejemplos por similitud mejora claramente a los modelos
+	más capaces, y en los modelos pequeños su efecto depende de la forma del
+	\textit{prompt}. Mejora los resultados de Gemini, del
+	86\,\% al 96\,\%, y de Qwen3~\cite{qwen3}, del 83\,\% al 91\,\% (alcanzando el 94\,\% de la Tabla~\ref{tab:sparql-modelos} al incorporar la corrección sintáctica posterior mediante guardas), pero no los del modelo de
 	7B, que se mantiene o empeora ligeramente respecto a los ejemplos fijos, del
 	76\,\% al 71--73\,\%. En la evaluación de Gao et al., en cambio, esa
 	selección mejora los cuatro modelos probados~\cite{gao2024-dailsql}.
@@ -2052,7 +2046,7 @@
 
 	En cuanto al tipo de pregunta, las proporciones son las más difíciles. Piden
 	un porcentaje, lo que exige dos recuentos en una misma consulta, y aunque
-	son pocas dentro de la batería, explican la mitad de las consultas
+	son pocas entre las 35 preguntas, explican la mitad de las consultas
 	incorrectas del modelo elegido.
 
 	El resultado de gpt-oss-120b no es concluyente. La cuota del nivel gratuito de
@@ -2133,12 +2127,12 @@
 		\label{fig:arquitectura}
 	\end{figure}
 
-	El código sigue la misma división. Un módulo común reúne lo que utilizan los
-	dos sistemas: las rutas de los datos, el acceso a los LLM con
-	sus respaldos y la normalización de los nombres de los grupos políticos. Cada
-	sistema tiene su propio módulo, organizado por etapas. En el RAG vectorial son
-	tres: del PDF a los fragmentos, de la pregunta a los fragmentos y de los
-	fragmentos a la respuesta. En el grafo son dos: construcción y consulta. La
+	El código sigue la misma división. Un módulo común reúne las rutas de los datos, el
+	acceso a los LLM con sus respaldos y la normalización de los nombres de los
+	grupos políticos, que utilizan los dos sistemas. Cada sistema tiene su propio
+	módulo, organizado por etapas. El del RAG vectorial va del PDF a los
+	fragmentos, de la pregunta a los fragmentos y de los fragmentos a la
+	respuesta, mientras que el del grafo se divide en construcción y consulta. La
 	interfaz se limita a enviar la pregunta al sistema elegido y a mostrar lo que
 	este devuelve.
 
@@ -2211,7 +2205,7 @@
 	entran en los recuentos.
 
 	\textbf{Texto de los debates.} El grafo no almacena el texto íntegro de las
-	intervenciones, sino un resumen de cada una y la postura del orador. Se trata de una decisión de diseño. El texto de los debates, de unos 95 millones de caracteres, ya está en el índice vectorial, y copiarlo al grafo habría
+	intervenciones, sino un resumen de cada una y la postura del orador. El texto de los debates, de unos 95 millones de caracteres, ya está en el índice vectorial, y copiarlo al grafo habría
 	duplicado ese índice en lugar de ofrecer una estructura distinta con la que
 	compararlo. Además, habría más que duplicado el tamaño de un grafo que se
 	carga completo en memoria. La otra
@@ -2227,8 +2221,8 @@
 	la Sección~\ref{sec:trabajo-futuro}.
 
 	La Figura~\ref{fig:rdf-ejemplo} muestra el resultado para una proposición
-	concreta, la misma cuyo comienzo en el acta reproduce la
-	Figura~\ref{fig:formato-actas}. Los triples recogen el pleno y la legislatura
+	concreta, la misma cuyo comienzo en el acta reproduce la parte derecha
+	de la Figura~\ref{fig:formato-actas}. Los triples recogen el pleno y la legislatura
 	en los que se debatió, el grupo que la presentó, sus temas, una de las
 	entidades que menciona, el voto de cada grupo y la página del acta en la que
 	comienza. Las flechas discontinuas señalan los dos triples que materializa el
@@ -2327,8 +2321,8 @@
 	los bloques repetidos o vacíos, y coloca bajo cada bloque el enlace a la
 	página del acta de la que procede, a partir de los metadatos de los
 	fragmentos. Un LLM al que se le pide que cite la página tiende a inventarla.
-	Como aquí la página no la escribe el modelo, el enlace conduce siempre a un
-	documento existente, lo que satisface el requisito RF6. La
+	Como aquí la página no la escribe el modelo, el enlace se construye a partir de los
+	metadatos y conduce a un documento existente, lo que satisface el requisito RF6. La
 	Figura~\ref{fig:interfaz-vectorial} muestra una respuesta de este sistema.
 
 	\begin{figure}[H]
@@ -2339,8 +2333,8 @@
 	\end{figure}
 
 	En el GraphRAG, el modelo recibe las filas devueltas por la consulta, la
-	propia consulta, para que conozca los filtros ya aplicados, y, según el tipo
-	de pregunta, indicaciones sobre cómo interpretar los datos. Su función es
+	propia consulta, para que conozca los filtros ya aplicados, e indicaciones
+	sobre cómo interpretar los datos según el tipo de pregunta. Su función es
 	explicar las filas, no calcular, puesto que las cifras proceden del grafo. Si
 	la respuesta cita proposiciones concretas, el programa añade el enlace a su
 	página. Si es una cifra agregada, se indica que se ha calculado sobre el grafo
@@ -2363,7 +2357,7 @@
 	detalle.
 
 	En la Figura~\ref{fig:interfaz-vectorial} se aprecia la forma de la respuesta
-	del RAG vectorial, con un bloque por proposición y, bajo cada uno, el enlace
+	del RAG vectorial, con un bloque por proposición, cada uno con el enlace
 	que abre el PDF del acta en la página correspondiente. En la
 	Figura~\ref{fig:interfaz-grafo}, la respuesta del GraphRAG incluye la tabla
 	del recuento por grupo, y la interfaz presenta en un panel la consulta SPARQL
@@ -2530,11 +2524,10 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 
 	\section{El corpus de actas del Pleno}
 
-	El Ayuntamiento de Bilbao publica en su portal web, para cada sesión del
-	Pleno, el orden del día, los extractos, un resumen y el acta completa. Este
-	trabajo utiliza únicamente el acta, el único documento que recoge
-	íntegros las proposiciones, el debate y el resultado de cada votación. La
-	Tabla~\ref{tab:corpus} resume el corpus descargado.
+	Como se indicó en la Introducción, de los documentos que el Ayuntamiento de
+	Bilbao publica en su portal web para cada sesión del Pleno, este trabajo
+	utiliza únicamente el acta. La Tabla~\ref{tab:corpus} resume el corpus
+	descargado.
 
 	\begin{table}[H]
 		\centering
@@ -2703,7 +2696,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 
 	El portal no ofrece una descarga conjunta, ya que es necesario elegir un año en un
 	formulario y abrir cada documento de la tabla de resultados. Un programa
-	propio reproduce ese recorrido mediante \textit{web scraping}, es decir,
+	propio reproduce ese recorrido mediante \textit{web scraping},
 	la extracción automatizada de información de las páginas de un sitio web. Para cada año envía el formulario, localiza en
 	la tabla el enlace al acta de cada sesión, descartando el orden del día, los
 	extractos y el resumen, y guarda el fichero en una carpeta por año, con un
@@ -2729,19 +2722,24 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	asiste a los plenos. Los nombres se obtienen de la relación de asistentes del
 	encabezado de cada acta, y el grupo, de las actas de las sesiones
 	constitutivas de cada mandato, completadas con el sentido del voto en las
-	votaciones nominales. Los dos procesos utilizan este censo: el del índice
-	vectorial, para asignar a cada fragmento el grupo del orador, y el del grafo,
-	para resolver el voto nominal y las intervenciones.
+	votaciones nominales. El índice vectorial utiliza este censo para asignar a
+	cada fragmento el grupo del orador. El grafo lo utiliza para resolver el voto
+	nominal y las intervenciones.
 
 	\section{Preprocesado para el índice vectorial}
 	\label{sec:prep-vectorial}
 
 	El índice vectorial conserva el texto de las actas, por lo que su preprocesado
 	se limita a dividirlo y a anotar cada fragmento. Cada acta se divide primero
-	por puntos del orden del día, con expresiones regulares, es decir, patrones
+	por puntos del orden del día, con expresiones regulares, patrones
 	de texto que reconocen el comienzo de un punto en los formatos del corpus, y cada punto, en fragmentos
 	de 1.200 caracteres con 200 de solape. De este modo, ningún fragmento mezcla
-	el final de un debate con el comienzo del siguiente.
+	el final de un debate con el comienzo del siguiente. Es un tamaño intermedio, de unos
+	300 \textit{tokens}, suficiente para recoger un tramo del debate con su contexto, lo
+	que conviene a las preguntas sobre la posición de un grupo, ya que la literatura
+	sitúa el tamaño óptimo en los fragmentos mayores cuando la pregunta necesita más
+	contexto y en los menores cuando la respuesta es breve y
+	concreta~\cite{bhat2025-chunk-size}.
 
 	Cada fragmento conserva como metadatos la fecha del pleno, el título del
 	punto, el orador y su grupo, la página del PDF y el resultado de la votación.
@@ -2762,9 +2760,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	\section{Preprocesado para el grafo}
 	\label{sec:prep-grafo}
 
-	El grafo no almacena el texto, sino los hechos que se extraen de él, y su preprocesado consta, por ello, de dos etapas más: la extracción de los puntos del
-	orden del día con sus datos, que se realiza con reglas, y su enriquecimiento
-	con un LLM. Con el resultado se construye después el grafo, como describe la
+	El grafo almacena los hechos que se extraen del texto, por lo que su
+	preprocesado añade la extracción con reglas de los puntos del orden del día
+	con sus datos y su enriquecimiento posterior con un LLM. Con el resultado se construye después el grafo, como describe la
 	Sección~\ref{sec:construccion-grafo}.
 
 	\subsection{Extracción de los puntos del orden del día}
@@ -2781,9 +2779,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	el acta lo recoge, se resuelve con el censo de concejales del mandato
 	correspondiente y de él se deriva el voto de cada grupo. Cuando el acta no lo recoge, el voto de cada
 	grupo procede de la lectura del LLM de la etapa siguiente, lo que ocurre en
-	torno al 6\,\% de los puntos con voto.
+	torno al 7\,\% de los puntos con voto.
 
-	La extracción de estos datos mediante reglas, en lugar de con un LLM, es una decisión de diseño. Los votos y el resultado son los datos en los que un error es más grave, y la fórmula con la que el acta los recoge es lo bastante regular
+	Estos datos se extraen mediante reglas en lugar de con un LLM, porque los votos y el resultado son los datos en los que un error es más grave y la fórmula con la que el acta los recoge es lo bastante regular
 	para leerla sin interpretarla. Cuando el LLM de la etapa siguiente y la regla
 	no coinciden en el resultado, prevalece la regla, conforme al requisito RF3 de
 	la Tabla~\ref{tab:requisitos-funcionales}.
@@ -2869,8 +2867,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	\label{ch:resultados}
 
 	Este capítulo presenta la evaluación de los dos sistemas. Tras el objetivo y
-	la metodología, se exponen los resultados de cada sistema por separado y, a
-	continuación, su comparación con las mismas preguntas, el resultado principal del trabajo. El capítulo termina con los límites de cada sistema, la
+	la metodología, se exponen los resultados de cada sistema por separado y después
+	su comparación con las mismas preguntas, que es el resultado principal del trabajo. El capítulo termina con los límites de cada sistema, la
 	valoración global y las limitaciones de la evaluación.
 
 	\section{Objetivo de la evaluación}
@@ -2933,10 +2931,10 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	el texto redactado, sino las filas que devuelve la consulta con el valor
 	correcto. Es un criterio más riguroso que el de un juez basado en un LLM, ya que compara con un hecho verificado y no con la valoración de otro modelo.
 
-	Se aplica en dos evaluaciones: el estudio comparativo de diez
+	Se aplica en el estudio comparativo de diez
 	modelos sobre 35 preguntas de referencia, descrito en la
 	Sección~\ref{sec:estudio-sparql}, que llevó a seleccionar Qwen3:8B como
-	generador de SPARQL, y una batería de regresión de 22 casos, con
+	generador de SPARQL, y en una batería de regresión de 22 casos, con
 	valores esperados y valores prohibidos verificados uno a uno en las actas, que
 	se ejecutó cada vez que cambiaban el grafo o el generador de consultas. El RAG
 	vectorial dispone de una batería análoga, de 13 casos, que verifica la
@@ -2972,7 +2970,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	lo que el propio sistema recuperaba o respondía.
 
 	Como juez se empleó Gemini 2.5 Pro. Un juez local, Qwen3:8B, se descartó por
-	ser notablemente más indulgente. En el trabajo de Zheng et al., son los
+	ser más indulgente. En el trabajo de Zheng et al., son los
 	modelos más capaces, como GPT-4, los que alcanzan con los evaluadores humanos
 	un acuerdo comparable al que estos tienen entre sí~\cite{zheng2023-llm-judge}. El contexto que se entrega al juez es el
 	mismo texto que recibe el generador, incluidos los metadatos de cada
@@ -3056,8 +3054,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		\label{tab:ragas-resultados}
 	\end{table}
 
-	La recuperación alcanza el máximo, con 1 en Context Relevance en las 50
-	preguntas. La fidelidad también es alta, con una media de 0,98, un valor
+	Los fragmentos recuperados son pertinentes en las 50 preguntas, con 1 en
+	Context Relevance. La fidelidad es alta, con una media de 0,98, un valor
 	mínimo de 0,83 y la puntuación máxima en 35 de las 50 preguntas. El sistema
 	apenas afirma nada que no figure en el contexto recuperado.
 
@@ -3118,13 +3116,12 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	forma conjunta la pregunta y cada
 	fragmento~\cite{nogueira2019-bert-rerank}. El reordenador local recupera buena
 	parte de lo que se pierde sin reordenación, al pasar del 33\,\% al 52\,\%, por lo
-	que el sistema puede funcionar sin la API externa con una pérdida moderada. Con el mismo contexto, sin embargo, Cohere se mantiene por encima,
-	con un 71\,\% frente a un 65\,\%.
+	que el sistema puede funcionar sin la API externa con una pérdida moderada.
 
 	En cuanto al reparto del contexto, cuando los bloques elegidos
 	superan el límite de caracteres del contexto, ese límite se reparte entre
 	todos, que se recortan a un tamaño común conservando la parte que la búsqueda
-	señaló como relevante. Antes, el contexto se cortaba por el final y, como los
+	señaló como relevante. En las versiones iniciales, el contexto se cortaba por el final y, como los
 	bloques se ordenan cronológicamente, se perdían los plenos más recientes y las
 	preguntas sobre la última vez que se trató un asunto se respondían con las
 	actas más antiguas.
@@ -3141,7 +3138,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 
 	La fidelidad de las respuestas no fue siempre tan alta como muestra la
 	Tabla~\ref{tab:ragas-resultados}. Durante el desarrollo, con el generador
-	local Qwen2.5-7B, la Faithfulness era la métrica más baja. El análisis de las
+	local Qwen2.5-7B, la Faithfulness era baja, de 0,76 de media, muy por debajo
+	de la actual. El análisis de las
 	respuestas peor puntuadas, afirmación por afirmación, mostró tres patrones de
 	error: interpretar ``decae'' como ``aprobada'', mezclar información entre
 	bloques e inventar datos ausentes del contexto. El más sistemático es el de
@@ -3199,8 +3197,8 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	apenas varían, ya que dependen principalmente de lo recuperado, que era idéntico
 	en las dos condiciones.
 
-	La conclusión es que el generador es el componente que más condiciona la
-	fidelidad de las respuestas, por encima de la recuperación. Es también
+	La conclusión es que el generador condiciona en gran medida la fidelidad
+	de las respuestas. Es también
 	relevante para decidir cómo desplegar el sistema, ya que un generador local pequeño
 	lo hace independiente de servicios externos, a costa de respuestas menos
 	fieles.
@@ -3227,12 +3225,12 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 
 	Estas cifras miden la consulta que escribe el LLM, que es solo una de las tres
 	vías del sistema. En la última de las siete rondas de la comparación, 16 de las 20
-	preguntas se resolvieron con consultas compuestas por el programa, sin intervención de un LLM. La diferencia de fiabilidad entre ambas vías es
-	considerable. En la segunda, la única desglosada por vía,
-	con 40 preguntas, las consultas compuestas por el programa produjeron 1
+	preguntas se resolvieron con consultas compuestas por el programa, sin intervención de un LLM. Las dos vías se diferencian sobre todo en las
+	respuestas falsas. En la ronda de 40 preguntas, la única desglosada por
+	vía, las consultas compuestas por el programa produjeron 1
 	respuesta falsa de 22, y las escritas por el LLM, 5 de 17, un 29\,\%. La
 	pregunta restante recibió una respuesta fija, sin consulta. Las respuestas
-	falsas del sistema proceden, por tanto, en su mayoría de las consultas escritas por el LLM, lo que justifica el orden de las tres vías descrito en el
+	falsas de esa ronda proceden, por tanto, en su mayoría de las consultas escritas por el LLM, lo que justifica el orden de las tres vías descrito en el
 	Capítulo~\ref{ch:solucion}.
 
 	\section{Comparación de los dos sistemas}
@@ -3318,9 +3316,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 
 	Los dos sistemas se diferencian en los recuentos y rankings. El GraphRAG
 	responde correctamente a más de la mitad, y el RAG vectorial, a casi ninguno.
-	No se trata de un fallo de ajuste, sino de estructura, ya que el RAG vectorial solo dispone de los fragmentos que caben en el contexto, y estas preguntas exigen
+	La causa está en la estructura del RAG vectorial, que solo dispone de los fragmentos que caben en el contexto, mientras que estas preguntas exigen
 	contar sobre todo el corpus. Fuera de los recuentos y rankings, los dos
-	sistemas aciertan exactamente lo mismo, 76 de 123 preguntas, de manera que toda
+	sistemas obtienen el mismo número de aciertos, 76 de 123 preguntas, de manera que toda
 	la diferencia global procede de ese tipo de pregunta.
 
 	En las preguntas sin respuesta en las actas, los dos sistemas responden bien
@@ -3334,7 +3332,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	vectorial apenas lo hacen, porque el sistema indica que no dispone del dato.
 
 	La Tabla~\ref{tab:indep-tipo} recoge el mismo desglose para la última ronda,
-	realizada con la versión final del grafo y 20 preguntas.
+	de 20 preguntas.
 
 	\begin{table}[H]
 		\centering
@@ -3388,8 +3386,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	\subsection{Causas de los fallos de cada sistema}
 	\label{sec:causas-fallos}
 
-	Los dos sistemas no solo fallan en proporciones distintas, sino por razones
-	distintas.
+	Los dos sistemas fallan, además, por razones distintas.
 
 	Los fallos del GraphRAG tienen dos causas, que a menudo se combinan. Una es
 	la formulación de la pregunta, que admite muchas redacciones,
@@ -3408,10 +3405,15 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	Sección~\ref{sec:resultados-graphrag}.
 
 	Los fallos del RAG vectorial tienen una causa principal, la recuperación. La respuesta está en las actas, pero el fragmento que la contiene
-	no llega al contexto. Este fallo depende sobre todo de la reordenación, y
-	queda prácticamente resuelto cuando esta funciona. En las cinco rondas en las
-	que el sistema funcionó sin ella, falló cerca de la mitad de las preguntas
-	puntuales, y en las dos en las que funcionó completo, solo una de trece. Sus escasas respuestas falsas corresponden a preguntas sobre la
+	no llega al contexto. Este fallo depende de la reordenación y de la composición del
+	contexto. Con la configuración final, este problema se reduce de forma notable. En las
+	rondas en las que el sistema funcionó sin reordenación falló cerca de la mitad
+	de las preguntas puntuales, mientras que, según el diagnóstico de recuperación,
+	con la configuración final el pleno correcto llega al contexto en el 85\,\% de
+	las 52 preguntas puntuales del diagnóstico, frente al 38\,\% sin reordenación.
+	Sobre el total de las 102 preguntas del diagnóstico la proporción es menor, del
+	76\,\% (Tabla~\ref{tab:diag-recuperacion}), porque estas incluyen también
+	preguntas con premisa falsa, preguntas ambiguas y algunos recuentos. Sus escasas respuestas falsas corresponden a preguntas sobre la
 	última vez que se trató un asunto, en las que toma como más reciente una fecha
 	en la que el tema solo se menciona de pasada. No se cuentan aquí como fallos
 	los recuentos y rankings, que el sistema no puede resolver por su propia
@@ -3475,10 +3477,10 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	falso en 2 de las 188 preguntas. Por último, el
 	GraphRAG, cuando falla, lo hace a menudo sin advertirlo, pues una de cada siete
 	respuestas, el 15\,\%, afirma un dato erróneo, y la proporción oscila entre el
-	5\,\% y el 28\,\% según el conjunto.
+	5\,\% y el 28\,\% según la ronda.
 
 	Las dos proporciones más altas de respuestas falsas, las de R5 y R6, coinciden
-	con las dos ampliaciones del grafo, que añadieron cerca de mil puntos del
+	con las dos ampliaciones del grafo, que añadieron más de mil puntos del
 	orden del día, las intervenciones de los debates y nuevos tipos de dato. Cada
 	dato nuevo introduce nuevas posibilidades de error, analizadas en la
 	Sección~\ref{sec:limites-grafo}, que hubo que corregir antes de R7.
@@ -3546,10 +3548,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	el momento de la pregunta. Un grafo obliga a decidir de antemano qué se
 	almacena y con qué forma. Lo que no encaja en sus clases se pierde o se
 	reduce. El ejemplo más claro son los debates, cuyas 18.581
-	intervenciones figuran en el grafo resumidas, con la postura de cada orador, ya
-	que copiar el texto completo convertiría el grafo en un índice de
-	documentos con otra sintaxis. El grafo contiene que un grupo intervino en
-	contra de una proposición y, de forma resumida, sus motivos, pero no las
+	intervenciones figuran en el grafo resumidas, con la postura de cada orador, por los
+	motivos expuestos en la Sección~\ref{sec:construccion-grafo}. El grafo contiene que un grupo intervino en
+	contra de una proposición y un resumen de sus motivos, pero no las
 	palabras exactas que empleó. Por ello falla cuando la pregunta busca una
 	palabra que solo figura en el texto del acta.
 
@@ -3621,7 +3622,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	contexto pertinente en todas las preguntas de la batería, con una Context
 	Relevance de 1,00, y redacta respuestas fieles a él, con una Faithfulness de
 	0,98. El GraphRAG genera una consulta correcta en el 97\,\% de los casos de la
-	repetición del estudio y supera completa su batería de regresión.
+	repetición del estudio y supera por completo su batería de regresión.
 
 	Ninguno de los dos es mejor para todas las preguntas. El GraphRAG responde
 	correctamente a más preguntas, un 59\,\% frente a un 41\,\%, porque resuelve los
@@ -3678,8 +3679,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		escrita por el LLM y se resolvió con una consulta compuesta por el
 		programa. La evaluación con RAGAS y las baterías de regresión sí se
 		repitieron completas tras la revisión.
-		\item \textbf{Batería de referencia.} Las 50 preguntas son suficientes
-		para que las medias sean estables frente al ruido del juez, pero no cubren
+		\item \textbf{Batería de referencia.} Las 50 preguntas bastan
+		para que las medias sean estables frente al ruido del juez, como muestra la
+		variación de 0,003 en la media al puntuar de nuevo, pero no cubren
 		todos los tipos de consulta posibles. La elección de temas con pocas
 		proposiciones, necesaria para verificar completas las respuestas de
 		referencia, deja fuera los temas más amplios del corpus.
@@ -3707,12 +3709,14 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	completo, como los recuentos, los rankings o la evolución por años, que el
 	índice vectorial no puede abordar por su propia estructura, ya que solo
 	dispone de los fragmentos que caben en su contexto. En el resto de las
-	preguntas, los dos sistemas acertaron en la misma proporción. El grafo iguala,
-	por tanto, al índice vectorial en las preguntas que este puede responder y
-	resuelve además las que no puede.
+	preguntas, los dos sistemas acertaron en la misma proporción. Su punto débil
+	es la fiabilidad. Al no contener el texto de los debates, el grafo no capta
+	todos los matices de la pregunta ni de lo que se dijo, y en ocasiones presenta
+	como respuesta una proposición que solo se parece a la pedida. Ese es el
+	problema que aborda el grafo conectado al texto que se propone como trabajo
+	futuro.
 
-	La limitación del grafo no está en lo que contiene, sino en cómo se le
-	pregunta. Para responder, el sistema debe convertir la pregunta en
+	La otra limitación del grafo está en cómo se le pregunta. Para responder, el sistema debe convertir la pregunta en
 	una consulta, y esa conversión falla por dos motivos: la ambigüedad con la que
 	el usuario formula la pregunta, que puede emplear palabras distintas de las
 	del grafo, y los errores del LLM al escribir la consulta. El fallo, además, no
@@ -3721,7 +3725,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	resultados obtenidos, una de cada siete respuestas del GraphRAG afirmó un dato
 	erróneo. El RAG vectorial, en cambio, apenas afirma datos falsos, pues cuando el
 	fragmento pertinente no llega al contexto, lo indica. Su fallo es de
-	recuperación, y queda prácticamente resuelto cuando la reordenación funciona.
+	recuperación, y se reduce de forma notable con la configuración final.
 	La fiabilidad es, por tanto, la ventaja del índice vectorial y el principal
 	problema pendiente del grafo.
 
@@ -3743,9 +3747,11 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	del grafo, como se expone en la Sección~\ref{sec:construccion-grafo}. Un grafo enlazado con el texto de
 	las actas, en el que el grafo localice las proposiciones y el texto aporte lo
 	que se dijo, podría responder con un único sistema a los dos tipos de
-	pregunta, y es la principal línea de continuación de este trabajo. Su límite
-	seguiría siendo el mismo: la construcción de la consulta y la ambigüedad de la
-	pregunta.
+	pregunta, y es la principal línea de continuación de este trabajo. El texto le
+	permitiría captar los matices que hoy se pierden, como las menciones de un
+	asunto fuera del título de la proposición o las palabras con las que se
+	formula la pregunta, aunque seguiría dependiendo de una consulta bien
+	construida en las preguntas ambiguas.
 
 	La preferencia por el grafo no es general, sino propia de este tipo de corpus.
 	El RAG vectorial es el enfoque más extendido, y en su uso más habitual, como
@@ -3769,7 +3775,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	El objetivo general del trabajo era desarrollar un sistema que permitiera
 	consultar en lenguaje natural las actas del Pleno y que respondiera con datos
 	verificables, enlazados a la página del documento de origen, y se
-	ha cumplido. Los seis objetivos específicos de la
+	ha cumplido, con la excepción de los resultados agregados del GraphRAG, como
+	un recuento. Estos se calculan sobre todo el corpus y no proceden de un
+	documento ni de una página concreta, por lo que no pueden llevar cita. Los seis objetivos específicos de la
 	Sección~\ref{sec:objetivos-especificos} se han cumplido también, el cuarto con una excepción:
 
 	\begin{enumerate}
@@ -3790,8 +3798,9 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		respuestas afirma un dato erróneo, por las causas que analiza la
 		Sección~\ref{sec:causas-fallos}.
 		\item \textbf{Interfaz conversacional con cita de la página.} Cumplido:
-		los dos sistemas se consultan desde la misma interfaz, y cada dato enlaza
-		con la página del PDF de origen.
+		los dos sistemas se consultan desde la misma interfaz, y cada respuesta
+		enlaza con el PDF de origen y, cuando procede de una proposición o de un
+		fragmento concretos, con su página.
 		\item \textbf{Evaluación comparativa.} Cumplido y ampliado respecto a lo
 		previsto: además de la batería de referencia, los dos sistemas se
 		compararon con preguntas no empleadas en su desarrollo, como recoge la
@@ -3808,7 +3817,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 	actas, permitieron comprobar que cada cambio no alteraba lo que ya funcionaba.
 	RAGAS muestra que el RAG vectorial recupera contexto pertinente en todas las
 	preguntas de la batería y que sus respuestas son fieles a él, y el experimento
-	con el contexto fijo, que esa fidelidad depende ante todo del modelo que redacta. El diagnóstico de la recuperación cuantificó la aportación de cada
+	con el contexto fijo, que esa fidelidad depende en gran medida del modelo que redacta. El diagnóstico de la recuperación cuantificó la aportación de cada
 	pieza y mostró que la reordenación es la que más influye. La comparación con preguntas no empleadas en el
 	desarrollo, por último, es la única que mide el comportamiento de los sistemas
 	ante preguntas imprevistas y la única que los compara entre sí, por lo que es
@@ -3850,15 +3859,15 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		\item \textbf{Tres resultados} de utilidad para quien construya un sistema
 		similar: fuera de las preguntas de agregación, las dos estructuras
 		aciertan lo mismo, y lo que las distingue es la forma de fallar; las
-		consultas compuestas por el programa producen muchas menos respuestas
-		falsas que las escritas por un LLM; y la fidelidad de las respuestas de
-		un sistema RAG depende más del modelo que redacta que de la
-		recuperación, una vez que esta aporta el contexto correcto.
+		consultas compuestas por el programa dan una respuesta falsa con la
+		mitad de frecuencia que las escritas por un LLM, un 13\,\% frente a un
+		25\,\%, con un porcentaje de aciertos similar; y, con el mismo contexto
+		recuperado, cambiar el modelo que redacta eleva la fidelidad de las
+		respuestas de 0,64 a 0,84.
 		\item \textbf{El código y los datos del proyecto}, disponibles en un
 		repositorio público: el código de los dos sistemas, la ontología, el
 		grafo, las baterías de regresión y la batería de RAGAS con sus
-		resultados.
-		\url{https://github.com/plopez053/TFG}
+		resultados (\url{https://github.com/plopez053/TFG}).
 	\end{itemize}
 
 	\section{Trabajo futuro}
@@ -3874,17 +3883,17 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		original. A diferencia de las dos opciones descartadas en la
 		Sección~\ref{sec:construccion-grafo}, no duplica el texto en el grafo ni
 		exige que un LLM extraiga más datos, con lo que no añade nuevas fuentes
-		de error. Resolvería la pérdida de información que supone resumir los
-		debates y el fallo de las preguntas que emplean palabras distintas de las del grafo, la causa más frecuente de sus respuestas incorrectas.
+		de error. Atenuaría la pérdida de información que supone resumir los
+		debates y el fallo de las preguntas que emplean palabras distintas de las del grafo, que está en el origen de buena parte de sus respuestas erróneas.
 		Durante el proyecto se desarrolló un prototipo, que se desactivó para
 		comparar las dos estructuras en igualdad de condiciones. Es también la
 		idea de fondo del método GraphRAG de Edge et al., que conserva enlazados
 		las entidades del grafo y los fragmentos de texto de los que se
 		extrajeron~\cite{edge2024-graphrag}.
-		\item \textbf{Más consultas compuestas por el programa.} Dado que las
-		respuestas falsas del GraphRAG proceden sobre todo de las consultas
-		escritas por el LLM, ampliar los tipos de pregunta que se resuelven sin
-		LLM es la forma más directa de reducirlas.
+		\item \textbf{Más consultas compuestas por el programa.} Ampliar los
+		tipos de pregunta que se resuelven sin que un LLM escriba la consulta, y
+		avisar cuando el asunto encontrado no coincide con el preguntado, es la
+		forma más directa de reducir las respuestas falsas del GraphRAG.
 		\item \textbf{Enrutado automático entre los dos sistemas.} Mientras los dos sistemas se mantengan
 		separados, un enrutador puede decidir, para cada pregunta, si la responde
 		el grafo o el índice vectorial. Se probó uno basado en reglas, que enviaba
@@ -3963,7 +3972,7 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		\bibitem{hogan2021-knowledge-graphs}
 		Hogan, A., Blomqvist, E., Cochez, M., D\textquotesingle{}Amato, C., De Melo, G.,
 		Gutierrez, C., Kirrane, S., Labra Gayo, J.~E., Navigli, R., Neumaier, S.,
-		Ngonga Ngomo, A.~C., Polleres, A., Rashid, S.~M., Rula, A., Schmelzeisen,
+		Ngonga Ngomo, A.-C., Polleres, A., Rashid, S.~M., Rula, A., Schmelzeisen,
 		L., Sequeda, J., Staab, S., y Zimmermann, A.
 		\textit{Knowledge Graphs}. ACM Computing Surveys, vol.~54, núm.~4,
 		art.~71, pp.~1--37, 2021.
@@ -4154,6 +4163,13 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		\textit{Chainlit}. Consultado el 8 de octubre de 2026.
 		\url{https://chainlit.io}
 
+		\bibitem{bhat2025-chunk-size}
+		Bhat, S. R., Rudat, M., Spiekermann, J. y Flores-Herr, N.
+		\textit{Rethinking Chunk Size For Long-Document Retrieval: A
+		Multi-Dataset Analysis}. arXiv:2505.21700, 2025. Consultado el 30 de
+		octubre de 2026.
+		\url{https://arxiv.org/pdf/2505.21700}
+
 		\bibitem{nomic-embed-text}
 		Nomic AI.
 		\textit{nomic-embed-text}. Consultado el 8 de octubre de 2026.
@@ -4212,6 +4228,11 @@ SELECT ?grupo (COUNT(DISTINCT ?p) AS ?n) WHERE {
 		Wikimedia Foundation.
 		\textit{Wikidata}. Consultado el 8 de octubre de 2026.
 		\url{https://www.wikidata.org}
+
+		\bibitem{foto-ayuntamiento}
+		Zarateman.
+		\textit{Bilbao - Ayuntamiento 4}, fotografía de la fachada del Ayuntamiento de Bilbao, publicada en Wikimedia Commons con licencia CC0. Consultado el 30 de octubre de 2026.
+		\url{https://commons.wikimedia.org/wiki/File:Bilbao_-_Ayuntamiento_4.JPG}
 
 	\end{thebibliography}
 

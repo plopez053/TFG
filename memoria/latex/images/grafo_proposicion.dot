@@ -1,0 +1,47 @@
+digraph G {
+  rankdir=LR; ranksep=0.75; nodesep=0.20; splines=true;
+  bgcolor="white"; pad=0.3;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=19, penwidth=0, margin="0.16,0.09"];
+  edge [fontname="Helvetica", fontsize=14, color="#8a8f98", fontcolor="#4a4f57", arrowsize=0.7, penwidth=1.3];
+
+  prop [label=<<b>Proposición</b><br/><font point-size="4"> </font><br/><font point-size="15">definición de<br/>gran tenedor de vivienda</font>>, fillcolor="#1B4A78", fontcolor="white", fontsize=21, margin="0.22,0.14"];
+
+  pleno [label=<Pleno<br/><font point-size="4"> </font><br/><font point-size="15">29-01-2026</font>>, fillcolor="#E3DDF2"];
+  leg   [label=<Legislatura<br/><font point-size="4"> </font><br/><font point-size="15">2023–2027</font>>, fillcolor="#E3DDF2"];
+
+  alq [label=<Tema<br/><font point-size="4"> </font><br/><font point-size="15">alquiler</font>>, fillcolor="#FCE8C8"];
+  viv [label=<Tema<br/><font point-size="4"> </font><br/><font point-size="15">vivienda</font>>, fillcolor="#FCE8C8"];
+
+  etx [label=<Organización<br/><font point-size="4"> </font><br/><font point-size="15">Etxebide</font>>, fillcolor="#D6E6F5"];
+
+  bildu [label=<Grupo político<br/><font point-size="4"> </font><br/><font point-size="15">EH Bildu</font>>, fillcolor="#D5EBD8"];
+  pnv   [label=<Grupo político<br/><font point-size="4"> </font><br/><font point-size="15">EAJ-PNV</font>>, fillcolor="#D5EBD8"];
+  pse   [label=<Grupo político<br/><font point-size="4"> </font><br/><font point-size="15">PSE-EE</font>>, fillcolor="#D5EBD8"];
+  elk   [label=<Grupo político<br/><font point-size="4"> </font><br/><font point-size="15">Elkarrekin Bilbao</font>>, fillcolor="#D5EBD8"];
+  pp    [label=<Grupo político<br/><font point-size="4"> </font><br/><font point-size="15">PP</font>>, fillcolor="#D5EBD8"];
+
+  res [label=<Resultado<br/><font point-size="4"> </font><br/><font point-size="15">aprobada</font>>, fillcolor="#F6D5D5"];
+
+  node [shape=box, style="filled", fillcolor="#EEF0F2", fontname="Courier", fontsize=16];
+  fecha [label="2026-01-29"];
+  pag   [label="50"];
+  votos [label="23"];
+
+  prop -> pleno [label="enPleno"];
+  pleno -> leg  [label="enLegislatura"];
+  prop -> leg   [label="enLegislatura", style=dashed];
+  prop -> alq   [label="trataSobre"];
+  prop -> viv   [label="trataTemaAmplio", style=dashed];
+  alq -> viv    [label="skos:broader"];
+  prop -> etx   [label="menciona"];
+  prop -> bildu [label="presentadaPor"];
+  prop -> bildu [label="votoAFavorDe"];
+  prop -> pnv   [label="votoAFavorDe"];
+  prop -> pse   [label="votoAFavorDe"];
+  prop -> elk   [label="votoAFavorDe"];
+  prop -> pp    [label="votoEnContraDe"];
+  prop -> res   [label="tieneResultado"];
+  prop -> fecha [label="fechaISO"];
+  prop -> pag   [label="pagina"];
+  prop -> votos [label="votosFavor"];
+}
