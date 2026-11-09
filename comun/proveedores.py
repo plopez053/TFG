@@ -7,7 +7,21 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(_BASE, ".env"))
+
+# LLM_SOLO_NUBE=1 en el .env: ningún LLM se ejecuta en Ollama (equipos sin
+# capacidad para modelos de 7-8B). Ollama sigue calculando los embeddings
+# (nomic-embed-text y bge-m3), que son ligeros. El SPARQL lo genera Gemini.
+SOLO_NUBE = os.environ.get("LLM_SOLO_NUBE", "").strip().lower() in ("1", "true", "si", "sí", "yes")
+
+# Credenciales de Google con una ruta de otro equipo: si el fichero no existe
+# pero hay uno con el mismo nombre en la carpeta del proyecto, se usa ese
+_cred = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "")
+if _cred and not os.path.isfile(_cred):
+    _local = os.path.join(_BASE, _cred.replace("\\", "/").rsplit("/", 1)[-1])
+    if os.path.isfile(_local):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _local
 
 # --- modelos y claves ---
 EMBEDDING_MODEL = "nomic-embed-text"
@@ -127,7 +141,7 @@ class LLMProvider:
             return None
 
     def _build_ollama(self, model, num_ctx, timeout):
-        if not ping_ollama():
+        if SOLO_NUBE or not ping_ollama():
             return None
         try:
             from langchain_ollama import ChatOllama

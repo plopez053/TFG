@@ -67,3 +67,4 @@ python evaluacion/ragas/generar.py                # RAGAS, fase 1 (entorno princ
 ```
 
 Para reconstruir los datos desde cero: `docs/RUNBOOK.md`.
+Para ejecutarlo en un equipo sin capacidad para LLM locales: `demo/README.md`.

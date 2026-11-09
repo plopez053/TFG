@@ -20,7 +20,7 @@ import urllib.parse
 from collections import defaultdict
 from dataclasses import replace
 
-from comun.proveedores import GOOGLE_CLOUD_PROJECT
+from comun.proveedores import GOOGLE_CLOUD_PROJECT, SOLO_NUBE
 from comun.rutas import DATA_PATH
 from grafo.consulta.consulta_directa import consulta_directa, forma
 from grafo.consulta.generacion import (_fix_degenerate_groupby, _generar_y_ejecutar, _RESPUESTA_IRRECUPERABLE,
@@ -690,7 +690,10 @@ def _responder(pregunta: str, verbose=True, sparql_provider: str = "ollama") -> 
 
 
 # Punto de entrada: {"sparql", "rows", "answer"}, con los enlaces a las actas ya en la respuesta
-def graph_answer(pregunta: str, verbose=True, sparql_provider: str = "ollama") -> dict:
+def graph_answer(pregunta: str, verbose=True, sparql_provider: str = None) -> dict:
+    # sin modelos locales (LLM_SOLO_NUBE=1) el SPARQL lo genera Gemini
+    if sparql_provider is None:
+        sparql_provider = "gemini" if SOLO_NUBE else "ollama"
     res = _responder(pregunta, verbose, sparql_provider)
     res["answer"] += fuentes_graphrag(res["rows"])
     return res

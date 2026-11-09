@@ -8,7 +8,7 @@ import threading
 
 from comun.proveedores import (build_gemini as _build_gemini, GOOGLE_CLOUD_PROJECT, LLM_MODEL_GEMINI,
                                LLM_MODEL_GRAPHRAG, LLM_MODEL_GROQ, ping_ollama as _ping_ollama,
-                               texto_llm as _texto_llm)
+                               SOLO_NUBE, texto_llm as _texto_llm)
 from comun.rutas import GRAFO_TTL as GRAPH_TTL
 
 
@@ -146,6 +146,8 @@ def _llm_invoke(prompt: str, prefer: str = "ollama") -> str:
                 print(f"[!] GraphRAG Gemini falló — {type(e).__name__}: {e}", flush=True)
                 errores.append(str(e))
         elif proveedor == "ollama":
+            if SOLO_NUBE:
+                continue
             if not _ping_ollama():
                 print("[!] GraphRAG: Ollama no disponible en localhost:11434", flush=True)
                 continue
